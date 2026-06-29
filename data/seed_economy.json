@@ -1,0 +1,27 @@
+{
+  "source": "China economic indicators mid-2026",
+  "description": "Macro economic context affecting consumer and business spending",
+  "indicators": {
+    "retail_sales_growth": "1.4% YoY (Jan-May 2026), May alone -0.6%",
+    "household_savings": "171.54 trillion RMB — people saving, not spending",
+    "micro_business_net_margin": "4.4% — razor-thin",
+    "micro_business_ai_continuous_usage": "33% — 70% tried AI, only 33% kept using",
+    "micro_business_price_abandon_rate": "58.5% — abandoned AI tools due to cost",
+    "consumer_confidence": "low — 'consumption downgrade' era",
+    "service_retail_growth": "5.4% — services growing, goods declining",
+    "OPC_count": "16 million — growing 47% YoY",
+    "OPC_policy_support": "7 ministries joint document, 20+ cities launched OPC policies"
+  },
+  "what_people_still_pay_for": [
+    "Non-deferrable essentials (repairs, healthcare, accounting, pet care)",
+    "Small emotional pick-me-ups (blind boxes, snacks, short trips, beauty)",
+    "Things that save money immediately",
+    "Things that bring in revenue immediately"
+  ],
+  "what_people_cut_first": [
+    "SaaS subscriptions with uncertain ROI",
+    "Marketing tools that require learning",
+    "'Nice to have' platforms",
+    "Luxury/premium anything"
+  ]
+}

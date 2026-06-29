@@ -1,0 +1,21 @@
+{
+  "source": "Technology maturity and trends mid-2026",
+  "description": "What's technically possible now that wasn't before",
+  "signals": {
+    "ai_agent_maturity": "Agents can now DO things, not just chat. OpenClaw 300K GitHub stars proved demand",
+    "multimodal_cost_collapse": "DeepSeek V3 dropped token costs 90%. AI inference now cheap enough for consumer apps",
+    "mcp_protocol_standard": "MCP SDK 97M+ downloads/month. AI-to-tool connection standardized",
+    "wechat_ecosystem_maturity": "400M+ mini-programs, 1B+ users. Verified service accounts can register 5 mini-programs instantly",
+    "vibe_coding_reality": "Non-developers shipping apps in hours. '小猫补光灯' 1 hour → #1 paid app",
+    "single_file_apps_rising": "HTML+JS single-file tools trending. No server needed. Just open in browser",
+    "chrome_extension_gold_rush": "Top extensions $20-130K/month. 7% monetized. Low competition in niche categories",
+    "cli_tools_passive_income": "Zig CLI tools made $82K in 3 months. Zero maintenance. One-time purchase",
+    "open_source_funding_path": "MiroFish: 10-day build → GitHub #1 → $4.2M funding. Validated path"
+  },
+  "emerging_frontiers": [
+    "AI agent marketplaces (pre-trained agents for hire)",
+    "Personal AI 'employee' cloning (learn your style, handle tier-1)",
+    "Screenshot → action pipelines (AI reads your screen, does the work)",
+    "Multi-agent economic simulation (academic frontier, not yet productized)"
+  ]
+}
