@@ -120,7 +120,8 @@
     "survival_chart": "产品存活分数",
     "adoption_curve": "📈 采纳曲线 (S-Curve)",
     "emotion_timeline": "💭 市场情绪 × 采纳率",
-    "no_products": "无产品数据"
+    "no_products": "无产品数据",
+    "survival_score_axis": "存活分数"
   },
   "evidence_tab": {
     "title": "📋 证据报告 — 不只是分数",
@@ -279,6 +280,9 @@
     "optimal_score": "得分最优",
     "elapsed": "耗时",
     "done": "已完成 {done}/{total} 个价格点",
-    "price_input": "价格点 (逗号分隔)"
+    "price_input": "价格点 (逗号分隔)",
+    "no_buyers": "所有价格点均无买家。产品可能需要重新定位或功能调整。",
+    "optimal_single": "最优价格 ¥{price} — 营收 ¥{revenue} · {buyers} 买家",
+    "optimal_multi": "营收最优: ¥{rev_price} (¥{rev_revenue} · {rev_buyers}人)。得分最优: ¥{score_price} (score={score_val})"
   }
 }

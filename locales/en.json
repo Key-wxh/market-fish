@@ -120,7 +120,8 @@
     "survival_chart": "Product Survival Scores",
     "adoption_curve": "Adoption Curve (S-Curve)",
     "emotion_timeline": "Market Sentiment x Adoption",
-    "no_products": "No product data"
+    "no_products": "No product data",
+    "survival_score_axis": "Survival Score"
   },
   "evidence_tab": {
     "title": "Evidence Report — More Than Just a Score",
@@ -279,6 +280,9 @@
     "optimal_score": "Optimal Score",
     "elapsed": "Elapsed",
     "done": "{done}/{total} price points done",
-    "price_input": "Price Points (comma-separated)"
+    "price_input": "Price Points (comma-separated)",
+    "no_buyers": "No buyers at any price point. Product may need repositioning.",
+    "optimal_single": "Optimal price ¥{price} — Revenue ¥{revenue} · {buyers} buyers",
+    "optimal_multi": "Revenue optimal: ¥{rev_price} (¥{rev_revenue} · {rev_buyers} buyers). Score optimal: ¥{score_price} (score={score_val})"
   }
 }

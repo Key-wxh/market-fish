@@ -6,6 +6,7 @@ at multiple price points. Reuses saved agents + simulate() — no pipeline chang
 import copy
 import time
 from engine.config import simulation_cfg as _cfg
+from engine.i18n import t as _t
 
 
 def scan_price_elasticity(
@@ -98,14 +99,11 @@ def scan_price_elasticity(
 
     # Generate recommendation
     if max_revenue["buyers"] == 0:
-        recommendation = f"所有价格点均无买家。产品可能需要重新定位或功能调整。"
+        recommendation = _t("price_scanner.no_buyers")
     elif max_revenue["revenue"] == max_score.get("revenue", 0):
-        recommendation = f"最优价格 ¥{max_revenue['price']} — 营收 ¥{max_revenue['revenue']} · {max_revenue['buyers']} 买家"
+        recommendation = _t("price_scanner.optimal_single", price=max_revenue["price"], revenue=max_revenue["revenue"], buyers=max_revenue["buyers"])
     else:
-        recommendation = (
-            f"营收最优: ¥{max_revenue['price']} (¥{max_revenue['revenue']} · {max_revenue['buyers']}人)\n"
-            f"得分最优: ¥{max_score.get('price','?')} (score={max_score.get('score','?')})"
-        )
+        recommendation = _t("price_scanner.optimal_multi", rev_price=max_revenue["price"], rev_revenue=max_revenue["revenue"], rev_buyers=max_revenue["buyers"], score_price=max_score.get("price","?"), score_val=max_score.get("score","?"))
 
     return {
         "price_points": price_points,
@@ -173,14 +171,14 @@ def build_elasticity_chart(scan_result: dict, height: int = 350):
         if opt_idx >= 0:
             fig.add_annotation(
                 x=f"¥{optimal}", y=revenues[opt_idx],
-                text=f"← 营收最优 ¥{optimal}",
+                text=_t("price_scanner.optimal_revenue") + f" ¥{optimal}",
                 showarrow=True, arrowhead=2,
                 font=dict(size=13, color="#ffaa00"),
                 ax=40, ay=-30,
             )
 
     fig.update_layout(
-        title=dict(text="💰 价格弹性分析", font=dict(size=14)),
+        title=dict(text=_t("price_scanner.title"), font=dict(size=14)),
         height=height,
         hovermode="x unified",
         showlegend=True,
