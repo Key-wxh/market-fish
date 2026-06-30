@@ -68,6 +68,8 @@ class Pipeline:
             # Stage 4: Market Simulation (run for each market type)
             self.status = "stage4_simulation"
             all_results = []
+            coupling_stats = {}
+            rl_stats = {}
             market_types = [
                 ("b2c", [a for a in agents if a.get("type") == "consumer"]),
                 ("smb", [a for a in agents if a.get("type") == "smb"]),
@@ -92,7 +94,22 @@ class Pipeline:
                 )
                 all_results.extend(sim_result.get("results", []))
 
-            output["stages"]["simulation"] = {"status": "ok", "markets_simulated": len(market_types), "total_results": len(all_results)}
+                # Capture coupling & RL stats from each market simulation
+                if sim_result.get("coupling_history"):
+                    coupling_stats[market_type] = {
+                        "rounds": len(sim_result["coupling_history"]),
+                        "final_sentiment": sim_result["coupling_history"][-1]["market_signals"]["avg_sentiment"] if sim_result["coupling_history"] else 0,
+                    }
+                if sim_result.get("rl_summary"):
+                    rl_stats[market_type] = sim_result["rl_summary"]
+
+            output["stages"]["simulation"] = {
+                "status": "ok",
+                "markets_simulated": len(market_types),
+                "total_results": len(all_results),
+                "cross_domain_coupling": coupling_stats,
+                "economic_alignment_rl": rl_stats,
+            }
             self.stages_completed.append("simulation")
 
             # Stage 5: Report Generation

@@ -3,16 +3,17 @@ Stage 4: Market Simulation Engine — Parallelized for multi-LLM speed.
 30 rounds. Heterogeneous agents. Batch-parallel LLM calls within each round.
 With progress logging + small-world network topology (UChicago 2025).
 
-v3 changes:
-- ThreadPoolExecutor parallel agent decisions per round (batch size 10)
-- Fast models only for simulation (DeepSeek/Qwen), slow models for reports
-- Agent cap: 30 B2C max for speed
-- Round-by-round progress logging
+v4 changes:
+- Cross-domain coupling (EconSimulacra 2026): 消费↔社交↔情绪联动 after each round
+- Economic alignment RL (Agent Bazaar 2026): strategy adaptation from market outcomes
+- RL strategy context injected into agent decision prompts
 """
 
 import json, time, os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from engine.llm_client import get_llm
+from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
+from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
 
 DECISION_SYSTEM_PROMPT = """You are a market agent making a real economic decision. You have a specific identity, budget, pain points.
 
@@ -33,6 +34,14 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
     if agent_type == "environment" and round_num % 5 != 0:
         return {"agent_id": agent_id, "round": round_num, "action": "skip", "reason": "environment_periodic"}
 
+    # Build RL strategy context for decision prompt injection
+    rl_context = get_strategy_context_for_decision(agent_id, {agent_id: state})
+
+    # Build coupling context
+    coupling_ctx = state.get("coupling_context", {})
+    market_sentiment = coupling_ctx.get("market_sentiment", 0)
+    fomo_active = coupling_ctx.get("fomo_active", False)
+
     context = {
         "agent_profile": {k: v for k, v in profile.items() if k != "bdi"},
         "bdi": profile.get("bdi", {}),
@@ -44,13 +53,22 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
         },
         "round": round_num,
         "available_products": [{k: p.get(k) for k in ["id", "name", "category", "estimated_pricing_cny"]} for p in products[:3]],
+        "market_conditions": {
+            "sentiment": "optimistic" if market_sentiment > 0.2 else ("pessimistic" if market_sentiment < -0.2 else "neutral"),
+            "fomo_active": fomo_active,
+        },
     }
+
+    # Inject RL strategy guidance into the user prompt
+    user_extra = ""
+    if rl_context:
+        user_extra = f"\n\nYOUR LEARNED BEHAVIOR: {rl_context}"
 
     try:
         llm = get_llm()
         decision = llm.chat_json(
             system=DECISION_SYSTEM_PROMPT,
-            user=f"Round {round_num}/{total_rounds}. You are a {agent_type}. Make ONE economic decision.\n{json.dumps(context, indent=2, ensure_ascii=False)[:3000]}",
+            user=f"Round {round_num}/{total_rounds}. You are a {agent_type}. Make ONE economic decision.\n{json.dumps(context, indent=2, ensure_ascii=False)[:3000]}{user_extra}",
             agent_type=agent_type,
             temperature=0.6,
         )
@@ -60,7 +78,7 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
 
 
 def simulate(agents: list, product_directions: list, rounds: int = 30, market_type: str = "b2c") -> dict:
-    """Run 30-round market simulation with parallel agent decisions."""
+    """Run 30-round market simulation with parallel agent decisions, coupling, and RL."""
     # Cap agents for speed
     consumer_agents = [a for a in agents if a.get("type") == "consumer"][:30]
     other_agents = [a for a in agents if a.get("type") != "consumer"]
@@ -73,9 +91,13 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
             "profile": a, "history": [], "discovered_products": set(),
             "purchased_products": {}, "total_spent": 0, "emotional_state": "neutral",
             "recommendations_received": [],
+            "rl_strategy": None,     # Initialized by alignment_rl on first update
+            "coupling_context": {},  # Set by coupling engine each round
         }
 
     log, timeline = [], []
+    coupling_history = []
+    rl_history = []
     batch_size = 10
     started = time.time()
 
@@ -101,6 +123,22 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
                 pid = decision.get("product_id")
                 action = decision.get("action", "ignore")
 
+                # Apply coupling adjustments
+                emotional_state = decision.get("emotional_state", state["emotional_state"])
+                base_wtp = decision.get("willingness_to_pay_cny", 0)
+
+                # FOMO boost
+                if pid and action in ("evaluate", "discover"):
+                    fomo = compute_fomo_boost(aid, agent_states, pid)
+                    if fomo > 0 and random.random() < fomo:
+                        # FOMO triggers: upgrade evaluation to purchase
+                        decision["action"] = "purchase"
+                        decision["reasoning"] = f"{decision.get('reasoning', '')} (FOMO: peers bought)"
+
+                # Emotion-adjusted willingness to pay
+                if action == "purchase":
+                    decision["willingness_to_pay_cny"] = adjust_willingness_to_pay(emotional_state, base_wtp)
+
                 if action == "discover" and pid:
                     state["discovered_products"].add(pid)
                 if action == "purchase" and pid:
@@ -113,23 +151,69 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
                         if conn_id in agent_states:
                             agent_states[conn_id]["recommendations_received"].append({"from": aid, "product": pid, "round": rnd})
 
-                state["emotional_state"] = decision.get("emotional_state", "neutral")
+                state["emotional_state"] = emotional_state
                 state["history"].append(decision)
                 log.append(decision)
 
+        # ---- Post-round: Cross-Domain Coupling (EconSimulacra 2026) ----
+        coupling_stats = apply_coupling(agent_states, rnd, product_directions)
+        coupling_history.append(coupling_stats)
+
+        # ---- Post-round: Economic Alignment RL (Agent Bazaar 2026) ----
+        market = coupling_stats.get("market_signals", {})
+        rl_stats = update_all_strategies(agent_states, market, product_directions)
+        rl_history.append(rl_stats)
+
         elapsed = time.time() - rnd_start
         errs = sum(1 for a in log[-len(agent_ids):] if a.get("action") in ("error", "timeout"))
-        timeline.append({"round": rnd, "agents": len(agent_ids), "errors": errs, "sec": round(elapsed, 1)})
+        timeline.append({
+            "round": rnd, "agents": len(agent_ids), "errors": errs,
+            "sec": round(elapsed, 1),
+            "market_sentiment": market.get("avg_sentiment", 0),
+            "adoption_rate": market.get("adoption_rate", 0),
+        })
 
         # Progress log every 5 rounds
         if rnd % 5 == 0:
             total_elapsed = time.time() - started
             purchasers = sum(1 for s in agent_states.values() if s["purchased_products"])
-            print(f"  [SIM] Round {rnd}/{rounds} | {purchasers} purchasers | {errs} errs | {total_elapsed:.0f}s total", flush=True)
+            n_strats = sum(1 for s in agent_states.values() if s.get("rl_strategy"))
+            print(f"  [SIM] Round {rnd}/{rounds} | {purchasers} purchasers | sentiment={market.get('avg_sentiment',0):.2f} | {n_strats} RL-active | {total_elapsed:.0f}s total", flush=True)
 
     results = _compute_results(agent_states, product_directions)
-    return {"market_type": market_type, "rounds": rounds, "agent_count": len(selected_agents),
-            "timeline": timeline, "log": log, "results": results}
+
+    # Collect final RL strategy summary
+    final_strategies = {}
+    for aid, state in agent_states.items():
+        if state.get("rl_strategy"):
+            final_strategies[aid] = state["rl_strategy"]
+
+    return {
+        "market_type": market_type,
+        "rounds": rounds,
+        "agent_count": len(selected_agents),
+        "timeline": timeline,
+        "log": log,
+        "results": results,
+        "coupling_history": coupling_history,
+        "rl_summary": {
+            "rounds_with_updates": len([r for r in rl_history if r.get("strategies_with_changes", 0) > 0]),
+            "final_strategies_count": len(final_strategies),
+            "avg_final_strategies": _avg_strategies(final_strategies) if final_strategies else {},
+        },
+    }
+
+
+def _avg_strategies(strategies: dict) -> dict:
+    """Compute average strategy values across all agents."""
+    if not strategies:
+        return {}
+    keys = ["price_sensitivity", "early_adopter", "social_susceptibility", "loyalty", "risk_tolerance"]
+    avgs = {}
+    for key in keys:
+        vals = [s[key] for s in strategies.values() if key in s]
+        avgs[key] = round(sum(vals) / len(vals), 3) if vals else 0
+    return avgs
 
 
 def _compute_results(agent_states: dict, products: list) -> list:
