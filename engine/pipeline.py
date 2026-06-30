@@ -1,6 +1,6 @@
 """
 5-Stage Full Pipeline Orchestrator.
-Runs the complete MarketFish pipeline: Ontology → Graph → Agents+Idea → Simulation → Report.
+Supports three input modes: explore / validate / hybrid.
 """
 
 import json
@@ -14,22 +14,85 @@ from engine.simulator import simulate
 from engine.reporter import generate_report
 
 
+def _convert_user_product(user_product: dict) -> dict:
+    """Convert user-provided product description to product_directions format."""
+    target = user_product.get("target_market", "consumer")
+    # Infer category from target_market
+    category_map = {"consumer": "consumer_app", "smb": "B2B_saas", "enterprise": "B2B_saas"}
+    category = user_product.get("category", category_map.get(target, "consumer_app"))
+
+    return {
+        "id": user_product.get("id", f"user-prod-{hash(user_product.get('name', '')) % 10000:04d}"),
+        "name": user_product.get("name", "Untitled Product"),
+        "category": category,
+        "target_market": target,
+        "pain_point_addressed": user_product.get("pain_point", user_product.get("description", "")),
+        "why_graph_shows_opportunity": user_product.get("differentiation", "User-submitted product for validation"),
+        "estimated_pricing_cny": user_product.get("pricing", ""),
+        "technical_feasibility": 0.8,
+        "viral_potential": 0.5,
+        "key_risks": user_product.get("key_risks", []),
+        "similar_existing": "",
+        "_source": "user",  # Tag to distinguish from LLM-generated
+    }
+
+
+def _load_seed_data(seed_data: dict = None) -> dict:
+    """Load seed data from user-provided dict or default JSON files."""
+    if seed_data:
+        return seed_data
+
+    seed = {}
+    seed_files = {
+        "freelancer": "data/seed_freelancer.json",
+        "economy": "data/seed_economy.json",
+        "tech": "data/seed_tech.json",
+        "consumer": "data/seed_consumer.json",
+        "b2b": "data/seed_b2b.json",
+    }
+    for key, path in seed_files.items():
+        try:
+            with open(path, encoding="utf-8") as f:
+                seed[key] = json.load(f)
+        except FileNotFoundError:
+            print(f"  [WARN] Seed data missing: {path}", flush=True)
+    return seed
+
+
 class Pipeline:
     def __init__(self):
         self.status = "idle"
         self.stages_completed = []
         self.errors = []
 
-    def run(self, seed_data: dict) -> dict:
-        """Run the full 5-stage pipeline."""
+    def run(self, seed_data: dict = None, mode: str = "explore",
+            user_product: dict = None) -> dict:
+        """
+        Run the MarketFish pipeline.
+
+        Args:
+            seed_data: Market seed data dict. If None, loads from default JSON files.
+            mode: "explore" (LLM generates directions),
+                  "validate" (user injects product, skips idea_generator),
+                  "hybrid" (user product + LLM-generated competitors)
+            user_product: Product dict for validate/hybrid modes.
+                Schema: {name, description, target_market, pricing, [pain_point, differentiation]}
+
+        Returns:
+            Pipeline result dict with stages, product_directions, and final_report.
+        """
         start_time = time.time()
-        output = {"pipeline_version": "1.0", "stages": {}}
+        mode_label = {"explore": "A: 探索", "validate": "B: 验证", "hybrid": "C: 混合"}.get(mode, mode)
+        output = {"pipeline_version": "2.0", "input_mode": mode, "stages": {}}
+
+        # Load seed data
+        seed = _load_seed_data(seed_data)
 
         try:
             # Stage 1: Ontology
             self.status = "stage1_ontology"
-            print("  [STAGE 1/5] Ontology...", flush=True)
-            ontology = generate_ontology(seed_data)
+            print(f"  [STAGE 1/5] Ontology ({mode_label})...", flush=True)
+            ontology = generate_ontology(seed)
             output["stages"]["ontology"] = {"status": "ok", "participant_types": len(ontology.get("participant_types", []))}
             self.stages_completed.append("ontology")
             print(f"  [STAGE 1/5] Ontology OK — {len(ontology.get('participant_types', []))} types", flush=True)
@@ -37,28 +100,51 @@ class Pipeline:
             # Stage 2: Knowledge Graph
             self.status = "stage2_graph"
             print("  [STAGE 2/5] Knowledge Graph...", flush=True)
-            knowledge_graph = build_knowledge_graph(ontology, seed_data)
+            knowledge_graph = build_knowledge_graph(ontology, seed)
             output["stages"]["graph"] = {"status": "ok", "entities": len(knowledge_graph.get("entities", [])), "pain_spaces": len(knowledge_graph.get("pain_point_spaces", []))}
             self.stages_completed.append("graph")
             print(f"  [STAGE 2/5] Graph OK — {len(knowledge_graph.get('entities', []))} entities, {len(knowledge_graph.get('pain_point_spaces', []))} pain spaces", flush=True)
 
-            # Stage 3a: Agent Generation
+            # Stage 3a: Agent Generation (first pass with placeholder)
             self.status = "stage3a_agents"
             print("  [STAGE 3/5] Agent Generation...", flush=True)
-            # Placeholder product directions for agent generation context
             placeholder_dirs = [{"id": "placeholder", "name": "Placeholder — real directions generated in 3b"}]
             agents_data = generate_agents(knowledge_graph, placeholder_dirs)
             output["stages"]["agents"] = {"status": "ok", "count": len(agents_data.get("agents", []))}
             self.stages_completed.append("agents")
 
-            # Stage 3b: Product Direction Generation
+            # ── Stage 3b: Product Directions (mode-dependent) ──
             self.status = "stage3b_ideas"
-            print("  [STAGE 3/5] Product Ideas...", flush=True)
-            product_directions = generate_product_directions(knowledge_graph)
-            output["stages"]["ideas"] = {"status": "ok", "count": len(product_directions)}
-            print(f"  [STAGE 3/5] Ideas OK — {len(product_directions)} directions", flush=True)
+            product_directions = []
 
-            # Backtest filter — score directions against validated success factors
+            if mode == "validate":
+                # User's product only, skip LLM generation
+                print("  [STAGE 3/5] Product: user-injected (validate mode)...", flush=True)
+                if not user_product:
+                    raise ValueError("validate mode requires user_product")
+                converted = _convert_user_product(user_product)
+                product_directions = [converted]
+                output["stages"]["ideas"] = {"status": "ok", "count": 1, "source": "user"}
+                print(f"  [STAGE 3/5] Injected: {converted['name']}", flush=True)
+
+            elif mode == "hybrid":
+                # User's product + LLM-generated
+                print("  [STAGE 3/5] Product: user + AI (hybrid mode)...", flush=True)
+                if not user_product:
+                    raise ValueError("hybrid mode requires user_product")
+                llm_dirs = generate_product_directions(knowledge_graph)
+                converted = _convert_user_product(user_product)
+                product_directions = [converted] + llm_dirs
+                output["stages"]["ideas"] = {"status": "ok", "count": len(product_directions), "source": "hybrid", "user_product": 1, "llm_generated": len(llm_dirs)}
+                print(f"  [STAGE 3/5] User: {converted['name']} + {len(llm_dirs)} AI-generated", flush=True)
+
+            else:  # explore (default)
+                print("  [STAGE 3/5] Product Ideas (explore mode)...", flush=True)
+                product_directions = generate_product_directions(knowledge_graph)
+                output["stages"]["ideas"] = {"status": "ok", "count": len(product_directions), "source": "llm"}
+                print(f"  [STAGE 3/5] Ideas OK — {len(product_directions)} directions", flush=True)
+
+            # Backtest filter
             from engine.backtest_filter import filter_and_rank
             product_directions = filter_and_rank(product_directions)
             promising = sum(1 for d in product_directions if d.get("backtest_verdict") == "promising")
@@ -73,13 +159,13 @@ class Pipeline:
             agents = agents_data.get("agents", [])
             output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents)}
 
-            # Stage 4: Market Simulation (run for each market type)
+            # Stage 4: Market Simulation
             self.status = "stage4_simulation"
             print("  [STAGE 4/5] Market Simulation (30 rounds, coupling + RL)...", flush=True)
             all_results = []
             coupling_stats = {}
             rl_stats = {}
-            # Build market-agent pairs from config
+
             _market_config = _cfg()["market_types"]
             market_types = []
             for m in _market_config:
@@ -90,7 +176,6 @@ class Pipeline:
                 else:
                     market_types.append((m, [a for a in agents if a.get("type") == m]))
 
-            # Filter product directions per market type
             for market_type, market_agents in market_types:
                 if not market_agents:
                     continue
@@ -109,7 +194,6 @@ class Pipeline:
                 )
                 all_results.extend(sim_result.get("results", []))
 
-                # Capture coupling & RL stats from each market simulation
                 if sim_result.get("coupling_history"):
                     coupling_stats[market_type] = {
                         "rounds": len(sim_result["coupling_history"]),
