@@ -630,9 +630,6 @@ if run_btn or _last_result:
         st.code(traceback.format_exc())
 
 else:
-    st.info("👆 点击「🚀 运行市场预测」启动全管道。已有的验证结果会自动加载。")
-
-    else:
         st.info("👆 点击「🚀 运行市场预测」启动全管道。")
 
 # ── Footer ──
