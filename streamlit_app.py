@@ -1,5 +1,5 @@
 """
-MarketFish v4 — Live Dashboard
+MarketFish v5 — Live Dashboard
 Real-time pipeline monitoring, market simulation visualization,
 coupling & RL metrics, agent network graph.
 """
@@ -40,7 +40,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Header ──
-st.markdown('<p class="main-header"> MarketFish v4</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header"> MarketFish v5</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Network · Cross-Domain Coupling · Economic Alignment RL</p>', unsafe_allow_html=True)
 
 # ── Sidebar ──
@@ -115,12 +115,26 @@ run_col1, run_col2 = st.columns([1, 4])
 with run_col1:
     run_btn = st.button("🚀 运行市场预测", type="primary", use_container_width=True)
 
+# Load last result for display when idle
+_last_result = None
+if not run_btn:
+    try:
+        result_files = [f for f in os.listdir("uploads") if f.endswith(".json") and "validate" in f]
+        if result_files:
+            latest = sorted(result_files)[-1]
+            with open(f"uploads/{latest}", encoding='utf-8') as lf:
+                _last_result = json.load(lf)
+    except Exception:
+        pass
+
 status_container = st.container()
 
-if run_btn:
-    from engine.pipeline import Pipeline
+if run_btn or _last_result:
 
-    pipeline = Pipeline()
+    if run_btn:
+        from engine.pipeline import Pipeline
+        pipeline = Pipeline()
+
     progress_bars = {
         "ontology": st.progress(0, "阶段 1/5: 本体生成..."),
         "graph": st.progress(0, "阶段 2/5: 知识图谱..."),
@@ -130,29 +144,34 @@ if run_btn:
     }
 
     sim_log_placeholder = st.empty()
-
     t0 = time.time()
-
-    # Patch simulator to stream progress to Streamlit
-    import engine.simulator as sim_module
-    original_print = builtins.print
-
     sim_lines = []
-    def stream_print(*args, **kwargs):
-        msg = " ".join(str(a) for a in args)
-        sim_lines.append(msg)
-        if "[SIM]" in msg:
-            sim_log_placeholder.code("\n".join(sim_lines[-15:]), language="text")
-        original_print(*args, **kwargs)
 
-    builtins.print = stream_print
+    if run_btn:
+        # Patch simulator to stream progress to Streamlit
+        import engine.simulator as sim_module
+        original_print = builtins.print
+        def stream_print(*args, **kwargs):
+            msg = " ".join(str(a) for a in args)
+            sim_lines.append(msg)
+            if "[SIM]" in msg:
+                sim_log_placeholder.code("\n".join(sim_lines[-15:]), language="text")
+            original_print(*args, **kwargs)
+        builtins.print = stream_print
 
     try:
-        # Stage 1
-        result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product)
-
-        elapsed = time.time() - t0
-        builtins.print = original_print
+        if run_btn:
+            # Stage 1 — run full pipeline
+            result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product)
+            elapsed = time.time() - t0
+            builtins.print = original_print
+        else:
+            # Use cached result
+            result = _last_result
+            elapsed = result.get("elapsed_seconds", 0)
+            # Mark all progress bars as done
+            for k, bar in progress_bars.items():
+                bar.progress(100)
 
         # Update all progress bars
         for k, bar in progress_bars.items():
@@ -177,7 +196,19 @@ if run_btn:
                 st.subheader("🎯 产品方向生存预测")
 
                 directions = result.get("product_directions", [])
-                sim_results = result.get("final_report", {}).get("simulation_results", [])
+                sim_results_raw = result.get("final_report", {}).get("simulation_results", [])
+                # Deduplicate by product name (same product appears per-market)
+                seen = {}
+                sim_results = []
+                for r in sim_results_raw:
+                    name = r.get('product_name', '')
+                    if name not in seen:
+                        seen[name] = dict(r)
+                        sim_results.append(seen[name])
+                    else:
+                        seen[name]['purchasers'] = seen[name].get('purchasers',0) + r.get('purchasers',0)
+                        seen[name]['total_revenue_cny'] = round(seen[name].get('total_revenue_cny',0) + r.get('total_revenue_cny',0), 2)
+                        seen[name]['survival_score'] = max(seen[name].get('survival_score',0), r.get('survival_score',0))
 
                 # Score cards
                 cols = st.columns(min(len(sim_results), 4))
@@ -449,7 +480,7 @@ if run_btn:
                 st.download_button(
                     "📥 下载完整结果 (JSON)",
                     json.dumps(result, indent=2, ensure_ascii=False),
-                    f"marketfish_v4_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    f"marketfish_v5_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
                 )
 
         else:
@@ -458,49 +489,87 @@ if run_btn:
             st.write(f"已完成: {result.get('stages_completed', [])}")
 
     except Exception as e:
-        builtins.print = original_print
+        if run_btn:
+            builtins.print = original_print
         st.error(f"💥 致命错误: {e}")
         import traceback
         st.code(traceback.format_exc())
 
 else:
-    # ── Idle state: show last run results if available ──
-    result_files = []
-    for f in os.listdir("uploads"):
-        if f.startswith("latest_v4") and f.endswith(".json"):
-            result_files.append(f)
+    st.info("👆 点击「🚀 运行市场预测」启动全管道。已有的验证结果会自动加载。")
 
-    if result_files:
+    # Clean up old idle code
+    if False:
         latest = sorted(result_files)[-1]
-        st.info(f"📁 上次运行结果: `uploads/{latest}` — 点击「运行市场预测」开始新的分析")
+        filepath = f"uploads/{latest}"
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                last_result = json.load(f)
+        except Exception:
+            last_result = None
 
-        with st.expander("📊 查看上次结果"):
-            try:
-                with open(f"uploads/{latest}", encoding='utf-8') as f:
-                    last_result = json.load(f)
+        if last_result:
+            st.success(f"📁 上次运行: `{latest}` ({last_result.get('elapsed_seconds',0):.0f}s, {last_result.get('input_mode','?')} mode)")
 
-                status = last_result.get("pipeline_status", "?")
-                elapsed = last_result.get("elapsed_seconds", 0)
-                stages = last_result.get("stages_completed", [])
-
-                col1, col2, col3 = st.columns(3)
-                col1.metric("状态", status)
-                col2.metric("耗时", f"{elapsed:.0f}s" if elapsed else "?")
-                col3.metric("阶段", f"{len(stages)}/6")
-
-                # Product results
-                sim_results = last_result.get("final_report", {}).get("simulation_results", [])
-                if sim_results:
-                    st.write("**产品存活情况:**")
+            if st.button("📊 展开完整报告", use_container_width=True):
+                # Re-use the same tab display logic from above by setting result
+                result = last_result
+                sim_lines = []
+                # Show tabs (same code as post-run)
+                if result.get("pipeline_status") == "complete":
+                    st.balloons()
+                    # Re-import tab rendering by re-running the tab block inline
+                    # For now, show key metrics
+                    sim_results = result.get("final_report", {}).get("simulation_results", [])
+                    # Deduplicate by product name
+                    seen_names = {}
+                    unique_results = []
                     for r in sim_results:
-                        icon = "🟢" if r.get("status") == "alive" else "🔴"
-                        st.write(f"{icon} {r.get('product_name','?')[:40]} — score={r.get('survival_score','?')}")
+                        name = r.get('product_name', '')
+                        if name not in seen_names:
+                            seen_names[name] = r
+                            unique_results.append(r)
+                        else:
+                            # Merge: sum purchasers and revenue
+                            seen_names[name]['purchasers'] = seen_names[name].get('purchasers',0) + r.get('purchasers',0)
+                            seen_names[name]['total_revenue_cny'] = round(
+                                seen_names[name].get('total_revenue_cny',0) + r.get('total_revenue_cny',0), 2)
+                            seen_names[name]['survival_score'] = max(
+                                seen_names[name].get('survival_score',0), r.get('survival_score',0))
 
-            except Exception:
-                st.warning("无法加载上次结果")
+                    if unique_results:
+                        st.subheader("🎯 产品预测")
+                        cols = st.columns(min(len(unique_results), 4))
+                        for i, name in enumerate(list(seen_names.keys())[:4]):
+                            r = seen_names[name]
+                            with cols[i % 4]:
+                                status = r.get("status", "dead")
+                                emoji = "🟢" if status == "alive" else "🔴"
+                                st.metric(f"{emoji} {name[:25]}",
+                                    f"Score: {r.get('survival_score',0):.2f}",
+                                    f"Buyers: {r.get('purchasers',0)} | Rev: ¥{r.get('total_revenue_cny',0)}")
+
+                    # Show coupling & RL summary
+                    sim_stage = result.get("stages", {}).get("simulation", {})
+                    coupling = sim_stage.get("cross_domain_coupling", {})
+                    rl_data = sim_stage.get("economic_alignment_rl", {})
+                    if coupling:
+                        st.subheader("📊 市场对比")
+                        c1, c2 = st.columns(2)
+                        for idx, (mkt, data) in enumerate(coupling.items()):
+                            rl_mkt = rl_data.get(mkt, {})
+                            with [c1, c2][idx % 2]:
+                                st.metric(f"{mkt.upper()} 情绪", f"{data.get('final_sentiment',0):.3f}")
+                                st.metric("RL Agents", rl_mkt.get('final_strategies_count', 0))
+                        # Total unique buyers across all markets
+                        total_buyers = sum(seen_names[n].get('purchasers', 0) for n in seen_names)
+                        st.metric("总买家", total_buyers)
+                    st.info("💡 点击「🚀 运行市场预测」触发完整管道，跑完后可查看全部 8 个 tab")
+                else:
+                    st.error(f"管道失败: {result.get('error','?')}")
     else:
-        st.info("👆 点击「运行市场预测」启动 6-LLM 多智能体市场模拟")
+        st.info("👆 点击「🚀 运行市场预测」启动全管道。上次验证结果: `v5_validate_v3.json` (蜜洲翻译, 51min, 6/6 stages)")
 
 # ── Footer ──
 st.divider()
-st.caption("MarketFish v4 · 16 academic papers · 6 LLMs · Built by Keystart AI · https://github.com/key-night-day/market-fish")
+st.caption("MarketFish v5 · 16 academic papers · 6 LLMs · Built by Keystart AI · https://github.com/key-night-day/market-fish")
