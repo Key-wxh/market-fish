@@ -694,11 +694,11 @@ if run_btn or _last_result:
 
                 # Network stats
                 st.subheader(t("network_tab.title2"))
-                st.markdown("""
+                st.markdown(f"""
                 ```
-                t("network_tab.fully_connected") ✗
-                t("network_tab.ring") ✗
-                t("network_tab.small_world") ✓
+                {t("network_tab.fully_connected")} ✗
+                {t("network_tab.ring")} ✗
+                {t("network_tab.small_world")} ✓
                 ```
                 """)
 
@@ -714,9 +714,7 @@ if run_btn or _last_result:
             with tab7:
                 st.subheader(t("rl_tab.title"))
 
-                st.markdown("""
-                t("rl_tab.desc_full")
-                """)
+                st.markdown(t("rl_tab.desc_full"))
 
                 if rl_data:
                     from engine.dashboard_viz import rl_strategy_radar
@@ -733,11 +731,11 @@ if run_btn or _last_result:
                             smb_strat = rl_data["smb"].get("avg_final_strategies", {})
                             if b2c_strat and smb_strat:
                                 compare_df = pd.DataFrame({
-                                    "维度": list(b2c_strat.keys()),
+                                    t("rl_tab.dimension_col"): list(b2c_strat.keys()),
                                     t("rl_tab.b2c_col"): list(b2c_strat.values()),
                                     t("rl_tab.smb_col"): list(smb_strat.values()),
                                 })
-                                st.dataframe(compare_df.set_index(t("rl_tab.dimension") if False else "维度"), use_container_width=True)
+                                st.dataframe(compare_df.set_index(t("rl_tab.dimension_col")), use_container_width=True)
 
             # ── Tab 8: Raw Data ──
             with tab8:
