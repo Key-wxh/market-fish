@@ -5,6 +5,7 @@ Factors with 75% success rate (solves_real_fear, social_sharing) are soft signal
 """
 
 import json
+from engine.config import backtest_cfg as _cfg
 
 # Hard filters — 100% success vs 0% failure in backtest
 HARD_PASS = [
@@ -45,14 +46,14 @@ def score_direction(direction: dict) -> dict:
     ux_signals = ["one-click", "single action", "auto", "instant", "no login", "no signup",
                   "one tap", "voice", "photo", "screenshot", "scan"]
     if any(s in desc for s in ux_signals) or category in ("consumer_app", "mini_program", "browser_extension"):
-        score += 30
+        score += _cfg()["hard_pass_simple_ux"]
         flags.append("simple_ux")
     else:
         flags.append("complex_ux")
 
     # 2. Consumer B2C?
     if target == "consumer":
-        score += 30
+        score += _cfg()["hard_pass_simple_ux"]
         flags.append("consumer_target")
     elif target == "smb" and "one-time" in pricing.lower():
         score += 10  # Partial — SMB with one-time pricing is better than subscription

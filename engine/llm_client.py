@@ -1,115 +1,48 @@
 """
 Multi-LLM Client — Heterogeneous Agent Architecture.
-7 models from GEO易 production config + Machine Spirits principle:
-  - Different agent types use different LLMs (异质 > 同质)
-  - Stronger models on competitive/strategic decisions
-  - Faster/cheaper models on routine consumer decisions
+Uses ModelRegistry for capability-based model selection.
+Agent types bind to capabilities, not model names.
 
-Model assignments (Machine Spirits 2026 + Agent Bazaar 2026):
-  Consumer B2C → DeepSeek V4 Pro (balanced, fast)
-  SMB → Qwen3 Max (pragmatic, cost-aware)
-  Enterprise → Kimi K2.5 (long-context, strategic)
-  Competitor → DeepSeek V4 Pro + high temp (creative/adaptive)
-  Environment → Mixed rotation (diverse perspectives)
-  Reporter Student → Doubao Seed 1.6 (analytical)
-  Reporter Teacher → Zhipu GLM-4 (critical/skeptical)
+Machine Spirits 2026 principle: heterogeneous agents > homogeneous.
+Agent Bazaar 2026 principle: economic alignment requires diverse cognition.
 """
 
 import json
 import re
 import os
 import time
+import threading
 from dotenv import load_dotenv
 load_dotenv()
-from openai import OpenAI
 from json_repair import repair_json
+from engine.model_registry import get_registry
 
 
 class MultiLLMClient:
-    """7-model client with 8-layer JSON enforcement. Heterogeneous assignment per agent type."""
-
-    # Model registry — from GEO易 production + latest versions
-    MODELS = {
-        "deepseek": {
-            "key": "DEEPSEEK_API_KEY",
-            "base_url": "https://api.deepseek.com/v1",
-            "model": "deepseek-v4-pro",  # Latest: April 2026, 1.6T MoE
-            "trait": "balanced, fast, JSON-reliable",
-        },
-        "qwen": {
-            "key": "QIANWEN_API_KEY",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-            "model": "qwen3-max",  # Latest flagship
-            "trait": "pragmatic, cost-aware, good at business logic",
-        },
-        # Kimi excluded — API rate limited. Enterprise/Graph reassigned to Baidu/Qwen.
-        "doubao": {
-            "key": "DOUBAO_API_KEY",
-            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
-            "model": "doubao-seed-1-6-251015",  # Reasoning model w/ search
-            "trait": "analytical, search-capable, detail-oriented",
-        },
-        "zhipu": {
-            "key": "ZHIPU_API_KEY",
-            "base_url": "https://open.bigmodel.cn/api/paas/v4",
-            "model": "glm-4",
-            "trait": "skeptical, critical thinking",
-        },
-        "baidu": {
-            "key": "BAIDU_API_KEY",
-            "base_url": "https://qianfan.baidubce.com/v2",
-            "model": "ernie-4.0-turbo-128k",
-            "trait": "broad knowledge, enterprise-ready",
-        },
-        "hunyuan": {
-            "key": "HUNYUAN_API_KEY",
-            "base_url": "https://api.hunyuan.cloud.tencent.com/v1",
-            "model": "hunyuan-pro",
-            "trait": "well-rounded, Tencent ecosystem aware",
-        },
-    }
-
-    # Heterogeneous assignment (Machine Spirits principle)
-    AGENT_MODEL_MAP = {
-        "consumer": "deepseek",     # Balanced, fast JSON
-        "smb": "qwen",              # Pragmatic, cost-aware
-        "enterprise": "baidu",      # Broad knowledge, enterprise-ready (was Kimi, rate-limited)
-        "competitor": "deepseek",   # Creative adaptation
-        "environment": "baidu",     # Broad knowledge
-        "reporter_student": "doubao",  # Analytical
-        "reporter_teacher": "zhipu",   # Skeptical/critical
-        "ontology": "deepseek",     # Core analysis
-        "graph": "qwen",            # Relationship extraction (was Kimi, rate-limited)
-        "idea": "deepseek",         # Creative generation
-        "default": "deepseek",
-    }
+    """Multi-model client with 8-layer JSON enforcement + capability-based model selection."""
 
     def __init__(self):
-        self.clients = {}
-        for name, cfg in self.MODELS.items():
-            key = os.getenv(cfg["key"], "")
-            if key:
-                self.clients[name] = OpenAI(api_key=key, base_url=cfg["base_url"], timeout=180.0, max_retries=1)
-            else:
-                print(f"  [WARN] {name} ({cfg['model']}) not configured — will skip")
+        self.registry = get_registry()
+        self.clients = {}  # provider_name -> OpenAI client (lazy)
 
-        if not self.clients:
-            raise RuntimeError("No LLM API keys configured. Check .env file.")
+        # Print status
+        status = self.registry.status_report()
+        active = sum(1 for s in status.values() if s["key_configured"])
+        total = len(status)
+        print(f"MultiLLMClient: {active}/{total} providers configured via registry")
+        for name, s in status.items():
+            if s["key_configured"]:
+                models = ", ".join(s["active_models"])
+                print(f"  - {name}: {models} ({s['api_type']})")
 
-        print(f"MultiLLMClient: {len(self.clients)}/{len(self.MODELS)} models ready")
-        for name in self.clients:
-            print(f"  - {name}: {self.MODELS[name]['model']} ({self.MODELS[name]['trait']})")
+        if active == 0:
+            raise RuntimeError("No LLM API keys configured. Check .env file and models_registry.json.")
 
-    def _resolve_model(self, agent_type: str) -> str:
-        """Resolve model name with fallback. If assigned model is unavailable, use deepseek."""
-        primary = self.AGENT_MODEL_MAP.get(agent_type, "default")
-        if primary in self.clients:
-            return primary
-        # Fallback chain
-        for fallback in ["deepseek", "qwen", "doubao", "baidu", "hunyuan", "zhipu", "kimi"]:
-            if fallback in self.clients:
-                return fallback
-        return list(self.clients.keys())[0]
+    def _resolve(self, agent_type: str) -> tuple:
+        """Resolve (provider_name, model_name, client) for an agent type."""
+        provider, model_name, client = self.registry.resolve(agent_type)
+        self.clients[provider] = client
+        return provider, model_name, client
 
     def chat_json(
         self,
@@ -119,16 +52,14 @@ class MultiLLMClient:
         temperature: float = 0.7,
         max_retries: int = 3,
     ) -> dict:
-        """8-layer JSON pipeline with heterogeneous model selection + automatic fallback."""
-        model_name = self._resolve_model(agent_type)
-        client = self.clients[model_name]
-        cfg = self.MODELS[model_name]
+        """8-layer JSON pipeline with capability-based model selection + auto fallback."""
+        provider, model_name, client = self._resolve(agent_type)
 
         for attempt in range(max_retries):
             try:
                 # Layer 1: API-level json_object
                 resp = client.chat.completions.create(
-                    model=cfg["model"],
+                    model=model_name,
                     messages=[
                         {"role": "system", "content": system},
                         {"role": "user", "content": user},
@@ -138,7 +69,7 @@ class MultiLLMClient:
                 )
                 raw = resp.choices[0].message.content or ""
 
-                # Layer 2: strip <think> tags
+                # Layer 2: strip <think> tags (DeepSeek-specific, harmless for others)
                 raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL)
 
                 # Layer 3: strip markdown fences
@@ -167,31 +98,23 @@ class MultiLLMClient:
                 result = json.loads(repaired)
                 return result
 
-            except Exception as e:
-                err_str = str(e)
-                # If auth failure, mark model as unavailable and fallback
-                if "401" in err_str or "Invalid Authentication" in err_str or "auth" in err_str.lower():
-                    if model_name in self.clients:
-                        print(f"  [AUTH_FAIL] {model_name} key invalid — removing from pool")
-                        del self.clients[model_name]
-                    # Retry with fallback model
-                    model_name = self._resolve_model(agent_type)
-                    if model_name not in self.clients:
-                        raise RuntimeError(f"All models exhausted after auth failure on {model_name}")
-                    client = self.clients[model_name]
-                    cfg = self.MODELS[model_name]
-                    continue
-                if attempt == max_retries - 1:
-                    raise
-                time.sleep(1.0)
-                continue
-
             except json.JSONDecodeError:
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(0.5)
                 continue
-            except Exception:
+            except Exception as e:
+                err_str = str(e)
+                # Auth failure → remove provider and retry with next
+                if "401" in err_str or "Invalid Authentication" in err_str or "auth" in err_str.lower():
+                    if provider in self.clients:
+                        print(f"  [AUTH_FAIL] {provider} key invalid — removing from pool", flush=True)
+                        del self.clients[provider]
+                    try:
+                        provider, model_name, client = self._resolve(agent_type)
+                    except RuntimeError:
+                        raise RuntimeError(f"All models exhausted after auth failure on {provider}")
+                    continue
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(1.0)
@@ -199,13 +122,44 @@ class MultiLLMClient:
 
         raise RuntimeError("Unreachable")
 
+    def chat_text(
+        self,
+        system: str,
+        user: str,
+        agent_type: str = "default",
+        temperature: float = 0.9,
+        max_tokens: int = 1000,
+    ) -> str:
+        """Natural language chat (no JSON enforcement). Used for Agent Dialogue."""
+        provider, model_name, client = self._resolve(agent_type)
 
-# Singleton
+        try:
+            resp = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            raw = resp.choices[0].message.content or ""
+            # Strip think tags only, keep natural text
+            raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL)
+            return raw.strip()
+        except Exception as e:
+            return f"[Agent unavailable: {e}]"
+
+
+# Thread-safe singleton
 _multi_llm = None
+_multi_llm_lock = threading.Lock()
 
 
 def get_llm() -> MultiLLMClient:
     global _multi_llm
     if _multi_llm is None:
-        _multi_llm = MultiLLMClient()
+        with _multi_llm_lock:
+            if _multi_llm is None:
+                _multi_llm = MultiLLMClient()
     return _multi_llm

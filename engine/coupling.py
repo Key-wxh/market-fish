@@ -19,62 +19,23 @@ Implementation:
 
 import random
 import math
+from engine.config import coupling_cfg as _cfg
 
-# Emotion → willingness-to-pay multiplier
-EMOTION_WTP_MULTIPLIER = {
-    "excited": 1.30,      # Excited agents pay 30% more
-    "satisfied": 1.10,    # Satisfied agents pay 10% more
-    "curious": 1.05,      # Curious = slightly more
-    "neutral": 1.00,      # Neutral = baseline
-    "indifferent": 0.85,  # Indifferent = 15% less
-    "skeptical": 0.70,    # Skeptical = 30% less
-    "frustrated": 0.50,   # Frustrated = 50% less
-}
-
-# Negativity bias: negative emotions spread at this multiplier relative to positive
-NEGATIVITY_SPREAD_MULTIPLIER = 2.0
-
-# FOMO threshold: number of connected peers who purchased to trigger FOMO
-FOMO_PEER_THRESHOLD = 3
-FOMO_PURCHASE_BOOST = 0.25  # +25% probability
-
-# Emotional contagion strength: how much one agent's emotion affects connected agents
-CONTAGION_STRENGTH = 0.15
-
-# Market sentiment weight: how much aggregate market mood affects individual agents
-MARKET_SENTIMENT_WEIGHT = 0.10
+def _C(key, default=None):
+    return _cfg().get(key, default)
 
 
 def _emotion_valence(emotion: str) -> float:
     """Map emotion to valence score (-1.0 to +1.0)."""
-    valence_map = {
-        "excited": 1.0,
-        "satisfied": 0.7,
-        "curious": 0.4,
-        "neutral": 0.0,
-        "indifferent": -0.1,
-        "skeptical": -0.4,
-        "frustrated": -0.8,
-    }
-    return valence_map.get(emotion, 0.0)
+    return _cfg()["emotion_valence"].get(emotion, 0.0)
 
 
 def _valence_to_emotion(valence: float) -> str:
-    """Map valence score back to emotion string."""
-    if valence > 0.8:
-        return "excited"
-    elif valence > 0.5:
-        return "satisfied"
-    elif valence > 0.2:
-        return "curious"
-    elif valence > -0.1:
-        return "neutral"
-    elif valence > -0.3:
-        return "indifferent"
-    elif valence > -0.6:
-        return "skeptical"
-    else:
-        return "frustrated"
+    """Map valence score back to emotion string using config thresholds."""
+    for threshold, emotion in _cfg()["valence_thresholds"]:
+        if valence > threshold:
+            return emotion
+    return "frustrated"
 
 
 def compute_market_signals(agent_states: dict) -> dict:
@@ -95,16 +56,19 @@ def compute_market_signals(agent_states: dict) -> dict:
     purchasers = sum(1 for s in agent_states.values() if s["purchased_products"])
     adoption_rate = purchasers / n
 
-    # Trending products: products with most recent purchases (last 3 rounds from history)
+    # Trending products: products with most recent purchases
     from collections import Counter
+    lookback = _cfg()["trending_lookback_rounds"]
     recent_purchases = Counter()
     for s in agent_states.values():
-        for h in s["history"][-3:]:
+        for h in s["history"][-lookback:]:
             pid = h.get("product_id")
             if pid and h.get("action") == "purchase":
                 recent_purchases[pid] += 1
 
-    trending = [pid for pid, count in recent_purchases.most_common(3) if count >= 2]
+    top_n = _cfg()["trending_top_n"]
+    min_count = _cfg()["trending_min_count"]
+    trending = [pid for pid, count in recent_purchases.most_common(top_n) if count >= min_count]
 
     # Churn rate
     total_purchases = sum(len(s["purchased_products"]) for s in agent_states.values())
@@ -158,7 +122,7 @@ def propagate_emotions(agent_states: dict) -> dict:
         if not connections:
             # Isolated agent: just regress toward market mean
             own_valence = current_emotions[aid]
-            new_valence = own_valence * (1 - MARKET_SENTIMENT_WEIGHT) + market["avg_sentiment"] * MARKET_SENTIMENT_WEIGHT
+            new_valence = own_valence * (1 - _cfg()["market_sentiment_weight"]) + market["avg_sentiment"] * _cfg()["market_sentiment_weight"]
             new_emotions[aid] = new_valence
             continue
 
@@ -169,7 +133,7 @@ def propagate_emotions(agent_states: dict) -> dict:
                 conn_valence = current_emotions[conn_id]
                 # Negativity bias: negative emotions exert stronger influence
                 if conn_valence < 0:
-                    conn_valence *= NEGATIVITY_SPREAD_MULTIPLIER
+                    conn_valence *= _cfg()["negativity_spread_multiplier"]
                 peer_valences.append(conn_valence)
 
         if not peer_valences:
@@ -179,15 +143,15 @@ def propagate_emotions(agent_states: dict) -> dict:
         avg_peer_valence = sum(peer_valences) / len(peer_valences)
 
         # Own susceptibility: higher influence_weight = less susceptible to others
-        susceptibility = max(0.05, 1.0 - influence_weight * 0.2)
-        social_influence = avg_peer_valence * CONTAGION_STRENGTH * susceptibility
+        susceptibility = max(_cfg()["min_susceptibility"], 1.0 - influence_weight * _cfg()["influence_susceptibility_factor"])
+        social_influence = avg_peer_valence * _cfg()["contagion_strength"] * susceptibility
 
         # Macro influence: all agents slightly pulled toward market average
-        macro_influence = market["avg_sentiment"] * MARKET_SENTIMENT_WEIGHT
+        macro_influence = market["avg_sentiment"] * _cfg()["market_sentiment_weight"]
 
         # Compute new valence: own + social + macro, clamped to [-1, 1]
         own_valence = current_emotions[aid]
-        new_valence = own_valence * (1 - CONTAGION_STRENGTH * susceptibility - MARKET_SENTIMENT_WEIGHT)
+        new_valence = own_valence * (1 - _cfg()["contagion_strength"] * susceptibility - _cfg()["market_sentiment_weight"])
         new_valence += social_influence + macro_influence
         new_valence = max(-1.0, min(1.0, new_valence))
 
@@ -207,7 +171,7 @@ def compute_fomo_boost(agent_id: str, agent_states: dict, product_id: str) -> fl
     If 3+ connected peers have purchased a product, the agent gets a +25% boost
     to purchase probability for that product.
 
-    Returns 0.0 to FOMO_PURCHASE_BOOST.
+    Returns 0.0 to _cfg()["fomo_purchase_boost"].
     """
     state = agent_states.get(agent_id)
     if not state:
@@ -228,14 +192,14 @@ def compute_fomo_boost(agent_id: str, agent_states: dict, product_id: str) -> fl
             if product_id in conn_state["purchased_products"]:
                 peer_purchasers += 1
 
-    if peer_purchasers >= FOMO_PEER_THRESHOLD:
-        return FOMO_PURCHASE_BOOST
+    if peer_purchasers >= _cfg()["fomo_peer_threshold"]:
+        return _cfg()["fomo_purchase_boost"]
 
     # Partial FOMO: 1-2 peers = smaller boost
     if peer_purchasers >= 2:
-        return FOMO_PURCHASE_BOOST * 0.5
+        return _cfg()["fomo_purchase_boost"] * _cfg()["fomo_partial_2_peers"]
     if peer_purchasers >= 1:
-        return FOMO_PURCHASE_BOOST * 0.2
+        return _cfg()["fomo_purchase_boost"] * _cfg()["fomo_partial_1_peer"]
 
     return 0.0
 
@@ -247,7 +211,7 @@ def adjust_willingness_to_pay(emotional_state: str, base_wtp: float) -> float:
     Excited agents pay more, frustrated agents pay much less.
     This is the 消费↔情绪 coupling direction.
     """
-    multiplier = EMOTION_WTP_MULTIPLIER.get(emotional_state, 1.0)
+    multiplier = _cfg()["emotion_wtp_multiplier"].get(emotional_state, 1.0)
     return round(base_wtp * multiplier, 2)
 
 
@@ -274,7 +238,7 @@ def apply_coupling(agent_states: dict, current_round: int, product_directions: l
             "market_sentiment": market["avg_sentiment"],
             "adoption_rate": market["adoption_rate"],
             "trending_products": market["trending_products"],
-            "fomo_active": market["adoption_rate"] > 0.3,  # FOMO activates at 30% adoption
+            "fomo_active": market["adoption_rate"] > _cfg()["fomo_activation_adoption_rate"],
         }
 
     return {

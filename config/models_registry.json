@@ -1,0 +1,140 @@
+{
+  "_comment": "MarketFish Model Registry — add/remove models here. No code changes needed.",
+  "_updated": "2026-06-30",
+
+  "providers": {
+    "deepseek": {
+      "api_type": "openai_compatible",
+      "base_url": "https://api.deepseek.com/v1",
+      "env_key": "DEEPSEEK_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "deepseek-v4-pro", "status": "active", "capabilities": ["json", "fast", "balanced"]},
+        {"name": "deepseek-chat", "status": "active", "capabilities": ["json", "fast", "cheap"]}
+      ]
+    },
+    "qwen": {
+      "api_type": "openai_compatible",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "env_key": "QIANWEN_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "qwen3-max", "status": "active", "capabilities": ["json", "balanced"]}
+      ]
+    },
+    "doubao": {
+      "api_type": "openai_compatible",
+      "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+      "env_key": "DOUBAO_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "doubao-seed-1-6-251015", "status": "active", "capabilities": ["json", "analytical"]}
+      ]
+    },
+    "zhipu": {
+      "api_type": "openai_compatible",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "env_key": "ZHIPU_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "glm-4", "status": "active", "capabilities": ["json", "critical_thinking"]}
+      ]
+    },
+    "baidu": {
+      "api_type": "openai_compatible",
+      "base_url": "https://qianfan.baidubce.com/v2",
+      "env_key": "BAIDU_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "ernie-4.0-turbo-128k", "status": "active", "capabilities": ["json", "balanced"]}
+      ]
+    },
+    "hunyuan": {
+      "api_type": "openai_compatible",
+      "base_url": "https://api.hunyuan.cloud.tencent.com/v1",
+      "env_key": "HUNYUAN_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "hunyuan-pro", "status": "active", "capabilities": ["json", "balanced"]}
+      ]
+    },
+
+    "openai": {
+      "api_type": "openai_compatible",
+      "base_url": "https://api.openai.com/v1",
+      "env_key": "OPENAI_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "gpt-5-mini", "status": "active", "capabilities": ["json", "fast", "cheap"]},
+        {"name": "gpt-5", "status": "active", "capabilities": ["json", "reasoning", "creative"]}
+      ]
+    },
+    "anthropic": {
+      "api_type": "anthropic_messages",
+      "base_url": "https://api.anthropic.com/v1",
+      "env_key": "ANTHROPIC_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "claude-sonnet-4-6", "status": "active", "capabilities": ["json", "balanced", "fast"]},
+        {"name": "claude-opus-4-8", "status": "active", "capabilities": ["json", "reasoning", "critical_thinking"]},
+        {"name": "claude-haiku-4-5", "status": "active", "capabilities": ["json", "fast", "cheap"]}
+      ]
+    },
+    "google": {
+      "api_type": "google_gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "env_key": "GOOGLE_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "gemini-2.5-pro", "status": "active", "capabilities": ["json", "reasoning"]},
+        {"name": "gemini-2.5-flash", "status": "active", "capabilities": ["json", "fast", "cheap"]}
+      ]
+    },
+    "mistral": {
+      "api_type": "openai_compatible",
+      "base_url": "https://api.mistral.ai/v1",
+      "env_key": "MISTRAL_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "mistral-large", "status": "active", "capabilities": ["json", "balanced"]},
+        {"name": "mistral-small", "status": "active", "capabilities": ["json", "fast", "cheap"]}
+      ]
+    },
+    "meta": {
+      "api_type": "openai_compatible",
+      "base_url": "https://llama-api.meta.com/v1",
+      "env_key": "META_API_KEY",
+      "timeout": 180,
+      "max_retries": 1,
+      "models": [
+        {"name": "llama-4-maverick", "status": "active", "capabilities": ["json", "balanced", "cheap"]}
+      ]
+    }
+  },
+
+  "assignments": {
+    "consumer":          {"requires": ["json", "fast"],        "prefer": "cheap"},
+    "smb":               {"requires": ["json", "balanced"],    "prefer": "cheap"},
+    "enterprise":        {"requires": ["json", "balanced"],    "prefer": "balanced"},
+    "competitor":        {"requires": ["json", "creative"],    "prefer": "balanced"},
+    "environment":       {"requires": ["json", "balanced"],    "prefer": "balanced"},
+    "reporter_student":  {"requires": ["json", "analytical"],  "prefer": "balanced"},
+    "reporter_teacher":  {"requires": ["json", "critical_thinking"], "prefer": "balanced"},
+    "ontology":          {"requires": ["json", "balanced"],    "prefer": "balanced"},
+    "graph":             {"requires": ["json", "balanced"],    "prefer": "cheap"},
+    "idea":              {"requires": ["json", "creative"],    "prefer": "balanced"},
+    "default":           {"requires": ["json"],                "prefer": "cheap"}
+  },
+
+  "fallback_chain": ["deepseek", "qwen", "doubao", "openai", "baidu", "hunyuan", "zhipu", "anthropic", "mistral", "google", "meta"]
+}

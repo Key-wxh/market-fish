@@ -6,6 +6,7 @@ Not simple summarization — iterative critique → improve → aggregate.
 
 import json
 from engine.llm_client import get_llm
+from engine.config import report_cfg as _cfg
 
 STUDENT_PROMPT = """You are a market analyst. Analyze the simulation results and produce insights.
 
@@ -55,19 +56,14 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
     sim_data = json.dumps(simulation_results, indent=2, ensure_ascii=False)
 
     # Phase 1: Multi-perspective Student analysis (Social Agents pattern)
-    perspectives = [
-        {"role": "消费者视角", "focus": "Which products actually solved consumer pain points?"},
-        {"role": "投资人视角", "focus": "Which products have the highest ceiling and lowest risk?"},
-        {"role": "竞品视角", "focus": "Which products threaten existing players and how would they respond?"},
-        {"role": "宏观视角", "focus": "How do economic conditions affect which products survive?"},
-    ]
+    perspectives = _cfg()["perspectives"]
 
     student_reports = []
     for p in perspectives:
         try:
             report = llm.chat_json(
                 system=STUDENT_PROMPT,
-                user=f"YOUR ROLE: {p['role']}. FOCUS: {p['focus']}\n\nSIMULATION DATA:\n{sim_data[:5000]}",
+                user=f"YOUR ROLE: {p['role']}. FOCUS: {p['focus']}\n\nSIMULATION DATA:\n{sim_data[:_cfg()["student_input_chars"]]}",
                 agent_type="reporter_student",  # Doubao: analytical
             )
             report["perspective"] = p["role"]
@@ -81,7 +77,7 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
         try:
             critique = llm.chat_json(
                 system=TEACHER_PROMPT,
-                user=f"STUDENT REPORT:\n{json.dumps(report, indent=2, ensure_ascii=False)}\n\nSIMULATION DATA:\n{sim_data[:3000]}",
+                user=f"STUDENT REPORT:\n{json.dumps(report, indent=2, ensure_ascii=False)}\n\nSIMULATION DATA:\n{sim_data[:_cfg()["teacher_input_chars"]]}",
                 agent_type="reporter_teacher",  # Zhipu: skeptical/critical
             )
             # Merge critique into report
@@ -97,7 +93,7 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
             user=f"""Synthesize these {len(improved_reports)} analyst reports into one final verdict.
 
 ANALYST REPORTS:
-{json.dumps(improved_reports, indent=2, ensure_ascii=False)[:5000]}
+{json.dumps(improved_reports, indent=2, ensure_ascii=False)[:_cfg()["synthesis_report_chars"]]}
 
 SIMULATION SUMMARY:
 {json.dumps([{

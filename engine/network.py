@@ -9,6 +9,7 @@ v2: Uses actual agent IDs (not synthetic indices). Works with batch-generated ag
 
 import random
 import math
+from engine.config import network_cfg as _cfg
 
 
 def watts_strogatz_network(n: int, k: int, beta: float) -> list[dict]:
@@ -76,15 +77,15 @@ def assign_network_to_agents(agents: list, network: list) -> list:
 def build_agent_network(agents: list) -> list:
     """
     One-shot: build small-world network using actual agent IDs.
-    beta=0.1 is the optimal value from UChicago research.
+    beta=_cfg()["beta"] is the optimal value from UChicago research.
     """
     n = len(agents)
     if n <= 1:
         return agents
 
     # Each agent connects to ~k neighbors. Scale k with network size.
-    k = max(4, min(12, n // 8))
-    network = watts_strogatz_network(n, k, beta=0.1)
+    k = max(_cfg()["k_min"], min(_cfg()["k_max"], n // _cfg()["k_divisor"]))
+    network = watts_strogatz_network(n, k, beta=_cfg()["beta"])
     return assign_network_to_agents(agents, network)
 
 

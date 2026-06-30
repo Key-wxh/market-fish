@@ -5,6 +5,7 @@ Runs the complete MarketFish pipeline: Ontology → Graph → Agents+Idea → Si
 
 import json
 import time
+from engine.config import pipeline_cfg as _cfg
 from engine.ontology_generator import generate_ontology
 from engine.graph_builder import build_knowledge_graph
 from engine.agent_factory import generate_agents
@@ -78,10 +79,16 @@ class Pipeline:
             all_results = []
             coupling_stats = {}
             rl_stats = {}
-            market_types = [
-                ("b2c", [a for a in agents if a.get("type") == "consumer"]),
-                ("smb", [a for a in agents if a.get("type") == "smb"]),
-            ]
+            # Build market-agent pairs from config
+            _market_config = _cfg()["market_types"]
+            market_types = []
+            for m in _market_config:
+                if m == "b2c":
+                    market_types.append((m, [a for a in agents if a.get("type") == "consumer"]))
+                elif m == "smb":
+                    market_types.append((m, [a for a in agents if a.get("type") == "smb"]))
+                else:
+                    market_types.append((m, [a for a in agents if a.get("type") == m]))
 
             # Filter product directions per market type
             for market_type, market_agents in market_types:
@@ -89,15 +96,15 @@ class Pipeline:
                     continue
                 relevant_products = [
                     p for p in product_directions
-                    if p.get("target_market") == market_type or p.get("target_market") == "consumer"
+                    if p.get("target_market") == market_type or p.get("target_market") == _cfg()["target_market_fallback"]
                 ]
                 if not relevant_products:
-                    relevant_products = product_directions[:3]
+                    relevant_products = product_directions[:_cfg()["product_fallback_count"]]
 
                 sim_result = simulate(
                     agents=market_agents + [a for a in agents if a.get("type") in ("competitor", "environment")],
                     product_directions=relevant_products,
-                    rounds=30,
+                    rounds=_cfg()["simulation_rounds"],
                     market_type=market_type,
                 )
                 all_results.extend(sim_result.get("results", []))

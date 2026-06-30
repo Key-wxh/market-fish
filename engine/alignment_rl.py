@@ -22,64 +22,7 @@ market-outcome rewards. Bounded by agent personality type.
 
 import random
 from collections import defaultdict
-
-# Learning rate for strategy adaptation
-ALPHA = 0.08  # EMA weight for new observations
-
-# Reward magnitudes
-REWARD_SATISFIED_PURCHASE = 0.15       # Bought + happy → good decision
-REWARD_RECOMMENDATION_MATCH = 0.12     # Recommended → peer also bought
-PENALTY_CHURN = -0.20                  # Bought + churned → bad decision
-PENALTY_MISSED_TREND = -0.08           # Didn't buy trending product peers bought
-PENALTY_OVERPAID = -0.10               # Paid > market average → bad price sense
-
-# Strategy bounds per agent type (personality persistence)
-AGENT_TYPE_STRATEGY_BOUNDS = {
-    "consumer": {
-        "price_sensitivity": (0.3, 0.9),
-        "early_adopter": (0.1, 0.8),
-        "social_susceptibility": (0.2, 0.9),
-        "loyalty": (0.1, 0.7),
-        "risk_tolerance": (0.1, 0.7),
-    },
-    "smb": {
-        "price_sensitivity": (0.5, 1.0),
-        "early_adopter": (0.05, 0.4),
-        "social_susceptibility": (0.1, 0.6),
-        "loyalty": (0.3, 0.9),
-        "risk_tolerance": (0.05, 0.4),
-    },
-    "enterprise": {
-        "price_sensitivity": (0.4, 0.8),
-        "early_adopter": (0.0, 0.2),
-        "social_susceptibility": (0.0, 0.3),
-        "loyalty": (0.5, 1.0),
-        "risk_tolerance": (0.0, 0.2),
-    },
-    "competitor": {
-        "price_sensitivity": (0.6, 1.0),
-        "early_adopter": (0.3, 0.9),
-        "social_susceptibility": (0.0, 0.3),
-        "loyalty": (0.0, 0.3),
-        "risk_tolerance": (0.5, 1.0),
-    },
-    "environment": {
-        "price_sensitivity": (0.3, 0.7),
-        "early_adopter": (0.2, 0.6),
-        "social_susceptibility": (0.2, 0.6),
-        "loyalty": (0.3, 0.7),
-        "risk_tolerance": (0.2, 0.6),
-    },
-}
-
-# Default bounds for unknown agent types
-DEFAULT_BOUNDS = {
-    "price_sensitivity": (0.2, 0.8),
-    "early_adopter": (0.1, 0.7),
-    "social_susceptibility": (0.1, 0.7),
-    "loyalty": (0.1, 0.7),
-    "risk_tolerance": (0.1, 0.7),
-}
+from engine.config import rl_cfg as _cfg
 
 
 def init_strategy(agent_profile: dict) -> dict:
@@ -94,12 +37,12 @@ def init_strategy(agent_profile: dict) -> dict:
     decision_speed = agent_profile.get("decision_speed", "days")
     bdi = agent_profile.get("bdi", {})
 
-    bounds = AGENT_TYPE_STRATEGY_BOUNDS.get(agent_type, DEFAULT_BOUNDS)
+    bounds = _cfg()["agent_type_bounds"].get(agent_type, _cfg()["agent_type_bounds"]["default"])
 
     # Initialize from profile traits with some randomness
     def bounded_init(key: str, base: float) -> float:
         lo, hi = bounds[key]
-        noise = random.uniform(-0.08, 0.08)
+        noise = random.uniform(-_cfg()["init_noise_range"], _cfg()["init_noise_range"])
         return max(lo, min(hi, base + noise))
 
     # Derive initial values from agent profile
@@ -110,15 +53,15 @@ def init_strategy(agent_profile: dict) -> dict:
     # More desires in BDI → higher risk tolerance
 
     price_sens = bounded_init("price_sensitivity",
-        1.0 - min(budget / 2000, 0.8))  # Higher budget → less sensitive
+        1.0 - min(budget / _cfg()["budget_price_sens_divisor"], _cfg()["budget_price_sens_cap"]))  # Higher budget → less sensitive
     early_adopt = bounded_init("early_adopter",
-        tech * 0.6 + (0.3 if decision_speed == "impulse" else 0.0))
+        tech * _cfg()["tech_early_adopter_factor"] + (_cfg()["impulse_early_adopter_bonus"] if decision_speed == "impulse" else 0.0))
     social_susc = bounded_init("social_susceptibility",
-        max(0.2, 1.0 - inf * 0.3))  # High influence → less susceptible
+        max(_cfg()["high_influence_susceptibility_min"], 1.0 - inf * _cfg()["influence_susceptibility_factor"]))  # High influence → less susceptible
     loyalty = bounded_init("loyalty",
-        0.3 + (0.2 if decision_speed in ("weeks", "months") else 0.0))
+        _cfg()["base_loyalty"] + (_cfg()["slow_decision_loyalty_bonus"] if decision_speed in ("weeks", "months") else 0.0))
     risk_tol = bounded_init("risk_tolerance",
-        tech * 0.5 + len(bdi.get("desires", [])) * 0.05)
+        tech * _cfg()["tech_risk_tolerance_factor"] + len(bdi.get("desires", [])) * _cfg()["desires_risk_tolerance_factor"])
 
     return {
         "price_sensitivity": round(price_sens, 3),
@@ -149,7 +92,7 @@ def update_strategy(agent_id: str, agent_states: dict, market_signals: dict,
 
     profile = state.get("profile", {})
     agent_type = profile.get("type", "consumer")
-    bounds = AGENT_TYPE_STRATEGY_BOUNDS.get(agent_type, DEFAULT_BOUNDS)
+    bounds = _cfg()["agent_type_bounds"].get(agent_type, _cfg()["agent_type_bounds"]["default"])
 
     # Get or init strategy
     strategy = state.get("rl_strategy")
@@ -169,14 +112,14 @@ def update_strategy(agent_id: str, agent_states: dict, market_signals: dict,
     for pid, pinfo in purchased.items():
         if "churned_at" not in pinfo:
             # Active purchase → good decision
-            strategy["loyalty"] = clamp("loyalty", strategy["loyalty"] + ALPHA * REWARD_SATISFIED_PURCHASE)
+            strategy["loyalty"] = clamp("loyalty", strategy["loyalty"] + _cfg()["alpha"] * _cfg()["reward_satisfied_purchase"])
             strategy["risk_tolerance"] = clamp("risk_tolerance",
-                strategy["risk_tolerance"] + ALPHA * REWARD_SATISFIED_PURCHASE * 0.5)
+                strategy["risk_tolerance"] + _cfg()["alpha"] * _cfg()["reward_satisfied_purchase"] * _cfg()["risk_reward_ratio"])
         else:
             # Churned → bad decision
-            strategy["loyalty"] = clamp("loyalty", strategy["loyalty"] + ALPHA * PENALTY_CHURN)
+            strategy["loyalty"] = clamp("loyalty", strategy["loyalty"] + _cfg()["alpha"] * _cfg()["penalty_churn"])
             strategy["risk_tolerance"] = clamp("risk_tolerance",
-                strategy["risk_tolerance"] + ALPHA * PENALTY_CHURN * 0.5)
+                strategy["risk_tolerance"] + _cfg()["alpha"] * _cfg()["penalty_churn"] * _cfg()["risk_reward_ratio"])
 
     # ---- Reward signal 2: Price awareness ----
     if purchased and market_signals.get("adoption_rate", 0) > 0.1:
@@ -189,14 +132,14 @@ def update_strategy(agent_id: str, agent_states: dict, market_signals: dict,
                     est_price_str = p.get("estimated_pricing_cny", "0")
                     try:
                         est_price = float(est_price_str.replace("¥", "").split("-")[0].strip())
-                        if est_price > 0 and price_paid > est_price * 1.5:
+                        if est_price > 0 and price_paid > est_price * _cfg()["overpaid_threshold_multiplier"]:
                             strategy["price_sensitivity"] = clamp("price_sensitivity",
-                                strategy["price_sensitivity"] + ALPHA * 0.05)  # Become more price sensitive
+                                strategy["price_sensitivity"] + _cfg()["alpha"] * _cfg()["overpaid_price_sensitivity_boost"])
                     except (ValueError, IndexError):
                         pass
 
     # ---- Reward signal 3: Social recommendation effectiveness ----
-    my_recommendations = [h for h in history[-5:] if h.get("action") == "recommend"]
+    my_recommendations = [h for h in history[-_cfg()["recommend_check_rounds"]:] if h.get("action") == "recommend"]
     if my_recommendations:
         # Check if any recommended peers later purchased
         rec_product = my_recommendations[-1].get("product_id")
@@ -206,11 +149,11 @@ def update_strategy(agent_id: str, agent_states: dict, market_signals: dict,
                     conn_hist = agent_states[conn_id].get("history", [])
                     conn_bought = any(
                         h.get("action") == "purchase" and h.get("product_id") == rec_product
-                        for h in conn_hist[-3:]
+                        for h in conn_hist[-_cfg()["peer_purchase_check_rounds"]:]
                     )
                     if conn_bought:
                         strategy["social_susceptibility"] = clamp("social_susceptibility",
-                            strategy["social_susceptibility"] + ALPHA * REWARD_RECOMMENDATION_MATCH)
+                            strategy["social_susceptibility"] + _cfg()["alpha"] * _cfg()["reward_recommendation_match"])
 
     # ---- Reward signal 4: Missed trends (FOMO learning) ----
     trending = market_signals.get("trending_products", [])
@@ -220,18 +163,18 @@ def update_strategy(agent_id: str, agent_states: dict, market_signals: dict,
         if missed:
             # Agent missed trending products → slightly increase early adopter tendency
             strategy["early_adopter"] = clamp("early_adopter",
-                strategy["early_adopter"] + ALPHA * abs(PENALTY_MISSED_TREND) * 0.5)
+                strategy["early_adopter"] + _cfg()["alpha"] * abs(_cfg()["penalty_missed_trend"]) * _cfg()["risk_reward_ratio"])
 
     # ---- Reward signal 5: Market sentiment alignment ----
     sentiment = market_signals.get("avg_sentiment", 0)
-    if sentiment > 0.3 and not purchased:
+    if sentiment > _cfg()["sentiment_optimistic_threshold"] and not purchased:
         # Market is optimistic but agent hasn't bought → increase risk tolerance slightly
         strategy["risk_tolerance"] = clamp("risk_tolerance",
-            strategy["risk_tolerance"] + ALPHA * 0.03)
-    elif sentiment < -0.3 and purchased:
+            strategy["risk_tolerance"] + _cfg()["alpha"] * 0.03)
+    elif sentiment < _cfg()["sentiment_pessimistic_threshold"] and purchased:
         # Market is pessimistic but agent bought → decrease risk tolerance
         strategy["risk_tolerance"] = clamp("risk_tolerance",
-            strategy["risk_tolerance"] + ALPHA * -0.03)
+            strategy["risk_tolerance"] + _cfg()["alpha"] * -0.03)
 
     state["rl_strategy"] = strategy
     return strategy
@@ -252,7 +195,7 @@ def update_all_strategies(agent_states: dict, market_signals: dict,
         if old_strategy and new_strategy:
             for key in new_strategy:
                 delta = new_strategy[key] - old_strategy.get(key, new_strategy[key])
-                if abs(delta) > 0.001:
+                if abs(delta) > _cfg()["strategy_shift_epsilon"]:
                     shifts[key].append(delta)
 
     # Compute average shifts
@@ -283,33 +226,33 @@ def get_strategy_context_for_decision(agent_id: str, agent_states: dict) -> str:
 
     lines = []
     ps = strategy["price_sensitivity"]
-    if ps > 0.7:
+    if ps > _cfg()["behavior_thresholds"]["price_sensitive_high"]:
         lines.append("You are price-sensitive. Prefer cheaper options.")
-    elif ps < 0.3:
+    elif ps < _cfg()["behavior_thresholds"]["price_sensitive_low"]:
         lines.append("Price is not your main concern. Value quality over cost.")
 
     ea = strategy["early_adopter"]
-    if ea > 0.6:
+    if ea > _cfg()["behavior_thresholds"]["early_adopter_high"]:
         lines.append("You are an early adopter. New products excite you.")
-    elif ea < 0.2:
+    elif ea < _cfg()["behavior_thresholds"]["early_adopter_low"]:
         lines.append("You prefer proven products. Avoid unvalidated new offerings.")
 
     ss = strategy["social_susceptibility"]
-    if ss > 0.6:
+    if ss > _cfg()["behavior_thresholds"]["social_susceptible_high"]:
         lines.append("Peer opinions strongly influence your decisions.")
-    elif ss < 0.2:
+    elif ss < _cfg()["behavior_thresholds"]["social_susceptible_low"]:
         lines.append("You make independent decisions. Peer behavior doesn't sway you.")
 
     lo = strategy["loyalty"]
-    if lo > 0.6:
+    if lo > _cfg()["behavior_thresholds"]["loyal_high"]:
         lines.append("Once you buy, you stick with it. Low churn risk.")
-    elif lo < 0.2:
+    elif lo < _cfg()["behavior_thresholds"]["loyal_low"]:
         lines.append("You churn easily if unsatisfied.")
 
     rt = strategy["risk_tolerance"]
-    if rt > 0.6:
+    if rt > _cfg()["behavior_thresholds"]["risk_tolerant_high"]:
         lines.append("You take risks on unproven products.")
-    elif rt < 0.2:
+    elif rt < _cfg()["behavior_thresholds"]["risk_tolerant_low"]:
         lines.append("You are risk-averse. Only buy safe bets.")
 
     return " | ".join(lines) if lines else ""

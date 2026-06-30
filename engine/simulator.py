@@ -11,6 +11,8 @@ v4 changes:
 
 import json, time, os, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from engine.config import simulation_cfg as _cfg, pipeline_cfg as _pcfg
+from engine.llm_client import get_llm
 
 def _safe_float(v, default=0.0):
     """Convert LLM output to float, handling strings and None."""
@@ -20,7 +22,6 @@ def _safe_float(v, default=0.0):
         return float(v)
     except (ValueError, TypeError):
         return default
-from engine.llm_client import get_llm
 from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
 from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
 
@@ -38,9 +39,9 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
     agent_type = profile.get("type", "consumer")
 
     # Skip logic
-    if agent_type == "competitor" and round_num < 8:
+    if agent_type == "competitor" and round_num < _cfg()["competitor_activate_round"]:
         return {"agent_id": agent_id, "round": round_num, "action": "skip", "reason": "competitor_not_active_yet"}
-    if agent_type == "environment" and round_num % 5 != 0:
+    if agent_type == "environment" and round_num % _cfg()["environment_period"] != 0:
         return {"agent_id": agent_id, "round": round_num, "action": "skip", "reason": "environment_periodic"}
 
     # Build RL strategy context for decision prompt injection
@@ -61,7 +62,7 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
             "emotional": state["emotional_state"],
         },
         "round": round_num,
-        "available_products": [{k: p.get(k) for k in ["id", "name", "category", "estimated_pricing_cny"]} for p in products[:3]],
+        "available_products": [{k: p.get(k) for k in ["id", "name", "category", "estimated_pricing_cny"]} for p in products[:_cfg()["products_shown"]]],
         "market_conditions": {
             "sentiment": "optimistic" if market_sentiment > 0.2 else ("pessimistic" if market_sentiment < -0.2 else "neutral"),
             "fomo_active": fomo_active,
@@ -77,7 +78,7 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
         llm = get_llm()
         decision = llm.chat_json(
             system=DECISION_SYSTEM_PROMPT,
-            user=f"Round {round_num}/{total_rounds}. You are a {agent_type}. Make ONE economic decision.\n{json.dumps(context, indent=2, ensure_ascii=False)[:3000]}{user_extra}",
+            user=f"Round {round_num}/{total_rounds}. You are a {agent_type}. Make ONE economic decision.\n{json.dumps(context, indent=2, ensure_ascii=False)[:_cfg()["context_max_chars"]]}{user_extra}",
             agent_type=agent_type,
             temperature=0.6,
         )
@@ -86,10 +87,12 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
         return {"agent_id": agent_id, "round": round_num, "action": "error", "error": str(e)}
 
 
-def simulate(agents: list, product_directions: list, rounds: int = 30, market_type: str = "b2c") -> dict:
+def simulate(agents: list, product_directions: list, rounds: int = None, market_type: str = "b2c") -> dict:
     """Run 30-round market simulation with parallel agent decisions, coupling, and RL."""
+    if rounds is None:
+        rounds = _cfg()["rounds"]
     # Cap agents for speed — use more with batch generation
-    consumer_agents = [a for a in agents if a.get("type") == "consumer"][:50]
+    consumer_agents = [a for a in agents if a.get("type") == "consumer"][:_pcfg()["agent_consumer_cap"]]
     other_agents = [a for a in agents if a.get("type") != "consumer"]
     selected_agents = consumer_agents + other_agents
 
@@ -107,7 +110,7 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
     log, timeline = [], []
     coupling_history = []
     rl_history = []
-    batch_size = 15  # More parallel workers for larger agent count
+    batch_size = _cfg()["batch_size"]  # More parallel workers for larger agent count
     started = time.time()
 
     for rnd in range(1, rounds + 1):
@@ -123,7 +126,7 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
             for future in as_completed(futures):
                 aid = futures[future]
                 try:
-                    decision = future.result(timeout=30)
+                    decision = future.result(timeout=_cfg()["agent_timeout"])
                 except Exception:
                     decision = {"agent_id": aid, "round": rnd, "action": "timeout"}
 
@@ -184,7 +187,7 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
         })
 
         # Progress log every 5 rounds
-        if rnd % 5 == 0:
+        if rnd % _cfg()["log_interval"] == 0:
             total_elapsed = time.time() - started
             purchasers = sum(1 for s in agent_states.values() if s["purchased_products"])
             n_strats = sum(1 for s in agent_states.values() if s.get("rl_strategy"))
@@ -239,10 +242,15 @@ def _compute_results(agent_states: dict, products: list) -> list:
         churned = sum(1 for aid in purchasers if "churned_at" in st["purchased_products"].get(pid, {}))
         churn_r = churned / pc if pc > 0 else 1.0
         revenue = sum(_safe_float(st["purchased_products"].get(pid, {}).get("price_paid", 0)) for st in agent_states.values())
-        score = (pc / max(1, total_agents * 0.1)) * 0.4 + ((1 - churn_r) * 0.3) + (min(revenue / max(pc * 50, 1), 1.0) * 0.3)
+        adoption = pc / max(1, total_agents * _cfg()["score_adoption_denominator"])
+        adoption_term = adoption * _cfg()["score_adoption_weight"]
+        retention_term = (1 - churn_r) * _cfg()["score_retention_weight"]
+        revenue_norm = min(revenue / max(pc * _cfg()["score_revenue_per_user_baseline"], 1), 1.0)
+        revenue_term = revenue_norm * _cfg()["score_revenue_weight"]
+        score = adoption_term + retention_term + revenue_term
         results.append({"product_id": pid, "product_name": p.get("name", ""), "purchasers": pc,
                         "churn_rate": round(churn_r, 2), "total_revenue_cny": revenue,
                         "survival_score": round(min(1.0, score), 3),
-                        "status": "alive" if score > 0.3 else ("struggling" if score > 0.1 else "dead")})
+                        "status": "alive" if score > _cfg()["alive_threshold"] else ("struggling" if score > _cfg()["struggling_threshold"] else "dead")})
     results.sort(key=lambda r: r["survival_score"], reverse=True)
     return results
