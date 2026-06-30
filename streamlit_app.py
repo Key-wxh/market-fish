@@ -402,18 +402,74 @@ if run_btn or _last_result:
                 st.caption("选中一个 agent，用它的身份和你聊天")
 
                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+                sim_stage_data = result.get("stages", {}).get("simulation", {})
+                sim_log_data = sim_stage_data.get("sim_log", [])
+
                 if agents_list:
+                    # Build agent_states from sim_log if available, else minimal
+                    agent_states = {}
+                    if sim_log_data:
+                        from engine.evidence_report import _rebuild_agent_states_from_log
+                        agent_states = _rebuild_agent_states_from_log(result)
+
                     from engine.agent_dialogue import list_chatable_agents
-                    chatable = list_chatable_agents(agents_list, {}, min_history=0)
-                    agent_options = {f"{a['name'][:20]} ({a['type']}, {a['actions']} actions)": a["id"] for a in chatable[:30]}
+                    chatable = list_chatable_agents(agents_list, agent_states, min_history=0)
+                    agent_options = {f"{a['name'][:20]} ({a['type']})" : a["id"] for a in chatable[:30]}
 
                     if agent_options:
-                        selected = st.selectbox("选择 Agent", list(agent_options.keys()))
-                        user_msg = st.text_input("你的消息", placeholder="你为什么买了这个产品？")
+                        # Session state for chat history
+                        if "dialogue_history" not in st.session_state:
+                            st.session_state.dialogue_history = {}
+                        if "selected_agent" not in st.session_state:
+                            st.session_state.selected_agent = None
 
-                        if user_msg and selected:
-                            aid = agent_options[selected]
-                            st.info(f"💬 **Agent 回复**: _（需要完整 agent_states 数据，当前仅展示接口）_\n\n> Agent ID: {aid}\n> 模式: validate/hybrid 模式运行后可对话")
+                        selected_label = st.selectbox("选择 Agent", list(agent_options.keys()),
+                            key="agent_selector")
+                        st.session_state.selected_agent = agent_options[selected_label]
+
+                        # Show agent profile summary
+                        selected_id = st.session_state.selected_agent
+                        agent_profile = next((a for a in agents_list if a["id"] == selected_id), None)
+                        if agent_profile:
+                            bdi = agent_profile.get("bdi", {})
+                            st.caption(f"类型: {agent_profile.get('type','?')} | "
+                                      f"预算: ¥{agent_profile.get('budget_monthly_cny','?')} | "
+                                      f"决策: {agent_profile.get('decision_speed','?')}")
+                            if bdi.get("beliefs"):
+                                st.caption(f"信念: {', '.join(bdi['beliefs'][:2])}")
+
+                        user_msg = st.text_input("你的消息", placeholder="你为什么会买这个产品？", key="chat_input")
+
+                        if user_msg:
+                            # Get or init chat history for this agent
+                            if selected_id not in st.session_state.dialogue_history:
+                                st.session_state.dialogue_history[selected_id] = []
+
+                            with st.spinner(f"{agent_profile.get('name', selected_id)} 正在思考..."):
+                                try:
+                                    from engine.agent_dialogue import chat_with_agent
+                                    response = chat_with_agent(
+                                        selected_id, user_msg, agents_list,
+                                        agent_states if agent_states else {selected_id: {
+                                            "profile": agent_profile, "history": [], "purchased_products": {},
+                                            "emotional_state": "neutral", "rl_strategy": {}, "total_spent": 0
+                                        }},
+                                    )
+                                    reply = response.get("response", "（无法回复）")
+                                    st.session_state.dialogue_history[selected_id].append(
+                                        {"role": "user", "content": user_msg})
+                                    st.session_state.dialogue_history[selected_id].append(
+                                        {"role": "agent", "content": reply})
+                                except Exception as e:
+                                    st.error(f"对话失败: {e}")
+
+                        # Show chat history
+                        if selected_id in st.session_state.dialogue_history:
+                            for msg in st.session_state.dialogue_history[selected_id][-10:]:
+                                if msg["role"] == "user":
+                                    st.markdown(f"**你:** {msg['content']}")
+                                else:
+                                    st.markdown(f"**{agent_profile.get('name', 'Agent')}:** {msg['content']}")
                     else:
                         st.info("无可对话的 agent — 请先运行管道")
                 else:
