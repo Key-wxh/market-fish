@@ -360,7 +360,8 @@
     "market_header": "{m} Market — Sentiment: {s} | {n} RL agents"
   },
   "page": {
-    "title": "MarketFish v5 — Market Prediction Engine"
+    "title": "MarketFish v5 — Market Prediction Engine",
+    "subtitle": "6-LLM Heterogeneous Agents · Small-World Network · Cross-Domain Coupling · Economic Alignment RL"
   },
   "backtest": {
     "product": "Product",

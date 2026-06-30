@@ -360,7 +360,8 @@
     "market_header": "{m} 市场 — 情绪: {s} | {n} RL agents"
   },
   "page": {
-    "title": "MarketFish v5 — 市场预测引擎"
+    "title": "MarketFish v5 — 市场预测引擎",
+    "subtitle": "6-LLM 异质 Agent · 小世界网络 · 跨域耦合 · 经济对齐 RL"
   },
   "backtest": {
     "product": "产品",

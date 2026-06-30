@@ -42,7 +42,7 @@ st.markdown("""
 
 # ── Header ──
 st.markdown('<p class="main-header"> MarketFish v5</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Network · Cross-Domain Coupling · Economic Alignment RL</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="sub-header">{t("page.subtitle")}</p>', unsafe_allow_html=True)
 
 # ── Sidebar ──
 with st.sidebar:
@@ -143,10 +143,10 @@ AGENT_BATCHES = agent_batches()
 total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric(t("kpi.mode"), {"explore": t("sidebar.explore"), "validate": t("sidebar.validate"), "hybrid": t("sidebar.hybrid")}[input_mode])
-col2.metric("Target Agents", str(total_agent_target), f"{len(AGENT_BATCHES)} batches")
-col3.metric("Sim Rounds", str(sim_rounds))
-col4.metric("Seed Sources", str(len(seed)))
-col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
+col2.metric(t("kpi.target_agents"), str(total_agent_target), f"{len(AGENT_BATCHES)} {t('kpi.batches')}")
+col3.metric(t("kpi.sim_rounds"), str(sim_rounds))
+col4.metric(t("kpi.seed_sources"), str(len(seed)))
+col5.metric(t("kpi.providers"), str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} {t('kpi.active')}")
 
 # ── Seed Data Transparency ──
 with st.expander(t("seed_transparency.title"), expanded=False):
