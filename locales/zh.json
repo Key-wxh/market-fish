@@ -361,5 +361,12 @@
   },
   "page": {
     "title": "MarketFish v5 — 市场预测引擎"
+  },
+  "backtest": {
+    "product": "产品",
+    "score": "回测分",
+    "verdict": "判定",
+    "factors": "因子",
+    "killers": "杀手"
   }
 }

@@ -362,10 +362,10 @@ if run_btn or _last_result:
                 st.subheader(t("evidence_tab.backtest_title"))
                 if directions:
                     bt_df = pd.DataFrame([
-                        {"产品": d["name"][:25], "回测分": d.get("backtest_score", 0),
-                         "判定": d.get("backtest_verdict", "?"),
-                         "因子": ", ".join(d.get("backtest_flags", [])),
-                         "杀手": ", ".join(d.get("backtest_kill_flags", []))}
+                        {t("backtest.product"): d["name"][:25], t("backtest.score"): d.get("backtest_score", 0),
+                         t("backtest.verdict"): d.get("backtest_verdict", "?"),
+                         t("backtest.factors"): ", ".join(d.get("backtest_flags", [])),
+                         t("backtest.killers"): ", ".join(d.get("backtest_kill_flags", []))}
                         for d in directions
                     ])
                     st.dataframe(bt_df, use_container_width=True, hide_index=True)

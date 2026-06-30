@@ -361,5 +361,12 @@
   },
   "page": {
     "title": "MarketFish v5 — Market Prediction Engine"
+  },
+  "backtest": {
+    "product": "Product",
+    "score": "Backtest Score",
+    "verdict": "Verdict",
+    "factors": "Factors",
+    "killers": "Kill Flags"
   }
 }
