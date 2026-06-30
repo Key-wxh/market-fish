@@ -278,7 +278,7 @@ if run_btn or _last_result:
                 # Plotly charts
                 if sim_results:
                     from engine.dashboard_viz import survival_score_chart, adoption_curve, emotion_timeline
-                    st.plotly_chart(survival_score_chart(sim_results), use_container_width=True)
+                    st.plotly_chart(survival_score_chart(sim_results), use_container_width=True, key="survival_score")
 
                     # Adoption curve + Emotion timeline side by side
                     sim_stage2 = result.get("stages", {}).get("simulation", {})
@@ -287,10 +287,10 @@ if run_btn or _last_result:
                     c1, c2 = st.columns(2)
                     with c1:
                         if sim_log_viz:
-                            st.plotly_chart(adoption_curve(sim_log_viz), use_container_width=True)
+                            st.plotly_chart(adoption_curve(sim_log_viz), use_container_width=True, key="adoption_curve")
                     with c2:
                         if timeline_data:
-                            st.plotly_chart(emotion_timeline(timeline_data), use_container_width=True)
+                            st.plotly_chart(emotion_timeline(timeline_data), use_container_width=True, key="emotion_timeline")
 
                 # Backtest filter results
                 st.subheader("🔍 回测因子过滤")
@@ -356,7 +356,7 @@ if run_btn or _last_result:
                                 with c1:
                                     st.write("**买家画像**")
                                     if buyer["total_buyers"] > 0:
-                                        st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True)
+                                        st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True, key="buyer_donut")
                                     else:
                                         st.write("买家细节需模拟日志（新管道运行后可用）")
                                         st.write(f"买家总数: {p.get('purchasers', 0)}")
@@ -371,7 +371,7 @@ if run_btn or _last_result:
                                     # RL strategy radar
                                     rl_data = result.get("stages", {}).get("simulation", {}).get("economic_alignment_rl", {})
                                     if rl_data:
-                                        st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
+                                        st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_evidence")
 
                                     st.write("**竞品对比**")
                                     for c in comps:
@@ -412,7 +412,7 @@ if run_btn or _last_result:
 
                 if rl_data:
                     from engine.dashboard_viz import rl_strategy_radar
-                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
+                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_overview")
 
                 if coupling_data:
                     st.subheader("📊 市场对比")
@@ -589,7 +589,7 @@ if run_btn or _last_result:
 
                 if rl_data:
                     from engine.dashboard_viz import rl_strategy_radar
-                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
+                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_tab")
 
                 for market, data in rl_data.items():
                     strategies = data.get('avg_final_strategies', {})
