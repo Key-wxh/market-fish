@@ -52,7 +52,10 @@
     "limitations": "Limitations",
     "upload_hint": "Upload your own seed JSON to replace defaults (optional)",
     "upload_label": "Upload seed JSON (format: {\"freelancer\": {...}, \"economy\": {...}, ...})",
-    "merged": "Merged {n} custom seed sources"
+    "merged": "Merged {n} custom seed sources",
+    "collection_label": "**Collection Method**: {v}",
+    "bias_label": "**Bias Statement**: {v}",
+    "limitations_label": "**Limitations**: {v}"
   },
   "calibration": {
     "title": "Calibration — Validate against 20 known products",
@@ -80,7 +83,8 @@
     "keyword_acc": "Keyword Baseline",
     "random_acc": "Random Baseline",
     "factor_label": "Factor Analysis (from 20 cases)",
-    "disc": "Discrimination"
+    "disc": "Discrimination",
+    "run_help_full": "Validate pipeline against {n} known products. ~{t} min estimate. Skip LLM for baseline."
   },
   "pipeline": {
     "run_btn": "Run Market Prediction",
@@ -103,7 +107,13 @@
     "seed_missing": "Missing seed data: {path}",
     "no_seed": "No seed data available",
     "json_error": "JSON parse error: {e}",
-    "stage_done": "Stage {stage_num}/5 Complete"
+    "stage_done": "Stage {stage_num}/5 Complete",
+    "explore_label": "A: Explore",
+    "validate_label": "B: Validate",
+    "hybrid_label": "C: Hybrid",
+    "pipeline_fail": "Pipeline failed: {err}",
+    "failed_stage": "Failed at stage: {s}",
+    "completed_stages": "Completed: {s}"
   },
   "tabs": {
     "products": "Products",
@@ -121,7 +131,8 @@
     "adoption_curve": "Adoption Curve (S-Curve)",
     "emotion_timeline": "Market Sentiment x Adoption",
     "no_products": "No product data",
-    "survival_score_axis": "Survival Score"
+    "survival_score_axis": "Survival Score",
+    "cumulative_buyers": "Cumulative Buyers"
   },
   "evidence_tab": {
     "title": "Evidence Report — More Than Just a Score",
@@ -168,7 +179,46 @@
     "risks_label": "Risk Signals",
     "comps_label": "Competitor Comparison",
     "motivations_label": "Purchase Motivations",
-    "motivation_count": "Purchase Motivations ({n} entries)"
+    "motivation_count": "Purchase Motivations ({n} entries)",
+    "total_buyers_fmt": "Total buyers: {n}",
+    "revenue_fmt": "Revenue: ¥{n}",
+    "no_buyers_detail": "Buyer details require simulation log (available after new pipeline run)",
+    "price_sensitive_seg": "Price Sensitive",
+    "impulsive_seg": "Impulsive",
+    "rational_seg": "Rational",
+    "price_sensitive_desc": "Highly price-sensitive, prefers low-cost or high-value products",
+    "impulsive_desc": "Quick decisions, easily influenced by emotion and FOMO",
+    "rational_desc": "Resists social influence, makes independent decisions",
+    "fomo_round": "Round {r} FOMO trigger: adoption {a:.1%}, sentiment {s:.3f}",
+    "death_no_buyers": "Zero buyers — product does not match market demand",
+    "death_high_churn": "High churn — users abandon after trial",
+    "death_low_score": "Survival score too low",
+    "risk_price_sensitive": "Buyers too price-sensitive",
+    "risk_price_detail": "{pct}% buyers are price-sensitive, limited room for price increase",
+    "risk_smb_sentiment": "SMB market sentiment negative",
+    "risk_smb_detail": "SMB sentiment {s:.2f}, enterprise expansion requires caution",
+    "risk_low_buyers": "Buyer base too small",
+    "risk_low_detail": "Only {n} buyers, low statistical confidence",
+    "risk_none": "No significant risk signals detected",
+    "risk_none_detail": "No significant risks found in this simulation",
+    "hypothesis_price": "Pricing {p} is acceptable to the target audience",
+    "hypothesis_price_test": "A/B test: {p} vs lower/higher prices, observe conversion differences",
+    "hypothesis_price_source": "{n} buyers accepted the current price",
+    "hypothesis_fear": "Fear/anxiety is a core purchase motivation",
+    "hypothesis_fear_test": "Landing page A/B test: fear-driven copy vs feature-driven copy",
+    "hypothesis_fear_source": "{n} buyers mentioned fear/safety-related reasons",
+    "hypothesis_social": "Social proof can significantly improve conversion",
+    "hypothesis_social_test": "Show 'X people already bought' → observe impact on conversion",
+    "hypothesis_social_source": "Based on FOMO effect observation in simulation",
+    "motivation_fear": "Fear-driven",
+    "motivation_safety": "Safety need",
+    "motivation_simple": "Minimalist UX",
+    "motivation_convenient": "Convenience",
+    "motivation_price": "Fair price",
+    "motivation_value": "Value recognition",
+    "motivation_social": "Social influence",
+    "motivation_curious": "Curiosity-driven",
+    "motivation_other": "Other"
   },
   "agents_tab": {
     "title": "Heterogeneous Agent Population",
@@ -210,7 +260,10 @@
     "select_first": "Select an agent first",
     "no_chat_agents": "No chatable agents — run pipeline first",
     "no_agent_data2": "No agent data — run pipeline first",
-    "beliefs": "Beliefs"
+    "beliefs": "Beliefs",
+    "type_info": "Type: {t} | Budget: ¥{b} | Decision: {d}",
+    "thinking": "{name} is thinking...",
+    "select_label": "Select Agent"
   },
   "network_tab": {
     "title": "Network Topology — Watts-Strogatz Small-World",
@@ -219,7 +272,11 @@
     "small_world": "Small-World: optimal balance — preserves diversity with fast diffusion",
     "wrong": "WRONG",
     "correct": "CORRECT",
-    "title2": "Network Topology — Watts-Strogatz Small-World"
+    "title2": "Network Topology — Watts-Strogatz Small-World",
+    "negativity_bias": "• Negative emotion spread speed: 2x (negativity bias)",
+    "fomo_trigger": "• FOMO trigger: 3+ peer purchases → +25% purchase probability",
+    "emotion_wtp": "• Emotion affects WTP: excited +30%, frustrated -50%",
+    "network_desc": "Market sentiment propagates through the small-world network each round\n\nNegative emotions spread 2x faster (negativity bias)\n\nFOMO trigger: 3+ peer purchases → +25% purchase probability\n\nEmotion affects willingness-to-pay: excited +30%, frustrated -50%"
   },
   "rl_tab": {
     "title": "Economic Alignment RL — Strategy Adaptation",
@@ -231,14 +288,19 @@
     "risk_tolerance": "Risk tolerance",
     "active_rl_rounds": "{market} Market ({rounds}/30 rounds active)",
     "b2c_vs_smb": "B2C consumers vs SMB business strategy differences",
-    "active_rounds": "{market} Market ({rounds}/30 rounds active)"
+    "active_rounds": "{market} Market ({rounds}/30 rounds active)",
+    "desc_full": "5-axis strategy vector (each agent learns independently):\n- `price_sensitivity` — Price sensitivity\n- `early_adopter` — Early adopter tendency\n- `social_susceptibility` — Social influence susceptibility\n- `loyalty` — Loyalty (low = easy churn)\n- `risk_tolerance` — Risk tolerance",
+    "b2c_col": "B2C Consumer",
+    "smb_col": "SMB Business",
+    "dimension_col": "Dimension"
   },
   "raw_tab": {
     "title": "Full JSON Output",
     "sim_log": "Simulation Log",
     "download": "Download Full Result (JSON)",
     "download_help": "Save the complete pipeline output for later analysis",
-    "sim_log_title": "Simulation Log"
+    "sim_log_title": "Simulation Log",
+    "download_btn": "Download full result (JSON)"
   },
   "footer": {
     "tagline": "MarketFish v5 · 6 academic papers · 6 LLMs · Built by Keystart AI",
@@ -284,5 +346,15 @@
     "no_buyers": "No buyers at any price point. Product may need repositioning.",
     "optimal_single": "Optimal price ¥{price} — Revenue ¥{revenue} · {buyers} buyers",
     "optimal_multi": "Revenue optimal: ¥{rev_price} (¥{rev_revenue} · {rev_buyers} buyers). Score optimal: ¥{score_price} (score={score_val})"
+  },
+  "market": {
+    "sentiment_label": "Final Sentiment",
+    "rounds_label": "Rounds",
+    "active_rounds_label": "Active Rounds",
+    "final_strategies_label": "Final Strategies",
+    "market_header": "{m} Market — Sentiment: {s:.3f} | {n} RL agents"
+  },
+  "page": {
+    "title": "MarketFish v5 — Market Prediction Engine"
   }
 }

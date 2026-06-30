@@ -16,7 +16,7 @@ import pandas as pd
 from engine.i18n import t, tabs as i18n_tabs, get_lang, set_lang
 
 st.set_page_config(
-    page_title="MarketFish v5 — 市场预测引擎",
+    page_title=t("page.title"),
     page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -155,8 +155,8 @@ with st.expander(t("seed_transparency.title"), expanded=False):
         meta = seed.get(key, {}).get("_meta", {})
         if meta:
             with st.expander(f"{key} — {meta.get('source','?')[:60]}...", expanded=False):
-                st.write(f"**采集方式**: {meta.get('collection_method','?')}")
-                st.write(f"**偏差声明**: {meta.get('bias_declaration','?')}")
+                st.write(t("seed_transparency.collection_label", v=meta.get("collection_method","?")))
+                st.write(t("seed_transparency.bias_label", v=meta.get("bias_declaration","?")))
                 st.write(f"**局限**: {', '.join(meta.get('limitations',['?']))}")
 
     # File upload for custom seed data
@@ -189,14 +189,14 @@ with st.expander(t("calibration.title"), expanded=False):
     with st.expander(t("calibration.view_all"), expanded=False):
         for c in cases:
             icon = "🟢" if c['outcome'] == 'success' else ("🔴" if c['outcome'] == 'failure' else "⚪")
-            source = "公开" if not c['name'].startswith('某') else "脱敏"
+            source = t("calibration.public") if not c["name"].startswith("某") else t("calibration.anon")
             st.caption(f"{icon} {c['name'][:40]} | {c['target_market']} | {c['pricing'][:25]} | {source} · {c.get('evidence','')[:60]}")
 
     cal_col1, cal_col2 = st.columns([1, 3])
     with cal_col1:
         cal_runs = st.selectbox(t("calibration.runs_label"), [1, 3, 5], index=1, help=t("calibration.runs_help"))
         cal_btn = st.button(t("calibration.run_cal_btn"), type="secondary", use_container_width=True,
-                           help=f"用{len(tested)}个已知产品验证管道。预计{len(tested)*cal_runs*5}分钟。不调LLM则用模拟基线。")
+                           help=t("calibration.run_help_full", n=len(tested), t=len(tested)*cal_runs*5))
 
     if cal_btn:
         with cal_col2:
@@ -425,8 +425,8 @@ if run_btn or _last_result:
                                         st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True, key="buyer_donut")
                                     else:
                                         st.write(t("evidence_tab.buyer_details_only"))
-                                        st.write(f"买家总数: {p.get('purchasers', 0)}")
-                                        st.write(f"营收: ¥{p.get('total_revenue_cny', 0)}")
+                                        st.write(t("evidence_tab.total_buyers_fmt", n=p.get("purchasers", 0)))
+                                        st.write(t("evidence_tab.revenue_fmt", n=p.get("total_revenue_cny", 0)))
 
                                     st.write(t("evidence_tab.risks_label"))
                                     for r in risks:
@@ -460,7 +460,7 @@ if run_btn or _last_result:
                         with st.expander(t("price_scanner.title"), expanded=False):
                             st.caption(t("price_scanner.desc"))
                             price_input = st.text_input("价格点 (逗号分隔)", "1,3,6,9,12,18,30",
-                                help="例如: 1,3,6,9,12,18,30", key=f"price_input_{pname}")
+                                help=t("price_scanner.price_help"), key=f"price_input_{pname}")
                             scan_rounds = st.slider(t("price_scanner.rounds_label"), 10, 30, 15,
                                 help=t("price_scanner.rounds_help"), key=f"scan_rounds_{pname}")
 
@@ -547,16 +547,16 @@ if run_btn or _last_result:
                     st.subheader(t("agents_tab.market_comparison"))
                     for market, data in coupling_data.items():
                         rl_market = rl_data.get(market, {})
-                        with st.expander(f"{market.upper()} 市场 — 情绪: {data.get('final_sentiment', 0):.3f} | {rl_market.get('final_strategies_count', 0)} RL agents"):
+                        with st.expander(t("market.market_header", m=market.upper(), s=data.get("final_sentiment", 0), n=rl_market.get("final_strategies_count", 0))):
                             col_a, col_b = st.columns(2)
                             with col_a:
                                 st.write(t("agents_tab.coupling_stats"))
-                                st.write(f"轮数: {data.get('rounds', '?')}")
-                                st.write(f"最终情绪: {data.get('final_sentiment', '?')}")
+                                st.write(t("market.rounds_label") + ": " + str(data.get("rounds","?")))
+                                st.write(t("market.sentiment_label") + ": " + str(data.get("final_sentiment","?")))
                             with col_b:
                                 st.write(t("agents_tab.rl_stats"))
-                                st.write(f"活跃轮数: {rl_market.get('rounds_with_updates', '?')}/30")
-                                st.write(f"最终策略: {rl_market.get('avg_final_strategies', {})}")
+                                st.write(t("market.active_rounds_label") + ": " + str(rl_market.get("rounds_with_updates","?")) + "/30")
+                                st.write(t("market.final_strategies_label") + ": " + str(rl_market.get("avg_final_strategies", {})))
 
             # ── Tab 4: Agent Graph ──
             with tab4:
@@ -607,7 +607,7 @@ if run_btn or _last_result:
 
                     # Show all agents with history first, then type filter
                     filter_type = st.selectbox("筛选类型", ["全部"] + sorted(set(a.get("type","unknown") for a in chatable)), key="dialogue_filter")
-                    if filter_type != "全部":
+                    if filter_type != t("chat_tab.filter_all"):
                         chatable = [a for a in chatable if a["type"] == filter_type]
 
                     agent_options = {}
@@ -624,7 +624,7 @@ if run_btn or _last_result:
                         if "selected_agent" not in st.session_state:
                             st.session_state.selected_agent = None
 
-                        selected_label = st.selectbox("选择 Agent", list(agent_options.keys()),
+                        selected_label = st.selectbox(t("chat_tab.select_label"), list(agent_options.keys()),
                             key="agent_selector")
                         st.session_state.selected_agent = agent_options[selected_label]
 
@@ -633,9 +633,7 @@ if run_btn or _last_result:
                         agent_profile = next((a for a in agents_list if a["id"] == selected_id), None)
                         if agent_profile:
                             bdi = agent_profile.get("bdi", {})
-                            st.caption(f"类型: {agent_profile.get('type','?')} | "
-                                      f"预算: ¥{agent_profile.get('budget_monthly_cny','?')} | "
-                                      f"决策: {agent_profile.get('decision_speed','?')}")
+                            st.caption(t("chat_tab.type_info", t=agent_profile.get("type","?"), b=agent_profile.get("budget_monthly_cny","?"), d=agent_profile.get("decision_speed","?")))
                             if bdi.get("beliefs"):
                                 st.caption(f"{t('chat_tab.beliefs')}: {', '.join(bdi['beliefs'][:2])}")
 
@@ -646,7 +644,7 @@ if run_btn or _last_result:
                             if selected_id not in st.session_state.dialogue_history:
                                 st.session_state.dialogue_history[selected_id] = []
 
-                            with st.spinner(f"{agent_profile.get('name', selected_id)} 正在思考..."):
+                            with st.spinner(t("chat_tab.thinking", name=agent_profile.get("name", selected_id))):
                                 try:
                                     from engine.agent_dialogue import chat_with_agent
                                     response = chat_with_agent(
@@ -692,10 +690,7 @@ if run_btn or _last_result:
 
                 # Show sentiment over rounds if we have timeline data
                 # (timeline is per-market in the sim_result, not in pipeline output)
-                st.info(t("evidence_tab.coupling_desc") + "\n"
-                        "• 负向情绪传播速度 2x (negativity bias)\n"
-                        "• FOMO 触发: 3+ 同伴购买 → +25% 购买概率\n"
-                        "• 情绪影响支付意愿: 兴奋 +30%, 沮丧 -50%")
+                st.info(t("network_tab.network_desc"))
 
                 # Network stats
                 st.subheader(t("network_tab.title2"))
@@ -710,9 +705,9 @@ if run_btn or _last_result:
                 if coupling_data:
                     for market, data in coupling_data.items():
                         st.metric(
-                            f"{market.upper()} 最终情绪",
-                            f"{data.get('final_sentiment', 0):.3f}",
-                            f"{data.get('rounds', 0)} rounds",
+                            f"{market.upper()} " + t("market.sentiment_label"),
+                            f"{data.get("final_sentiment", 0):.3f}",
+                            f"{data.get("rounds", 0)} rounds",
                         )
 
             # ── Tab 7: RL Strategy ──
@@ -720,12 +715,7 @@ if run_btn or _last_result:
                 st.subheader(t("rl_tab.title"))
 
                 st.markdown("""
-                **5 轴策略向量** (每个 Agent 独立学习):
-                - `price_sensitivity` — 价格敏感度
-                - `early_adopter` — 尝鲜倾向
-                - `social_susceptibility` — 社交影响力敏感度
-                - `loyalty` — 忠诚度 (低=容易流失)
-                - `risk_tolerance` — 风险承受力
+                t("rl_tab.desc_full")
                 """)
 
                 if rl_data:
@@ -744,8 +734,8 @@ if run_btn or _last_result:
                             if b2c_strat and smb_strat:
                                 compare_df = pd.DataFrame({
                                     "维度": list(b2c_strat.keys()),
-                                    "B2C 消费者": list(b2c_strat.values()),
-                                    "SMB 商家": list(smb_strat.values()),
+                                    t("rl_tab.b2c_col"): list(b2c_strat.values()),
+                                    t("rl_tab.smb_col"): list(smb_strat.values()),
                                 })
                                 st.dataframe(compare_df.set_index(t("rl_tab.dimension") if False else "维度"), use_container_width=True)
 
@@ -758,15 +748,15 @@ if run_btn or _last_result:
                 st.code("\n".join(sim_lines[-50:]), language="text")
 
                 st.download_button(
-                    "📥 下载完整结果 (JSON)",
+                    t("raw_tab.download_btn"),
                     json.dumps(result, indent=2, ensure_ascii=False),
                     f"marketfish_v5_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
                 )
 
         else:
-            st.error(f"❌ 管道失败: {result.get('error', 'Unknown')}")
-            st.write(f"失败阶段: {result.get('failed_at_stage', '?')}")
-            st.write(f"已完成: {result.get('stages_completed', [])}")
+            st.error(t("pipeline.pipeline_fail", err=result.get("error", "Unknown")))
+            st.write(t("pipeline.failed_stage", s=result.get("failed_at_stage", "?")))
+            st.write(t("pipeline.completed_stages", s=result.get("stages_completed", [])))
 
     except Exception as e:
         if run_btn:

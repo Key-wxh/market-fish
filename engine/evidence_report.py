@@ -7,6 +7,7 @@ Data sources: agent reasoning, RL strategies, coupling history, purchase timelin
 
 import json
 from collections import Counter, defaultdict
+from engine.i18n import t as _t
 
 
 def extract_purchase_reasons(product_id: str, agent_states: dict, max_reasons: int = 5) -> list[dict]:
@@ -72,12 +73,12 @@ def build_buyer_profile(product_id: str, agent_states: dict, agents: list) -> di
         "total_buyers": total,
         "avg_budget": round(sum(b["budget"] for b in buyers) / total, 1) if total else 0,
         "segments": [
-            {"name": "价格敏感型", "count": len(price_sensitive), "pct": round(len(price_sensitive) / total * 100, 1),
-             "description": "对价格高度敏感，倾向于低价或高性价比产品"},
-            {"name": "冲动消费型", "count": len(impulsive), "pct": round(len(impulsive) / total * 100, 1),
-             "description": "决策快，容易受情绪和 FOMO 影响"},
-            {"name": "理性独立型", "count": len(rational), "pct": round(len(rational) / total * 100, 1),
-             "description": "不易受社交影响，独立做决策"},
+            {"name": _t("evidence_tab.price_sensitive_seg"), "count": len(price_sensitive), "pct": round(len(price_sensitive) / total * 100, 1),
+             "description": _t("evidence_tab.price_sensitive_desc")},
+            {"name": _t("evidence_tab.impulsive_seg"), "count": len(impulsive), "pct": round(len(impulsive) / total * 100, 1),
+             "description": _t("evidence_tab.impulsive_desc")},
+            {"name": _t("evidence_tab.rational_seg"), "count": len(rational), "pct": round(len(rational) / total * 100, 1),
+             "description": _t("evidence_tab.rational_desc")},
         ],
     }
 
@@ -127,11 +128,11 @@ def compare_with_competitors(product_id: str, all_results: list) -> list[dict]:
     for c in competitors:
         if c["status"] == "dead":
             if c["purchasers"] == 0:
-                c["death_cause"] = "零买家 — 产品与市场需求不匹配"
+                c["death_cause"] = _t("evidence_tab.death_no_buyers")
             elif c["churn"] > 0.5:
-                c["death_cause"] = "高流失 — 用户试用后放弃"
+                c["death_cause"] = _t("evidence_tab.death_high_churn")
             else:
-                c["death_cause"] = "存活分数过低"
+                c["death_cause"] = _t("evidence_tab.death_low_score")
         else:
             c["death_cause"] = None
 
@@ -144,25 +145,25 @@ def generate_risk_signals(product_id: str, buyer_profile: dict, coupling_stats: 
     segments = buyer_profile.get("segments", [])
 
     # Price sensitivity risk
-    price_seg = next((s for s in segments if s["name"] == "价格敏感型"), None)
+    price_seg = next((s for s in segments if s["name"] == _t("evidence_tab.price_sensitive_seg")), None)
     if price_seg and price_seg["pct"] > 50:
-        risks.append({"level": "medium", "signal": "买家价格敏感度过高",
-                       "detail": f"{price_seg['pct']}% 买家为价格敏感型，提价空间有限"})
+        risks.append({"level": "medium", "signal": _t("evidence_tab.risk_price_sensitive"),
+                       "detail": _t("evidence_tab.risk_price_detail", pct=price_seg["pct"])})
 
     # SMB sentiment risk
     smb_sentiment = coupling_stats.get("smb", {}).get("final_sentiment", 0) if isinstance(coupling_stats, dict) else 0
     if smb_sentiment < 0:
-        risks.append({"level": "medium", "signal": "SMB 市场情绪负值",
-                       "detail": f"SMB 商家情绪 {smb_sentiment:.2f}，企业端扩展需谨慎"})
+        risks.append({"level": "medium", "signal": _t("evidence_tab.risk_smb_sentiment"),
+                       "detail": _t("evidence_tab.risk_smb_detail", s=smb_sentiment)})
 
     # Low buyer count risk
     if buyer_profile.get("total_buyers", 0) < 5:
-        risks.append({"level": "high", "signal": "买家基数过小",
-                       "detail": f"仅 {buyer_profile['total_buyers']} 个买家，统计可信度低"})
+        risks.append({"level": "high", "signal": _t("evidence_tab.risk_low_buyers"),
+                       "detail": _t("evidence_tab.risk_low_detail", n=buyer_profile["total_buyers"])})
 
     # No risk = good
     if not risks:
-        risks.append({"level": "low", "signal": "无明显风险信号", "detail": "当前模拟中未发现显著风险"})
+        risks.append({"level": "low", "signal": _t("evidence_tab.risk_none"), "detail": _t("evidence_tab.risk_none_detail")})
 
     return risks
 
@@ -177,9 +178,9 @@ def generate_testable_hypotheses(product_id: str, reasons: list, buyer_profile: 
     if pricing and buyer_profile.get("total_buyers", 0) > 0:
         hypotheses.append({
             "id": "H1",
-            "hypothesis": f"定价 {pricing} 在目标用户群中可接受",
-            "test": f"A/B test: {pricing} vs 更低/更高价位，观察转化率差异",
-            "source": f"{buyer_profile['total_buyers']} 个买家接受当前价格",
+            "hypothesis": _t("evidence_tab.hypothesis_price", p=pricing),
+            "test": _t("evidence_tab.hypothesis_price_test", p=pricing),
+            "source": _t("evidence_tab.hypothesis_price_source", n=buyer_profile["total_buyers"]),
         })
 
     # Motivation hypothesis
@@ -190,17 +191,17 @@ def generate_testable_hypotheses(product_id: str, reasons: list, buyer_profile: 
         if fear_reasons:
             hypotheses.append({
                 "id": "H2",
-                "hypothesis": "恐惧/焦虑是核心购买动机",
-                "test": "落地页 A/B test: 恐惧驱动文案 vs 功能驱动文案",
-                "source": f"{len(fear_reasons)} 个买家提及恐惧/安全相关理由",
+                "hypothesis": _t("evidence_tab.hypothesis_fear"),
+                "test": _t("evidence_tab.hypothesis_fear_test"),
+                "source": _t("evidence_tab.hypothesis_fear_source", n=len(fear_reasons)),
             })
 
     # Social proof hypothesis
     hypotheses.append({
         "id": "H3",
-        "hypothesis": "社交证明可显著提升转化",
-        "test": "展示「已有多少人购买」 → 观察对转化率的影响",
-        "source": "基于模拟中 FOMO 效应的观察",
+        "hypothesis": _t("evidence_tab.hypothesis_social"),
+        "test": _t("evidence_tab.hypothesis_social_test"),
+        "source": _t("evidence_tab.hypothesis_social_source"),
     })
 
     return hypotheses
@@ -250,16 +251,16 @@ def generate_evidence_report(product_info: dict, agent_states: dict, agents: lis
         text = r.get("reasoning", "")
         # Simple keyword-based categorization
         for keyword, label in [
-            ("怕", "恐惧驱动"), ("担心", "恐惧驱动"), ("安全", "安全需求"),
-            ("简单", "极简体验"), ("一键", "极简体验"), ("方便", "便捷性"),
-            ("便宜", "价格合理"), ("不贵", "价格合理"), ("值得", "价值认同"),
-            ("朋友", "社交影响"), ("推荐", "社交影响"), ("试试", "尝鲜心理"),
+            ("怕", _t("evidence_tab.motivation_fear")), ("担心", _t("evidence_tab.motivation_fear")), ("安全", _t("evidence_tab.motivation_safety")),
+            ("简单", _t("evidence_tab.motivation_simple")), ("一键", _t("evidence_tab.motivation_simple")), ("方便", _t("evidence_tab.motivation_convenient")),
+            ("便宜", _t("evidence_tab.motivation_price")), ("不贵", _t("evidence_tab.motivation_price")), ("值得", _t("evidence_tab.motivation_value")),
+            ("朋友", _t("evidence_tab.motivation_social")), ("推荐", _t("evidence_tab.motivation_social")), ("试试", _t("evidence_tab.motivation_curious")),
         ]:
             if keyword in text:
                 reason_counter[label] += 1
                 break
         else:
-            reason_counter["其他"] += 1
+            reason_counter[_t("evidence_tab.motivation_other")] += 1
 
     top_reasons = [{"category": cat, "count": cnt} for cat, cnt in reason_counter.most_common(5)]
 

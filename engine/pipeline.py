@@ -8,6 +8,7 @@ import time
 import random
 import hashlib
 from engine.config import pipeline_cfg as _cfg, simulation_cfg as _sim_cfg
+from engine.i18n import t as _t
 from engine.ontology_generator import generate_ontology
 from engine.graph_builder import build_knowledge_graph
 from engine.agent_factory import generate_agents
@@ -87,7 +88,7 @@ class Pipeline:
             Pipeline result dict with stages, product_directions, and final_report.
         """
         start_time = time.time()
-        mode_label = {"explore": "A: 探索", "validate": "B: 验证", "hybrid": "C: 混合"}.get(mode, mode)
+        mode_label = {"explore": _t("pipeline.explore_label"), "validate": _t("pipeline.validate_label"), "hybrid": _t("pipeline.hybrid_label")}.get(mode, mode)
         output = {"pipeline_version": "2.0", "input_mode": mode, "stages": {}}
 
         # Apply random seed for reproducibility
