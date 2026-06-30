@@ -27,18 +27,23 @@ class Pipeline:
         try:
             # Stage 1: Ontology
             self.status = "stage1_ontology"
+            print("  [STAGE 1/5] Ontology...", flush=True)
             ontology = generate_ontology(seed_data)
             output["stages"]["ontology"] = {"status": "ok", "participant_types": len(ontology.get("participant_types", []))}
             self.stages_completed.append("ontology")
+            print(f"  [STAGE 1/5] Ontology OK — {len(ontology.get('participant_types', []))} types", flush=True)
 
             # Stage 2: Knowledge Graph
             self.status = "stage2_graph"
+            print("  [STAGE 2/5] Knowledge Graph...", flush=True)
             knowledge_graph = build_knowledge_graph(ontology, seed_data)
             output["stages"]["graph"] = {"status": "ok", "entities": len(knowledge_graph.get("entities", [])), "pain_spaces": len(knowledge_graph.get("pain_point_spaces", []))}
             self.stages_completed.append("graph")
+            print(f"  [STAGE 2/5] Graph OK — {len(knowledge_graph.get('entities', []))} entities, {len(knowledge_graph.get('pain_point_spaces', []))} pain spaces", flush=True)
 
             # Stage 3a: Agent Generation
             self.status = "stage3a_agents"
+            print("  [STAGE 3/5] Agent Generation...", flush=True)
             # Placeholder product directions for agent generation context
             placeholder_dirs = [{"id": "placeholder", "name": "Placeholder — real directions generated in 3b"}]
             agents_data = generate_agents(knowledge_graph, placeholder_dirs)
@@ -47,8 +52,10 @@ class Pipeline:
 
             # Stage 3b: Product Direction Generation
             self.status = "stage3b_ideas"
+            print("  [STAGE 3/5] Product Ideas...", flush=True)
             product_directions = generate_product_directions(knowledge_graph)
             output["stages"]["ideas"] = {"status": "ok", "count": len(product_directions)}
+            print(f"  [STAGE 3/5] Ideas OK — {len(product_directions)} directions", flush=True)
 
             # Backtest filter — score directions against validated success factors
             from engine.backtest_filter import filter_and_rank
@@ -67,6 +74,7 @@ class Pipeline:
 
             # Stage 4: Market Simulation (run for each market type)
             self.status = "stage4_simulation"
+            print("  [STAGE 4/5] Market Simulation (30 rounds, coupling + RL)...", flush=True)
             all_results = []
             coupling_stats = {}
             rl_stats = {}
@@ -114,6 +122,7 @@ class Pipeline:
 
             # Stage 5: Report Generation
             self.status = "stage5_report"
+            print("  [STAGE 5/5] Report Generation...", flush=True)
             report = generate_report(all_results, knowledge_graph)
             output["stages"]["report"] = {"status": "ok", "perspectives": len(report.get("analyst_reports", []))}
             output["final_report"] = report

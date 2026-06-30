@@ -19,6 +19,8 @@ import json
 import re
 import os
 import time
+from dotenv import load_dotenv
+load_dotenv()
 from openai import OpenAI
 from json_repair import repair_json
 
@@ -87,7 +89,7 @@ class MultiLLMClient:
         for name, cfg in self.MODELS.items():
             key = os.getenv(cfg["key"], "")
             if key:
-                self.clients[name] = OpenAI(api_key=key, base_url=cfg["base_url"])
+                self.clients[name] = OpenAI(api_key=key, base_url=cfg["base_url"], timeout=180.0, max_retries=1)
             else:
                 print(f"  [WARN] {name} ({cfg['model']}) not configured — will skip")
 

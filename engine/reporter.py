@@ -95,7 +95,6 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
         synthesis = llm.chat_json(
             system=SYNTHESIS_PROMPT,
             user=f"""Synthesize these {len(improved_reports)} analyst reports into one final verdict.
-            agent_type="reporter_student",  # Use analytical model for final synthesis
 
 ANALYST REPORTS:
 {json.dumps(improved_reports, indent=2, ensure_ascii=False)[:5000]}
@@ -109,6 +108,7 @@ SIMULATION SUMMARY:
     'revenue': r.get('total_revenue_cny', 0),
     'status': r.get('status', '')
 } for r in simulation_results], indent=2, ensure_ascii=False)}""",
+            agent_type="reporter_student",
         )
     except Exception:
         synthesis = {"final_report": {"executive_summary": "Synthesis failed — see individual analyst reports."}}

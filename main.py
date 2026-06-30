@@ -4,6 +4,9 @@ FastAPI entry point + 5-stage pipeline API.
 """
 
 import json
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from engine.pipeline import Pipeline
