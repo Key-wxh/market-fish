@@ -301,7 +301,7 @@ if run_btn or _last_result:
 
         if result.get("pipeline_status") == "complete":
             st.balloons()
-            st.success(t("pipeline.complete_msg", elapsed=elapsed, elapsed_m=elapsed/60))
+            st.success(t("pipeline.complete_msg", elapsed=f"{elapsed:.0f}", elapsed_m=f"{elapsed/60:.1f}"))
 
             # ═══════════════════════════════════════
             # RESULTS DASHBOARD

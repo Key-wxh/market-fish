@@ -98,7 +98,7 @@
     "stages_done": "阶段: {stages}",
     "results": "结果: {n}",
     "no_result": "无结果数据",
-    "complete_msg": "🎉 管道完成！耗时 {elapsed:.0f} 秒 ({elapsed_m:.1f} 分钟)",
+    "complete_msg": "🎉 管道完成！耗时 {elapsed} 秒 ({elapsed_m} 分钟)",
     "error": "💥 致命错误: {e}",
     "seed_missing": "种子数据缺失: {path}",
     "no_seed": "没有可用的种子数据",

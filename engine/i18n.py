@@ -71,7 +71,7 @@ def t(key: str, **kwargs) -> str:
     # Fallback: target lang → English → key itself
     result = value if value is not None else (fb_value if fb_value is not None else key)
 
-    # String interpolation
+    # String interpolation — format numbers in code before passing to t()
     if isinstance(result, str) and kwargs:
         for k, v in kwargs.items():
             result = result.replace("{" + k + "}", str(v))

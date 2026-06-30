@@ -98,7 +98,7 @@
     "stages_done": "Stages: {stages}",
     "results": "Results: {n}",
     "no_result": "No result data",
-    "complete_msg": "Pipeline complete! {elapsed:.0f}s ({elapsed_m:.1f}min)",
+    "complete_msg": "Pipeline complete! {elapsed}s ({elapsed_m}min)",
     "error": "Fatal Error: {e}",
     "seed_missing": "Missing seed data: {path}",
     "no_seed": "No seed data available",
