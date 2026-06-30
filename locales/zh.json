@@ -1,6 +1,5 @@
 {
   "_comment": "MarketFish 简体中文 locale",
-
   "sidebar": {
     "title": "⚙️ 配置",
     "language": "语言",
@@ -36,7 +35,6 @@
     "version": "v5.0",
     "lang_status": "语言: 中文 | 英文版完善中"
   },
-
   "kpi": {
     "mode": "Mode",
     "target_agents": "目标Agent",
@@ -46,7 +44,6 @@
     "providers": "模型",
     "active": "在线"
   },
-
   "seed_transparency": {
     "title": "📊 种子数据来源 & 偏差声明",
     "desc": "种子数据影响本体生成和知识图谱。当前为 LLM 聚合的公开信息快照，非实时数据。",
@@ -57,7 +54,6 @@
     "upload_label": "上传种子 JSON (格式: {\"freelancer\": {...}, \"economy\": {...}, ...})",
     "merged": "已合并 {n} 个自定义种子数据源"
   },
-
   "calibration": {
     "title": "🧪 校准验证 — 20个已知产品验证准确率",
     "desc": "用已知成败的外部产品独立验证管道预测能力。方向性验证（非统计显著性）。",
@@ -65,20 +61,27 @@
     "success": "成功",
     "failure": "失败",
     "estimated_time": "预计耗时",
-    "view_all": "📋 查看全部案例",
+    "view_all": "查看全部案例",
     "public": "公开",
     "anon": "脱敏",
     "run_calibration": "🚀 运行校准",
     "run_help": "用{n}个已知产品验证管道。预计{t}分钟。不调LLM则用模拟基线。",
     "ready": "⏳ 校准功能已就绪。完整校准需调用 LLM，耗时较长。",
-    "baseline_note": "以下为基线参考（无需 LLM）：",
+    "baseline_note": "以下为基线参考（无需LLM）：",
     "keyword_accuracy": "关键词基线准确率",
     "random_accuracy": "随机基线准确率",
     "sim_estimate": "模拟需跑管道",
     "factor_analysis": "📊 因子分析 (来自20案例)",
-    "discrimination": "区分度"
+    "discrimination": "区分度",
+    "runs_label": "每案例跑几次",
+    "runs_help": "多次取mode减少随机性",
+    "run_cal_btn": "运行校准",
+    "ready_note": "校准功能已就绪。完整校准需调用LLM，耗时较长。",
+    "keyword_acc": "关键词基线准确率",
+    "random_acc": "随机基线准确率",
+    "factor_label": "因子分析 (来自20案例)",
+    "disc": "区分度"
   },
-
   "pipeline": {
     "run_btn": "🚀 运行市场预测",
     "load_hint": "👆 点击「🚀 运行市场预测」启动全管道。",
@@ -94,9 +97,13 @@
     "elapsed": "{s}s",
     "stages_done": "阶段: {stages}",
     "results": "结果: {n}",
-    "no_result": "无结果数据"
+    "no_result": "无结果数据",
+    "complete_msg": "🎉 管道完成！耗时 {elapsed:.0f} 秒 ({elapsed_m:.1f} 分钟)",
+    "error": "💥 致命错误: {e}",
+    "seed_missing": "种子数据缺失: {path}",
+    "no_seed": "没有可用的种子数据",
+    "json_error": "JSON 解析失败: {e}"
   },
-
   "tabs": {
     "products": "📊 产品预测",
     "evidence": "📋 证据报告",
@@ -107,7 +114,6 @@
     "rl": "🧠 RL 策略",
     "raw": "📋 原始数据"
   },
-
   "products_tab": {
     "title": "🎯 产品存活预测",
     "survival_chart": "产品存活分数",
@@ -115,7 +121,6 @@
     "emotion_timeline": "💭 市场情绪 × 采纳率",
     "no_products": "无产品数据"
   },
-
   "evidence_tab": {
     "title": "📋 证据报告 — 不只是分数",
     "rebuilt_states": "从 {m} 条模拟日志重建了 {n} 个 agent 状态",
@@ -149,11 +154,22 @@
       "optimal_score": "得分最优",
       "elapsed": "耗时",
       "price_error": "价格格式错误。请用逗号分隔数字，例如: 1,3,6,9"
-    }
+    },
+    "product_survival": "产品方向生存预测",
+    "backtest_title": "回测因子过滤",
+    "coupling_title": "跨域耦合 & 小世界网络",
+    "coupling_desc": "市场情绪通过小世界网络每轮传播。负向情绪传播快2倍。≥3个同伴购买触发FOMO。",
+    "old_pipeline_warn2": "此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。",
+    "rebuilt": "从 {m} 条模拟日志重建了 {n} 个 agent 状态",
+    "buyers_label": "买家画像",
+    "buyer_details_only": "买家细节需模拟日志（新管道运行后可用）",
+    "risks_label": "风险信号",
+    "comps_label": "竞品对比",
+    "motivations_label": "购买动机",
+    "motivation_count": "购买动机 ({n} 条)"
   },
-
   "agents_tab": {
-    "title": "🤖 异质 Agent 群体",
+    "title": "异质 Agent 群体",
     "total": "Agent 总数",
     "type_distribution": "Agent 类型分布",
     "market_comparison": "📊 市场对比",
@@ -165,17 +181,19 @@
     "rl_stats": "RL 统计",
     "active_rounds": "活跃轮数",
     "final_strategies": "最终策略",
-    "no_agent_data": "无 agent 数据"
+    "no_agent_data": "无 agent 数据",
+    "total_label": "Agent 总数"
   },
-
   "graph_tab": {
     "title": "🕸️ Agent 社交网络",
     "caption": "{n} agents · 小世界网络",
     "bipartite_title": "📊 产品-买家 二分图",
     "graph_error": "图谱生成失败: {e}",
-    "no_agent_data": "无 agent 数据"
+    "no_agent_data": "无 agent 数据",
+    "caption2": "{n} agents · 小世界网络",
+    "no_agent_data2": "无 agent 数据",
+    "bipartite_error": "二分图暂不可用: {e}"
   },
-
   "chat_tab": {
     "title": "💬 和 Agent 对话",
     "desc": "选中一个 agent，用它的身份和你聊天",
@@ -186,18 +204,21 @@
     "your_message": "你的消息",
     "send": "发送",
     "chat_fail": "对话失败: {e}",
-    "select_agent": "请先选择一个 agent"
+    "select_agent": "请先选择一个 agent",
+    "select_first": "请先选择一个 agent",
+    "no_chat_agents": "无可对话的 agent — 请先运行管道",
+    "no_agent_data2": "无 agent 数据 — 请先运行管道",
+    "beliefs": "信念"
   },
-
   "network_tab": {
     "title": "🌐 网络拓扑 — Watts-Strogatz 小世界",
     "fully_connected": "全连接网络: 过早收敛, 杀死多样性",
     "ring": "环形网络: 扩散太慢, 保留多样性但无传播",
     "small_world": "小世界网络: 最优平衡 — 既保留多样性又有传播速度",
     "wrong": "✗",
-    "correct": "✓"
+    "correct": "✓",
+    "title2": "网络拓扑 — Watts-Strogatz 小世界"
   },
-
   "rl_tab": {
     "title": "🧠 经济对齐 RL — 策略自适应",
     "desc": "5 轴策略向量 (每个 Agent 独立学习)",
@@ -207,21 +228,20 @@
     "loyalty": "忠诚度 (低=容易流失)",
     "risk_tolerance": "风险承受力",
     "active_rl_rounds": "{market} 市场 ({rounds}/30 轮活跃)",
-    "b2c_vs_smb": "B2C 消费者 vs SMB 商家策略差异"
+    "b2c_vs_smb": "B2C 消费者 vs SMB 商家策略差异",
+    "active_rounds": "{market} 市场 ({rounds}/30 轮活跃)"
   },
-
   "raw_tab": {
     "title": "📋 完整 JSON 输出",
     "sim_log": "模拟日志",
     "download": "📥 下载完整结果 (JSON)",
-    "download_help": "保存完整管道输出供后续分析"
+    "download_help": "保存完整管道输出供后续分析",
+    "sim_log_title": "模拟日志"
   },
-
   "footer": {
     "tagline": "MarketFish v5 · 6篇论文 · 6 LLMs · Keystart AI 出品",
     "github": "GitHub"
   },
-
   "emotions": {
     "excited": "兴奋",
     "satisfied": "满意",
@@ -231,7 +251,6 @@
     "skeptical": "怀疑",
     "frustrated": "沮丧"
   },
-
   "status": {
     "alive": "存活",
     "struggling": "挣扎",
@@ -241,8 +260,22 @@
     "risky": "高风险",
     "fail": "不通过"
   },
-
   "sim_log": {
     "skipped": "无模拟日志数据"
+  },
+  "price_scanner": {
+    "title": "价格弹性扫描 — 找到最优定价",
+    "desc": "同一产品注入不同价格点，对比买家数/营收曲线，定位最优定价。",
+    "rounds_label": "每价格点模拟轮数",
+    "rounds_help": "轮数越少越快，但精度降低",
+    "scan_btn": "开始价格扫描",
+    "min_prices": "至少需要 2 个价格点",
+    "no_agents": "无 Agent 数据。请先运行管道。",
+    "price_error": "价格格式错误。请用逗号分隔数字，例如: 1,3,6,9",
+    "progress": "价格扫描中...",
+    "scanning": "扫描 {n} 个价格点，每点 {r} 轮...",
+    "optimal_revenue": "营收最优",
+    "optimal_score": "得分最优",
+    "elapsed": "耗时"
   }
 }

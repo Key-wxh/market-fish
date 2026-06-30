@@ -128,13 +128,13 @@ def load_seed_data(sources):
             with open(path, encoding='utf-8') as f:
                 seed[key] = json.load(f)
         except FileNotFoundError:
-            st.warning(f"种子数据缺失: {path}")
+            st.warning(t("pipeline.seed_missing", path=path))
     return seed
 
 seed = load_seed_data(tuple(seed_sources))
 
 if not seed:
-    st.error("没有可用的种子数据")
+    st.error(t("pipeline.no_seed"))
     st.stop()
 
 # ── KPI Bar ──
@@ -162,7 +162,7 @@ with st.expander(t("seed_transparency.title"), expanded=False):
     # File upload for custom seed data
     st.divider()
     st.caption(t("seed_transparency.upload_hint"))
-    uploaded_seed = st.file_uploader("上传种子 JSON (格式: {\"freelancer\": {...}, \"economy\": {...}, ...})",
+    uploaded_seed = st.file_uploader(t("seed_transparency.upload_label"),
                                       type=["json"], key="seed_uploader")
     if uploaded_seed is not None:
         try:
@@ -170,7 +170,7 @@ with st.expander(t("seed_transparency.title"), expanded=False):
             seed.update(custom)
             st.success(t("seed_transparency.merged", n=len(custom)))
         except Exception as e:
-            st.error(f"JSON 解析失败: {e}")
+            st.error(t("pipeline.json_error", e=str(e)))
 
 # ── Calibration Section ──
 with st.expander(t("calibration.title"), expanded=False):
@@ -194,14 +194,14 @@ with st.expander(t("calibration.title"), expanded=False):
 
     cal_col1, cal_col2 = st.columns([1, 3])
     with cal_col1:
-        cal_runs = st.selectbox("每案例跑几次", [1, 3, 5], index=1, help="多次取mode减少随机性")
-        cal_btn = st.button("🚀 运行校准", type="secondary", use_container_width=True,
+        cal_runs = st.selectbox(t("calibration.runs_label"), [1, 3, 5], index=1, help=t("calibration.runs_help"))
+        cal_btn = st.button(t("calibration.run_cal_btn"), type="secondary", use_container_width=True,
                            help=f"用{len(tested)}个已知产品验证管道。预计{len(tested)*cal_runs*5}分钟。不调LLM则用模拟基线。")
 
     if cal_btn:
         with cal_col2:
-            st.info("⏳ 校准功能已就绪。完整校准需调用 LLM，耗时较长。")
-            st.caption("以下为基线参考（无需 LLM）：")
+            st.info(t("calibration.ready_note"))
+            st.caption(t("calibration.baseline_note"))
 
         # Run keyword baseline (fast, no LLM)
         from engine.calibrate import baseline_keyword, baseline_random, analyze_patterns
@@ -222,14 +222,14 @@ with st.expander(t("calibration.title"), expanded=False):
             for f, d in patterns['factor_analysis'].items():
                 disc = d['discrimination']
                 bar = "█" * int(abs(disc) * 20) + ("░" * (20 - int(abs(disc) * 20)))
-                st.write(f"{f}: 成功{d['success_rate']:.0%} vs 失败{d['failure_rate']:.0%} (区分度 {disc:+.2f}) {bar}")
+                st.write(f"{f}: {t('calibration.success')} {d['success_rate']:.0%} vs {t('calibration.failure')} {d['failure_rate']:.0%} ({t('calibration.disc')} {disc:+.2f}) {bar}")
 
 # ── Main: Run Pipeline ──
 st.divider()
 
 run_col1, run_col2 = st.columns([1, 4])
 with run_col1:
-    run_btn = st.button("🚀 运行市场预测", type="primary", use_container_width=True)
+    run_btn = st.button(t("pipeline.btn"), type="primary", use_container_width=True)
 
 # Load last result for display when idle
 _last_result = None
@@ -256,11 +256,11 @@ if run_btn or _last_result:
         pipeline = Pipeline()
 
     progress_bars = {
-        "ontology": st.progress(0, "阶段 1/5: 本体生成..."),
-        "graph": st.progress(0, "阶段 2/5: 知识图谱..."),
-        "agents": st.progress(0, "阶段 3/5: Agent + 产品方向..."),
-        "simulation": st.progress(0, "阶段 4/5: 市场模拟 (耦合+RL)..."),
-        "report": st.progress(0, "阶段 5/5: 报告生成..."),
+        "ontology": st.progress(0, t("pipeline.stages.ontology")),
+        "graph": st.progress(0, t("pipeline.stages.graph")),
+        "agents": st.progress(0, t("pipeline.stages.agents")),
+        "simulation": st.progress(0, t("pipeline.stages.simulation")),
+        "report": st.progress(0, t("pipeline.stages.report")),
     }
 
     sim_log_placeholder = st.empty()
@@ -301,7 +301,7 @@ if run_btn or _last_result:
 
         if result.get("pipeline_status") == "complete":
             st.balloons()
-            st.success(f"🎉 管道完成！耗时 {elapsed:.0f} 秒 ({elapsed/60:.1f} 分钟)")
+            st.success(t("pipeline.complete_msg", elapsed=elapsed, elapsed_m=elapsed/60))
 
             # ═══════════════════════════════════════
             # RESULTS DASHBOARD
@@ -311,7 +311,7 @@ if run_btn or _last_result:
 
             # ── Tab 1: Product Predictions ──
             with tab1:
-                st.subheader("🎯 产品方向生存预测")
+                st.subheader(t("evidence_tab.product_survival"))
 
                 directions = result.get("product_directions", [])
                 sim_results_raw = result.get("final_report", {}).get("simulation_results", [])
@@ -358,7 +358,7 @@ if run_btn or _last_result:
                             st.plotly_chart(emotion_timeline(timeline_data), use_container_width=True, key="emotion_timeline")
 
                 # Backtest filter results
-                st.subheader("🔍 回测因子过滤")
+                st.subheader(t("evidence_tab.backtest_title"))
                 if directions:
                     bt_df = pd.DataFrame([
                         {"产品": d["name"][:25], "回测分": d.get("backtest_score", 0),
@@ -371,7 +371,7 @@ if run_btn or _last_result:
 
             # ── Tab 2: Evidence Report ──
             with tab2:
-                st.subheader("📋 证据报告 — 不只是分数")
+                st.subheader(t("evidence_tab.title"))
 
                 sim_results = result.get("final_report", {}).get("simulation_results", [])
                 sim_stage = result.get("stages", {}).get("simulation", {})
@@ -386,10 +386,10 @@ if run_btn or _last_result:
                     from engine.evidence_report import _rebuild_agent_states_from_log
                     agent_states = _rebuild_agent_states_from_log(result)
                     st.session_state.agent_states = agent_states
-                    st.caption(f"从 {len(sim_log)} 条模拟日志重建了 {len(agent_states)} 个 agent 状态")
+                    st.caption(t("evidence_tab.rebuilt", m=len(sim_log), n=len(agent_states)))
                 else:
-                    st.warning("⚠️ 此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。")
-                    st.caption("以下是基于汇总数据的有限分析：")
+                    st.warning(t("evidence_tab.old_pipeline_warn"))
+                    st.caption(t("evidence_tab.limited_analysis"))
 
                 if sim_results:
                     # Dedup products
@@ -419,15 +419,15 @@ if run_btn or _last_result:
 
                                 c1, c2 = st.columns(2)
                                 with c1:
-                                    st.write("**买家画像**")
+                                    st.write(t("evidence_tab.buyers_label"))
                                     if buyer["total_buyers"] > 0:
                                         st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True, key="buyer_donut")
                                     else:
-                                        st.write("买家细节需模拟日志（新管道运行后可用）")
+                                        st.write(t("evidence_tab.buyer_details_only"))
                                         st.write(f"买家总数: {p.get('purchasers', 0)}")
                                         st.write(f"营收: ¥{p.get('total_revenue_cny', 0)}")
 
-                                    st.write("**风险信号**")
+                                    st.write(t("evidence_tab.risks_label"))
                                     for r in risks:
                                         level_color = {"low": "green", "medium": "orange", "high": "red"}
                                         st.markdown(f":{level_color.get(r['level'],'gray')}[{r['signal']}] — {r['detail']}")
@@ -438,7 +438,7 @@ if run_btn or _last_result:
                                     if rl_data:
                                         st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_evidence")
 
-                                    st.write("**竞品对比**")
+                                    st.write(t("evidence_tab.comps_label"))
                                     for c in comps:
                                         icon = "🟢" if c["status"] == "alive" else "🔴"
                                         death = f" — {c['death_cause']}" if c.get("death_cause") else ""
@@ -448,40 +448,40 @@ if run_btn or _last_result:
                                     if sim_log:
                                         reasons = extract_purchase_reasons(p.get('product_id',''), agent_states)
                                         if reasons:
-                                            st.write(f"**购买动机** ({len(reasons)} 条)")
+                                            st.write(t("evidence_tab.motivation_count", n=len(reasons)))
                                             for r in reasons[:5]:
                                                 st.caption(f"\"{r['reasoning'][:80]}\"")
 
                             except Exception as e:
-                                st.caption(f"证据提取受限: {e}")
+                                st.caption(t("evidence_tab.evidence_error", e=str(e)))
 
                         # ── Price Elasticity Scanner ──
-                        with st.expander("💰 价格弹性扫描 — 找到最优定价", expanded=False):
-                            st.caption("同一产品注入不同价格点，对比买家数/营收曲线，定位最优定价。")
+                        with st.expander(t("price_scanner.title"), expanded=False):
+                            st.caption(t("price_scanner.desc"))
                             price_input = st.text_input("价格点 (逗号分隔)", "1,3,6,9,12,18,30",
                                 help="例如: 1,3,6,9,12,18,30", key=f"price_input_{pname}")
-                            scan_rounds = st.slider("每价格点模拟轮数", 10, 30, 15,
-                                help="轮数越少越快，但精度降低", key=f"scan_rounds_{pname}")
+                            scan_rounds = st.slider(t("price_scanner.rounds_label"), 10, 30, 15,
+                                help=t("price_scanner.rounds_help"), key=f"scan_rounds_{pname}")
 
-                            if st.button("🔍 开始价格扫描", key=f"scan_btn_{pname}", type="primary"):
+                            if st.button(t("price_scanner.scan_btn"), key=f"scan_btn_{pname}", type="primary"):
                                 try:
                                     prices = [float(x.strip()) for x in price_input.replace("¥","").split(",") if x.strip()]
                                     if len(prices) < 2:
-                                        st.error("至少需要 2 个价格点")
+                                        st.error(t("price_scanner.min_prices"))
                                     else:
                                         from engine.price_scanner import scan_price_elasticity, build_elasticity_chart
                                         scan_agents = result.get("stages", {}).get("agents", {}).get("agents",
                                                         result.get("stages", {}).get("agents_v2", {}).get("agents", []))
                                         if not scan_agents:
-                                            st.error("无 Agent 数据。请先运行管道。")
+                                            st.error(t("price_scanner.no_agents"))
                                         else:
                                             status_text = st.empty()
-                                            progress = st.progress(0, "价格扫描中...")
+                                            progress = st.progress(0, t("price_scanner.progress"))
                                             def update_prog(i, total):
                                                 progress.progress(i / total, f"扫描 ¥{prices[i-1]} ({i}/{total})...")
                                                 status_text.caption(f"已完成 {i}/{total} 个价格点")
 
-                                            with st.spinner(f"扫描 {len(prices)} 个价格点，每点 {scan_rounds} 轮..."):
+                                            with st.spinner(t("price_scanner.scanning", n=len(prices), r=scan_rounds)):
                                                 for pname2, pdata in seen.items():
                                                     # Find original product from product_directions
                                                     prod_template = None
@@ -515,19 +515,19 @@ if run_btn or _last_result:
                                                     st.success(scan_result["recommendation"])
                                                     break  # Only scan first product
                                 except ValueError:
-                                    st.error("价格格式错误。请用逗号分隔数字，例如: 1,3,6,9")
+                                    st.error(t("price_scanner.price_error"))
 
                 else:
-                    st.info("无模拟结果数据")
+                    st.info(t("evidence_tab.no_sim_data"))
 
             # ── Tab 3: Agent Overview ──
             with tab3:
-                st.subheader("🤖 异质 Agent 群体")
+                st.subheader(t("agents_tab.title"))
 
                 stages = result.get("stages", {})
                 agents_list3 = stages.get("agents_v2", {}).get("agents", [])
                 agent_count = stages.get("agents_v2", {}).get("count", len(agents_list3))
-                st.metric("Agent 总数", agent_count)
+                st.metric(t("agents_tab.total_label"), agent_count)
 
                 # Agent type distribution (Plotly)
                 if agents_list3:
@@ -543,23 +543,23 @@ if run_btn or _last_result:
                     st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_overview")
 
                 if coupling_data:
-                    st.subheader("📊 市场对比")
+                    st.subheader(t("agents_tab.market_comparison"))
                     for market, data in coupling_data.items():
                         rl_market = rl_data.get(market, {})
                         with st.expander(f"{market.upper()} 市场 — 情绪: {data.get('final_sentiment', 0):.3f} | {rl_market.get('final_strategies_count', 0)} RL agents"):
                             col_a, col_b = st.columns(2)
                             with col_a:
-                                st.write("**耦合统计**")
+                                st.write(t("agents_tab.coupling_stats"))
                                 st.write(f"轮数: {data.get('rounds', '?')}")
                                 st.write(f"最终情绪: {data.get('final_sentiment', '?')}")
                             with col_b:
-                                st.write("**RL 统计**")
+                                st.write(t("agents_tab.rl_stats"))
                                 st.write(f"活跃轮数: {rl_market.get('rounds_with_updates', '?')}/30")
                                 st.write(f"最终策略: {rl_market.get('avg_final_strategies', {})}")
 
             # ── Tab 4: Agent Graph ──
             with tab4:
-                st.subheader("🕸️ Agent 社交网络")
+                st.subheader(t("graph_tab.title"))
 
                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
                 if agents_list:
@@ -567,27 +567,27 @@ if run_btn or _last_result:
                         from engine.network_viz import build_agent_graph_html
                         graph_html = build_agent_graph_html(agents_list, height="550px", title="")
                         st.components.v1.html(graph_html, height=580, scrolling=False)
-                        st.caption(f"{len(agents_list)} agents · 小世界网络")
+                        st.caption(t("graph_tab.caption2", n=len(agents_list)))
                     except Exception as e:
-                        st.warning(f"图谱生成失败: {e}")
+                        st.warning(t("graph_tab.graph_error", e=str(e)))
                 else:
-                    st.info("无 agent 数据")
+                    st.info(t("graph_tab.no_agent_data2"))
 
                 # Bipartite graph
                 sim_results = result.get("final_report", {}).get("simulation_results", [])
                 if sim_results:
-                    st.subheader("📊 产品-买家 二分图")
+                    st.subheader(t("graph_tab.bipartite_title"))
                     try:
                         from engine.network_viz import build_bipartite_graph_html
                         bp_html = build_bipartite_graph_html(sim_results, st.session_state.get("agent_states", {}), agents_list, height="500px")
                         st.components.v1.html(bp_html, height=530, scrolling=False)
                     except Exception as e:
-                        st.caption(f"二分图暂不可用: {e}")
+                        st.caption(t("graph_tab.bipartite_error", e=str(e)))
 
             # ── Tab 5: Agent Dialogue ──
             with tab5:
-                st.subheader("💬 和 Agent 对话")
-                st.caption(f"选中一个 agent，用它的身份和你聊天")
+                st.subheader(t("chat_tab.title"))
+                st.caption(ft("chat_tab.desc"))
 
                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
                 sim_stage_data = result.get("stages", {}).get("simulation", {})
@@ -602,7 +602,7 @@ if run_btn or _last_result:
 
                     from engine.agent_dialogue import list_chatable_agents
                     chatable = list_chatable_agents(agents_list, agent_states, min_history=0)
-                    st.caption(f"共 {len(agents_list)} 个 agent，{len(chatable)} 个有模拟记录")
+                    st.caption(t("chat_tab.total", total=len(agents_list), active=len(chatable)))
 
                     # Show all agents with history first, then type filter
                     filter_type = st.selectbox("筛选类型", ["全部"] + sorted(set(a.get("type","unknown") for a in chatable)), key="dialogue_filter")
@@ -636,7 +636,7 @@ if run_btn or _last_result:
                                       f"预算: ¥{agent_profile.get('budget_monthly_cny','?')} | "
                                       f"决策: {agent_profile.get('decision_speed','?')}")
                             if bdi.get("beliefs"):
-                                st.caption(f"信念: {', '.join(bdi['beliefs'][:2])}")
+                                st.caption(f"{t('chat_tab.beliefs')}: {', '.join(bdi['beliefs'][:2])}")
 
                         user_msg = st.text_input("你的消息", placeholder="你为什么会买这个产品？", key="chat_input")
 
@@ -661,7 +661,7 @@ if run_btn or _last_result:
                                     st.session_state.dialogue_history[selected_id].append(
                                         {"role": "agent", "content": reply})
                                 except Exception as e:
-                                    st.error(f"对话失败: {e}")
+                                    st.error(t("chat_tab.chat_fail", e=str(e)))
 
                         # Show chat history
                         if selected_id in st.session_state.dialogue_history:
@@ -671,13 +671,13 @@ if run_btn or _last_result:
                                 else:
                                     st.markdown(f"**{agent_profile.get('name', 'Agent')}:** {msg['content']}")
                     else:
-                        st.info("无可对话的 agent — 请先运行管道")
+                        st.info(t("chat_tab.no_chat_agents"))
                 else:
-                    st.info("无 agent 数据 — 请先运行管道")
+                    st.info(t("chat_tab.no_agent_data2"))
 
             # ── Tab 6: Coupling & Network ──
             with tab6:
-                st.subheader("🕸️ 跨域耦合 & 小世界网络")
+                st.subheader(t("evidence_tab.coupling_title"))
 
                 # Sentiment timeline
                 sim_stage = stages.get("simulation", {})
@@ -691,18 +691,18 @@ if run_btn or _last_result:
 
                 # Show sentiment over rounds if we have timeline data
                 # (timeline is per-market in the sim_result, not in pipeline output)
-                st.info("📈 市场情绪通过小世界网络每轮传播\n"
+                st.info(t("evidence_tab.coupling_desc") + "\n"
                         "• 负向情绪传播速度 2x (negativity bias)\n"
                         "• FOMO 触发: 3+ 同伴购买 → +25% 购买概率\n"
                         "• 情绪影响支付意愿: 兴奋 +30%, 沮丧 -50%")
 
                 # Network stats
-                st.subheader("🌐 网络拓扑 — Watts-Strogatz 小世界")
+                st.subheader(t("network_tab.title2"))
                 st.markdown("""
                 ```
-                全连接网络: 过早收敛, 杀死多样性 ✗
-                环形网络:   扩散太慢, 保留多样性但无传播 ✗
-                小世界网络: 最优平衡 — 既保留多样性又有传播速度 ✓
+                t("network_tab.fully_connected") ✗
+                t("network_tab.ring") ✗
+                t("network_tab.small_world") ✓
                 ```
                 """)
 
@@ -716,7 +716,7 @@ if run_btn or _last_result:
 
             # ── Tab 7: RL Strategy ──
             with tab7:
-                st.subheader("🧠 经济对齐 RL — 策略自适应")
+                st.subheader(t("rl_tab.title"))
 
                 st.markdown("""
                 **5 轴策略向量** (每个 Agent 独立学习):
@@ -734,9 +734,9 @@ if run_btn or _last_result:
                 for market, data in rl_data.items():
                     strategies = data.get('avg_final_strategies', {})
                     if strategies:
-                        st.subheader(f"{market.upper()} 市场 ({data['rounds_with_updates']}/30 轮活跃)")
+                        st.subheader(t("rl_tab.active_rounds", market=market.upper(), rounds=data["rounds_with_updates"]))
                         # B2C vs SMB comparison text
-                        st.caption("B2C 消费者 vs SMB 商家策略差异:")
+                        st.caption(t("rl_tab.b2c_vs_smb"))
                         if "b2c" in rl_data and "smb" in rl_data:
                             b2c_strat = rl_data["b2c"].get("avg_final_strategies", {})
                             smb_strat = rl_data["smb"].get("avg_final_strategies", {})
@@ -746,14 +746,14 @@ if run_btn or _last_result:
                                     "B2C 消费者": list(b2c_strat.values()),
                                     "SMB 商家": list(smb_strat.values()),
                                 })
-                                st.dataframe(compare_df.set_index("维度"), use_container_width=True)
+                                st.dataframe(compare_df.set_index(t("rl_tab.dimension") if False else "维度"), use_container_width=True)
 
             # ── Tab 8: Raw Data ──
             with tab8:
-                st.subheader("📋 完整 JSON 输出")
+                st.subheader(t("raw_tab.title"))
                 st.json(result.get("final_report", {}).get("synthesis", {}))
 
-                st.subheader("模拟日志")
+                st.subheader(t("raw_tab.sim_log_title"))
                 st.code("\n".join(sim_lines[-50:]), language="text")
 
                 st.download_button(
@@ -770,12 +770,12 @@ if run_btn or _last_result:
     except Exception as e:
         if run_btn:
             builtins.print = original_print
-        st.error(f"💥 致命错误: {e}")
+        st.error(t("pipeline.error", e=str(e)))
         import traceback
         st.code(traceback.format_exc())
 
 else:
-        st.info("👆 点击「🚀 运行市场预测」启动全管道。")
+        st.info(t("pipeline.load_hint2"))
 
 # ── Footer ──
 st.divider()
