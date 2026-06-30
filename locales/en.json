@@ -276,6 +276,8 @@
     "scanning": "Scanning {n} price points, {r} rounds each...",
     "optimal_revenue": "Optimal Revenue",
     "optimal_score": "Optimal Score",
-    "elapsed": "Elapsed"
+    "elapsed": "Elapsed",
+    "done": "{done}/{total} price points done",
+    "price_input": "Price Points (comma-separated)"
   }
 }

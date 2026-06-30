@@ -65,7 +65,7 @@ with st.sidebar:
 
     st.subheader(t("sidebar.input_mode"))
     input_mode = st.radio("", ["explore", "validate", "hybrid"],
-                          format_func=lambda m: {"explore": "🔍 探索", "validate": "✅ 验证", "hybrid": "⚔️ 混合"}[m])
+                          format_func=lambda m: {"explore": t("sidebar.explore"), "validate": t("sidebar.validate"), "hybrid": t("sidebar.hybrid")}[m])
 
     user_product = None
     if input_mode in ("validate", "hybrid"):
@@ -142,7 +142,7 @@ from engine.config import agent_batches
 AGENT_BATCHES = agent_batches()
 total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
-col1.metric("Mode", {"explore": "探索", "validate": "验证", "hybrid": "混合"}[input_mode])
+col1.metric(t("kpi.mode"), {"explore": t("sidebar.explore"), "validate": t("sidebar.validate"), "hybrid": t("sidebar.hybrid")}[input_mode])
 col2.metric("Target Agents", str(total_agent_target), f"{len(AGENT_BATCHES)} batches")
 col3.metric("Sim Rounds", str(sim_rounds))
 col4.metric("Seed Sources", str(len(seed)))
@@ -214,7 +214,7 @@ with st.expander(t("calibration.title"), expanded=False):
         patterns = analyze_patterns(cases)
 
         r1, r2, r3 = st.columns(3)
-        r1.metric("关键词基线准确率", f"{kw_correct}/{len(tested)} ({kw_correct/len(tested):.0%})")
+        r1.metric(t("calibration.keyword_acc"), f"{kw_correct}/{len(tested)} ({kw_correct/len(tested):.0%})")
         r2.metric(t("calibration.random_accuracy"), "50%")
         r3.metric(t("calibration.sim_estimate"), f"~{len(tested)*cal_runs*5}min")
 
@@ -479,7 +479,7 @@ if run_btn or _last_result:
                                             progress = st.progress(0, t("price_scanner.progress"))
                                             def update_prog(i, total):
                                                 progress.progress(i / total, f"扫描 ¥{prices[i-1]} ({i}/{total})...")
-                                                status_text.caption(f"已完成 {i}/{total} 个价格点")
+                                                status_text.caption(t("price_scanner.done", done=i, total=total))
 
                                             with st.spinner(t("price_scanner.scanning", n=len(prices), r=scan_rounds)):
                                                 for pname2, pdata in seen.items():
@@ -509,9 +509,9 @@ if run_btn or _last_result:
 
                                                     # Summary table
                                                     cols = st.columns(3)
-                                                    cols[0].metric("营收最优", f"¥{scan_result['optimal_price_by_revenue']}")
-                                                    cols[1].metric("得分最优", f"¥{scan_result['optimal_price_by_score']}")
-                                                    cols[2].metric("耗时", f"{scan_result['elapsed_seconds']}s")
+                                                    cols[0].metric(t("price_scanner.optimal_revenue"), f"¥{scan_result['optimal_price_by_revenue']}")
+                                                    cols[1].metric(t("price_scanner.optimal_score"), f"¥{scan_result['optimal_price_by_score']}")
+                                                    cols[2].metric(t("price_scanner.elapsed"), f"{scan_result['elapsed_seconds']}s")
                                                     st.success(scan_result["recommendation"])
                                                     break  # Only scan first product
                                 except ValueError:
@@ -587,7 +587,7 @@ if run_btn or _last_result:
             # ── Tab 5: Agent Dialogue ──
             with tab5:
                 st.subheader(t("chat_tab.title"))
-                st.caption(ft("chat_tab.desc"))
+                st.caption(t("chat_tab.desc"))
 
                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
                 sim_stage_data = result.get("stages", {}).get("simulation", {})

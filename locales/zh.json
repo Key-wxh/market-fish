@@ -276,6 +276,8 @@
     "scanning": "扫描 {n} 个价格点，每点 {r} 轮...",
     "optimal_revenue": "营收最优",
     "optimal_score": "得分最优",
-    "elapsed": "耗时"
+    "elapsed": "耗时",
+    "done": "已完成 {done}/{total} 个价格点",
+    "price_input": "价格点 (逗号分隔)"
   }
 }
