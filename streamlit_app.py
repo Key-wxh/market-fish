@@ -337,8 +337,8 @@ if run_btn or _last_result:
                         emoji = "🟢" if status == "alive" else ("🟡" if status == "struggling" else "🔴")
                         st.metric(
                             f"{emoji} {r['product_name'][:25]}",
-                            f"Score: {r['survival_score']:.2f}",
-                            f"Buyers: {r['purchasers']} | Rev: ¥{r['total_revenue_cny']}",
+                            f"{t('status.score')}: {r['survival_score']:.2f}",
+                            f"{t('status.buyers')}: {r['purchasers']} | {t('status.rev')}: ¥{r['total_revenue_cny']}",
                         )
 
                 # Plotly charts

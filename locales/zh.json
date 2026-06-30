@@ -322,7 +322,10 @@
     "untested": "未验证",
     "promising": "有希望",
     "risky": "高风险",
-    "fail": "不通过"
+    "fail": "不通过",
+    "score": "分数",
+    "buyers": "买家",
+    "rev": "营收"
   },
   "sim_log": {
     "skipped": "无模拟日志数据"

@@ -322,7 +322,10 @@
     "untested": "Untested",
     "promising": "Promising",
     "risky": "Risky",
-    "fail": "Fail"
+    "fail": "Fail",
+    "score": "Score",
+    "buyers": "Buyers",
+    "rev": "Rev"
   },
   "sim_log": {
     "skipped": "No simulation log data available"
