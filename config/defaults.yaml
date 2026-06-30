@@ -220,70 +220,222 @@ domain:
 
 # Calibration cases — known products for validation
 calibration_cases:
+  # ═══════════════════════════════════════════
+  # SUCCESS cases (consumer B2C — 8 cases)
+  # ═══════════════════════════════════════════
   - id: demumu
     name: 死了么 (Demumu)
-    description: "签到打卡→没签到就通知紧急联系人。极简：打开app点一下。恐惧驱动：怕死了没人知道。社交分享：每天签到的仪式感。"
+    description: "每日签到打卡→连续2天未签就通知紧急联系人。极简：打开app点一下。恐惧驱动：独居怕出事没人知道。"
     category: consumer_app
     target_market: consumer
-    pricing: "¥1-8 一次性"
-    dev_cost: "$1500"
+    pricing: "¥8 一次性"
     outcome: success
-    evidence: 4天冲到付费榜#1, 60+投资人主动联系, 1500美元开发成本
+    evidence: "2026.1 中国App Store付费榜#1, 60+投资人主动联系, 开发成本仅¥1500, 估值数千万"
     factors: [dead_simple_ux, solves_real_fear, social_sharing, consumer_b2c]
 
   - id: kitten_light
     name: 小猫补光灯
-    description: 拍照补光工具。极简：打开就是补光灯，没别的功能。1小时开发完成。
+    description: "拍照补光工具。打开就是补光灯，没别的功能。1小时开发完成。"
     category: consumer_app
     target_market: consumer
-    pricing: 免费
-    dev_cost: 1小时开发
+    pricing: "¥1 一次性"
     outcome: success
-    evidence: 当天冲上付费榜#1, 1小时开发时间
-    factors: [dead_simple_ux, consumer_b2c, social_sharing]
+    evidence: "当天冲上付费榜#1, 1小时开发时间, 零营销成本"
+    factors: [dead_simple_ux, consumer_b2c]
 
   - id: pingo
     name: Pingo
-    description: "语言学习+吐槽模式。Freemium: 免费病毒传播→$9.99/月付费。300万用户, $50万/月收入, 0广告费。"
+    description: "AI语言学习App，带吐槽模式。Freemium: 免费病毒传播→$9.99/月付费。TikTok有机增长。"
     category: consumer_app
     target_market: consumer
-    pricing: "freemium -> $9.99/mo"
-    dev_cost: unknown
+    pricing: "freemium → $9.99/月"
     outcome: success
-    evidence: "300万用户, $500K/月收入, 零广告获取用户"
+    evidence: "300万用户, $500K/月收入, 零广告费, 全靠TikTok自然传播"
     factors: [social_sharing, consumer_b2c, solves_real_fear]
 
-  - id: geoyi
-    name: GEO易
-    description: "B2B AI可见度监测SaaS。需要解释什么是GEO、为什么重要。¥99-1299/月订阅。223次检测0付费。"
+  - id: calorie_snap
+    name: 卡路里拍照计算 (Cal AI)
+    description: "拍照识别食物→计算卡路里。AI视觉+营养数据库。青少年独立开发。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "freemium"
+    outcome: success
+    evidence: "17岁开发者, 年收入$30M, 2年做到"
+    factors: [dead_simple_ux, solves_real_fear, consumer_b2c]
+
+  - id: loom
+    name: Loom
+    description: "一键录屏+语音解说，即时生成分享链接。替代长邮件和会议。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "freemium → $12.5/月"
+    outcome: success
+    evidence: "2023年被Atlassian以$975M收购, 1400万用户, 极简录屏分享"
+    factors: [dead_simple_ux, social_sharing, consumer_b2c]
+
+  - id: calm
+    name: Calm
+    description: "冥想和睡眠App。解决焦虑和失眠恐惧。订阅制。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "$69.99/年"
+    outcome: success
+    evidence: "估值$2B, 400万付费用户, 睡眠故事是killer feature"
+    factors: [solves_real_fear, consumer_b2c]
+
+  - id: duolingo
+    name: Duolingo
+    description: "游戏化语言学习App。免费+广告/付费。每日打卡机制。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "freemium → $6.99/月"
+    outcome: success
+    evidence: "上市市值$10B+, 5亿+下载, 日活3000万, 社交排行榜+打卡机制"
+    factors: [social_sharing, consumer_b2c, dead_simple_ux]
+
+  - id: controol
+    name: Controol
+    description: "Mac窗口管理器。一键整理桌面窗口布局。极简：拖拽→自动排列。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "¥68 一次性"
+    outcome: success
+    evidence: "Product Hunt Top 5, 独立开发者单人完成, 月入$5K+"
+    factors: [dead_simple_ux, consumer_b2c]
+
+  # ═══════════════════════════════════════════
+  # SUCCESS cases (B2B/SMB — 3 cases)
+  # ═══════════════════════════════════════════
+  - id: notion
+    name: Notion
+    description: "All-in-one 笔记+项目管理+数据库。个人免费→团队付费。"
+    category: B2B_saas
+    target_market: smb
+    pricing: "freemium → $10/月/人"
+    outcome: success
+    evidence: "估值$10B, 1亿用户, 从个人消费者渗透到企业"
+    factors: [social_sharing, dead_simple_ux]
+
+  - id: hoverify
+    name: Hoverify
+    description: "浏览器开发工具合集。CSS检查+截图+颜色提取。Chrome扩展。"
+    category: browser_extension
+    target_market: smb
+    pricing: "$24 一次性"
+    outcome: success
+    evidence: "单人开发者, $2K MRR, Product Hunt #1 of the week"
+    factors: [dead_simple_ux, consumer_b2c]
+
+  - id: stripe_atlas
+    name: Stripe Atlas
+    description: "一键注册美国公司+银行账户。面向全球创业者。API-first。"
+    category: B2B_saas
+    target_market: smb
+    pricing: "$500 一次性"
+    outcome: success
+    evidence: "Stripe 旗下, 数万公司通过其注册, 解决跨境创业最大痛点"
+    factors: [dead_simple_ux, solves_real_fear]
+
+  # ═══════════════════════════════════════════
+  # FAILURE cases (consumer — 4 cases)
+  # ═══════════════════════════════════════════
+  - id: panels_mkbhd
+    name: Panels (MKBHD 壁纸App)
+    description: "付费壁纸订阅App。$50/年 或 $12/月。MKBHD (2000万粉丝) 背书。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "$50/年 订阅"
+    outcome: failure
+    evidence: "2025.12 关闭。仅90万下载, $95K收入。消费者不愿为壁纸付费。隐私争议。"
+    factors: [high_price_monthly, complex_ux]
+
+  - id: koo
+    name: Koo (印度微博)
+    description: "多语言Twitter替代品。主打印度市场。需要解释为什么不用Twitter。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "免费+广告"
+    outcome: failure
+    evidence: "2024.7 关闭。未建立差异化, 融资失败, 用户流失回Twitter"
+    factors: [requires_onboarding]
+
+  - id: flip_shopping
+    name: Flip (社交购物)
+    description: "TikTok式短视频购物App。$230M融资, $1.1B估值。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "免费+佣金"
+    outcome: failure
+    evidence: "2025.8 关闭。获客成本过高, 美国社交购物不成熟, 烧完融资"
+    factors: [requires_onboarding]
+
+  - id: zing_food
+    name: Zing Food (10分钟送餐)
+    description: "10分钟极速送餐。自建暗厨房+骑手。主打鲜食。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "免费配送+餐费"
+    outcome: failure
+    evidence: "2025中关闭。重资产模式烧钱, 用户宁愿等30分钟吃自己喜欢的店"
+    factors: [complex_ux]
+
+  # ═══════════════════════════════════════════
+  # FAILURE cases (B2B/SMB — 2 cases)
+  # ═══════════════════════════════════════════
+  - id: b2b_saas_x
+    name: 某B2B AI监测SaaS (匿名)
+    description: "AI品牌可见度监测。需解释GEO概念。¥99-1299/月订阅。需onboarding培训。"
     category: B2B_saas
     target_market: smb
     pricing: "¥99-1299/月 订阅"
-    dev_cost: 3个月开发
     outcome: failure
-    evidence: "223次检测, 0付费转化"
+    evidence: "200+次检测, 0付费转化。B2B订阅+需教育市场+抽象概念=三重debuff"
     factors: [b2b_subscription, requires_onboarding, high_price_monthly]
 
-  - id: anfang_tool
-    name: 安防报价+布线工具
-    description: 安防行业专用的报价计算+布线图生成SaaS。需要行业知识。B2B。
+  - id: industry_saas_y
+    name: 某行业垂直SaaS (匿名)
+    description: "行业专用工具SaaS。需要深厚行业知识。B2B订阅。MVP2周后停止。"
     category: B2B_saas
     target_market: smb
-    pricing: 订阅制
-    dev_cost: 2周MVP
+    pricing: "订阅制"
     outcome: failure
-    evidence: 缺乏行业知识, 拍脑袋做的, CEO叫停
+    evidence: "缺乏行业知识, 拍脑袋决定, 未找到PMF即停止开发"
     factors: [b2b_subscription, requires_onboarding, complex_ux]
 
+  # ═══════════════════════════════════════════
+  # FAILURE cases (enterprise/other — 2 cases)
+  # ═══════════════════════════════════════════
+  - id: zing_bank
+    name: HSBC Zing (银行支付App)
+    description: "汇丰银行推出的消费者支付App, 对标Revolut/Wise。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "免费"
+    outcome: failure
+    evidence: "2025.1 关闭。仅8000月活, 无法差异化, 大银行创新失败"
+    factors: [requires_onboarding]
+
+  - id: blip_fashion
+    name: Blip (30分钟快时尚)
+    description: "30分钟送达的快时尚电商。自建仓储+配送。印度班加罗尔。"
+    category: consumer_app
+    target_market: consumer
+    pricing: "免费配送+商品费"
+    outcome: failure
+    evidence: "2025.7 关闭。零融资, 重资产烧钱, 无法规模化"
+    factors: [complex_ux]
+
+  # ═══════════════════════════════════════════
+  # UNTESTED (1 case)
+  # ═══════════════════════════════════════════
   - id: mizhou_translate
     name: 蜜洲翻译
-    description: 极简翻译工具 - 复制文本自动弹出翻译。不做B2B, 不做订阅。微信小程序。
+    description: "极简翻译工具 - 复制文本自动弹出翻译。微信小程序。一次性付费。"
     category: mini_program
     target_market: consumer
-    pricing: "一次性 ¥3-6"
-    dev_cost: "估计 ¥5000"
+    pricing: "¥3-6 一次性"
     outcome: untested
-    evidence: 还未验证 — 待校准
+    evidence: "未开发 — 待校准验证"
     factors: [dead_simple_ux, consumer_b2c]
 
 # Agent batch definitions

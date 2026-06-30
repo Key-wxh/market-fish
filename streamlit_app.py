@@ -108,6 +108,58 @@ col3.metric("Sim Rounds", "30")
 col4.metric("Seed Sources", str(len(seed)))
 col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
 
+# ── Calibration Section ──
+with st.expander("🧪 校准验证 — 20个已知产品验证准确率", expanded=False):
+    st.caption("用已知成败的外部产品独立验证管道预测能力。方向性验证（非统计显著性）。")
+
+    from engine.config import calibration_cases
+    cases = calibration_cases()
+    tested = [c for c in cases if c['outcome'] != 'untested']
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("案例总数", len(cases))
+    c2.metric("成功", sum(1 for c in cases if c['outcome'] == 'success'))
+    c3.metric("失败", sum(1 for c in cases if c['outcome'] == 'failure'))
+    c4.metric("预计耗时", f"~{len(tested) * 5}min")
+
+    with st.expander("📋 查看全部案例", expanded=False):
+        for c in cases:
+            icon = "🟢" if c['outcome'] == 'success' else ("🔴" if c['outcome'] == 'failure' else "⚪")
+            source = "公开" if not c['name'].startswith('某') else "脱敏"
+            st.caption(f"{icon} {c['name'][:40]} | {c['target_market']} | {c['pricing'][:25]} | {source} · {c.get('evidence','')[:60]}")
+
+    cal_col1, cal_col2 = st.columns([1, 3])
+    with cal_col1:
+        cal_runs = st.selectbox("每案例跑几次", [1, 3, 5], index=1, help="多次取mode减少随机性")
+        cal_btn = st.button("🚀 运行校准", type="secondary", use_container_width=True,
+                           help=f"用{len(tested)}个已知产品验证管道。预计{len(tested)*cal_runs*5}分钟。不调LLM则用模拟基线。")
+
+    if cal_btn:
+        with cal_col2:
+            st.info("⏳ 校准功能已就绪。完整校准需调用 LLM，耗时较长。")
+            st.caption("以下为基线参考（无需 LLM）：")
+
+        # Run keyword baseline (fast, no LLM)
+        from engine.calibrate import baseline_keyword, baseline_random, analyze_patterns
+        kw_correct = 0
+        for c in tested:
+            kw = baseline_keyword(c)
+            if kw['predicted'] == c['outcome']:
+                kw_correct += 1
+
+        patterns = analyze_patterns(cases)
+
+        r1, r2, r3 = st.columns(3)
+        r1.metric("关键词基线准确率", f"{kw_correct}/{len(tested)} ({kw_correct/len(tested):.0%})")
+        r2.metric("随机基线准确率", "50%")
+        r3.metric("模拟需跑管道", f"~{len(tested)*cal_runs*5}min")
+
+        with st.expander("📊 因子分析 (来自20案例)", expanded=False):
+            for f, d in patterns['factor_analysis'].items():
+                disc = d['discrimination']
+                bar = "█" * int(abs(disc) * 20) + ("░" * (20 - int(abs(disc) * 20)))
+                st.write(f"{f}: 成功{d['success_rate']:.0%} vs 失败{d['failure_rate']:.0%} (区分度 {disc:+.2f}) {bar}")
+
 # ── Main: Run Pipeline ──
 st.divider()
 

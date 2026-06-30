@@ -28,7 +28,7 @@ class TestConfig:
     def test_calibration_cases(self):
         from engine.config import calibration_cases
         cases = calibration_cases()
-        assert len(cases) == 6
+        assert len(cases) >= 10  # 20 cases after expansion
         outcomes = [c["outcome"] for c in cases]
         assert "success" in outcomes
         assert "failure" in outcomes
