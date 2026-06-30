@@ -459,7 +459,7 @@ if run_btn or _last_result:
             # ── Tab 5: Agent Dialogue ──
             with tab5:
                 st.subheader("💬 和 Agent 对话")
-                st.caption("选中一个 agent，用它的身份和你聊天")
+                st.caption(f"选中一个 agent，用它的身份和你聊天")
 
                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
                 sim_stage_data = result.get("stages", {}).get("simulation", {})
@@ -474,7 +474,19 @@ if run_btn or _last_result:
 
                     from engine.agent_dialogue import list_chatable_agents
                     chatable = list_chatable_agents(agents_list, agent_states, min_history=0)
-                    agent_options = {f"{a['name'][:20]} ({a['type']})" : a["id"] for a in chatable[:30]}
+                    st.caption(f"共 {len(agents_list)} 个 agent，{len(chatable)} 个有模拟记录")
+
+                    # Show all agents with history first, then type filter
+                    filter_type = st.selectbox("筛选类型", ["全部"] + sorted(set(a.get("type","unknown") for a in chatable)), key="dialogue_filter")
+                    if filter_type != "全部":
+                        chatable = [a for a in chatable if a["type"] == filter_type]
+
+                    agent_options = {}
+                    for a in chatable:
+                        label = f"{a['name'][:20]} ({a['type']})"
+                        if a['purchases'] > 0:
+                            label += f" 🛒{a['purchases']}"
+                        agent_options[label] = a["id"]
 
                     if agent_options:
                         # Session state for chat history
