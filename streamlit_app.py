@@ -13,6 +13,7 @@ load_dotenv()
 
 import streamlit as st
 import pandas as pd
+from engine.i18n import T, tabs as i18n_tabs, set_lang
 
 st.set_page_config(
     page_title="MarketFish v5 — 市场预测引擎",
@@ -45,16 +46,25 @@ st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Net
 
 # ── Sidebar ──
 with st.sidebar:
-    st.header("⚙️ 配置")
+    # Language toggle
+    lang_choice = st.radio("", ["🇨🇳 中文", "🇺🇸 English"],
+                           index=0 if st.session_state.lang == "zh" else 1,
+                           horizontal=True, key="lang_toggle")
+    if lang_choice == "🇨🇳 中文":
+        st.session_state.lang = "zh"
+    else:
+        st.session_state.lang = "en"
 
-    st.subheader("种子数据源")
+    st.header(T("⚙️ 配置", "⚙️ Settings"))
+
+    st.subheader(T("种子数据源", "Seed Data Sources"))
     seed_sources = st.multiselect(
-        "选择数据源",
+        T("选择数据源", "Select sources"),
         ["freelancer", "economy", "tech", "consumer", "b2b"],
         default=["freelancer", "economy", "tech", "consumer", "b2b"],
     )
 
-    st.subheader("输入模式")
+    st.subheader(T("输入模式", "Input Mode"))
     input_mode = st.radio("", ["explore", "validate", "hybrid"],
                           format_func=lambda m: {"explore": "🔍 探索", "validate": "✅ 验证", "hybrid": "⚔️ 混合"}[m])
 
@@ -107,6 +117,7 @@ with st.sidebar:
     st.divider()
     st.caption(f"v5.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     st.caption("[GitHub](https://github.com/key-night-day/market-fish) · Keystart AI")
+    st.caption(T("语言: 中文 | 英文版完善中", "Lang: EN | Chinese WIP"))
 
 # ── Load seed data ──
 @st.cache_data
@@ -297,10 +308,7 @@ if run_btn or _last_result:
             # RESULTS DASHBOARD
             # ═══════════════════════════════════════
 
-            tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-                "📊 产品预测", "📋 证据报告", "🤖 Agent 总览", "🕸️ Agent 图谱",
-                "💬 Agent 对话", "🕸️ 耦合 & 网络", "🧠 RL 策略", "📋 原始数据"
-            ])
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(i18n_tabs())
 
             # ── Tab 1: Product Predictions ──
             with tab1:
