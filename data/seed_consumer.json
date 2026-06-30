@@ -1,0 +1,94 @@
+{
+  "source": "Multi-source consumer market signals mid-2026",
+  "description": "Cross-validated from App Store rankings, WeChat mini-program data, viral case studies, Sensor Tower reports",
+  "validation": "Multiple data sources cross-checked: QuestMobile + App Store rankings + viral case studies + consumer surveys",
+
+  "app_store_top_grossing": [
+    {"rank": 1, "name": "TikTok/Douyin", "category": "Entertainment", "revenue_model": "ads+in-app"},
+    {"rank": 2, "name": "Tencent Video", "category": "Entertainment", "revenue_model": "subscription"},
+    {"rank": 3, "name": "iQIYI", "category": "Entertainment", "revenue_model": "subscription"},
+    {"rank": 4, "name": "Kuaishou", "category": "Entertainment", "revenue_model": "ads+in-app"},
+    {"rank": 5, "name": "NetEase Music", "category": "Music", "revenue_model": "subscription"}
+  ],
+
+  "wechat_mini_program_trends": {
+    "mau": "1.02 billion (March 2026)",
+    "fastest_growing_categories": [
+      {"category": "AI工具", "growth": "+340% YoY", "new_apps": "27,000+ in 100 days"},
+      {"category": "生活服务", "growth": "+187% transaction value", "subcategories": {"社区团购":"+203%","家政":"+156%"}},
+      {"category": "AR试穿/虚拟体验", "growth": "conversion +27-35%, returns -15-22%"}
+    ],
+    "top_mini_programs": [
+      {"name": "美团优选", "daily_orders": "8M+", "mini_program_share": "60%+"},
+      {"name": "Notion AI 小程序", "dau_30days": "500K+"},
+      {"name": "海尔智家", "mau": "6.4M", "growth": "+140%"}
+    ]
+  },
+
+  "viral_consumer_success_cases": [
+    {
+      "name": "死了么 (Demumu)",
+      "category": "daily_checkin_safety",
+      "build_cost": "$1,500",
+      "time_to_1_paid": "4 days",
+      "peak": "Apple App Store #1 paid for 4 consecutive days",
+      "viral_mechanic": "controversial name + daily checkin + emergency contact notification",
+      "pricing": "¥1-8 one-time",
+      "key_insight": "solves real fear (dying alone unnoticed). dead simple UX. name IS the marketing."
+    },
+    {
+      "name": "小猫补光灯",
+      "category": "utility_photo_light",
+      "build_cost": "$0 (1 hour vibe coding)",
+      "time_to_1_paid": "same day",
+      "peak": "Apple App Store #1 paid on launch day",
+      "viral_mechanic": "girlfriend needed photo lighting → built in 1 hour → posted on social media",
+      "pricing": "¥1 one-time",
+      "key_insight": "solves a specific micro-problem for a specific person. instant value. no explanation needed."
+    },
+    {
+      "name": "Pingo AI",
+      "category": "language_learning_companion",
+      "build_cost": "dorm room startup",
+      "time_to_traction": "14 months",
+      "revenue": "$500K/month",
+      "users": "3M",
+      "viral_mechanic": "TikTok organic. 'Roast mode' video got 52M views. Not designed for virality — it happened naturally.",
+      "pricing": "freemium → $9.99/mo",
+      "key_insight": "solves real fear (speaking foreign language). has personality. zero ad spend. all organic."
+    }
+  ],
+
+  "consumer_spending_patterns_2026": {
+    "what_sells": [
+      "One-time purchase < ¥10 (冲动消费友好)",
+      "Freemium with viral free tier → subscription upsell",
+      "Emotional/entertainment value (潮玩, 短视频, 零食)",
+      "Tools that solve ONE specific problem instantly",
+      "Social sharing baked into the product experience"
+    ],
+    "what_doesnt_sell": [
+      "High-priced subscriptions without free tier proof",
+      "Products requiring explanation or onboarding",
+      "B2B tools marketed to consumers",
+      "Feature-heavy platforms (vs single-purpose tools)"
+    ],
+    "pricing_sweet_spots": {
+      "one_time_impulse": "¥1-9.9",
+      "one_time_premium": "¥6-18",
+      "monthly_subscription": "¥4.99-9.99",
+      "annual_subscription": "¥29-88"
+    }
+  },
+
+  "consumer_discovery_channels": {
+    "primary": ["抖音/TikTok (short video)", "微信朋友圈/群", "小红书种草"],
+    "secondary": ["应用商店榜单", "朋友推荐", "公众号文章"],
+    "viral_triggers": [
+      "争议性名字 (如'死了么')",
+      "情感共鸣 (如'被Pingo怼哭')",
+      "实用价值展示 (如'1小时做出了这个')",
+      "社交货币 (如'我也测了，结果...')"
+    ]
+  }
+}
