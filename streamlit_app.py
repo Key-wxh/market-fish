@@ -15,7 +15,7 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(
-    page_title="MarketFish v4 — 市场预测引擎",
+    page_title="MarketFish v5 — 市场预测引擎",
     page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -54,21 +54,30 @@ with st.sidebar:
         default=["freelancer", "economy", "tech", "consumer", "b2b"],
     )
 
-    st.subheader("模拟参数")
-    sim_rounds = st.slider("模拟轮数", 10, 60, 30, 5)
-    agent_cap = st.slider("消费者上限", 10, 100, 50, 10)
+    st.subheader("输入模式")
+    input_mode = st.radio("", ["explore", "validate", "hybrid"],
+                          format_func=lambda m: {"explore": "🔍 探索", "validate": "✅ 验证", "hybrid": "⚔️ 混合"}[m])
+
+    user_product = None
+    if input_mode in ("validate", "hybrid"):
+        with st.expander("📝 产品信息", expanded=True):
+            product_name = st.text_input("产品名", placeholder="一键翻译")
+            product_desc = st.text_area("描述", placeholder="复制文本自动弹窗翻译，无需切换App")
+            product_target = st.selectbox("目标市场", ["consumer", "smb", "enterprise"])
+            product_price = st.text_input("定价", placeholder="¥3-6 一次性")
+            if product_name:
+                user_product = {"name": product_name, "description": product_desc,
+                                "target_market": product_target, "pricing": product_price}
 
     st.subheader("模型配置")
-    st.caption("6-LLM Heterogeneous Architecture")
-    models_status = {}
-    for name in ["deepseek", "qwen", "doubao", "zhipu", "baidu", "hunyuan"]:
-        key_var = f"{'DEEPSEEK' if name == 'deepseek' else name.upper()}_API_KEY"
-        has_key = bool(os.getenv(key_var))
-        models_status[name] = has_key
-        st.markdown(f"{'🟢' if has_key else '🔴'} {name}")
+    from engine.model_registry import get_registry
+    registry = get_registry()
+    status = registry.status_report()
+    for name, s in status.items():
+        st.markdown(f"{'🟢' if s['key_configured'] else '⚫'} {name}")
 
     st.divider()
-    st.caption(f"v4.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.caption(f"v5.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
 # ── Load seed data ──
 @st.cache_data
@@ -140,7 +149,7 @@ if run_btn:
 
     try:
         # Stage 1
-        result = pipeline.run(seed)
+        result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product)
 
         elapsed = time.time() - t0
         builtins.print = original_print
@@ -158,8 +167,9 @@ if run_btn:
             # RESULTS DASHBOARD
             # ═══════════════════════════════════════
 
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "📊 产品预测", "🤖 Agent 总览", "🕸️ 耦合 & 网络", "🧠 RL 策略", "📋 原始数据"
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+                "📊 产品预测", "📋 证据报告", "🤖 Agent 总览", "🕸️ Agent 图谱",
+                "💬 Agent 对话", "🕸️ 耦合 & 网络", "🧠 RL 策略", "📋 原始数据"
             ])
 
             # ── Tab 1: Product Predictions ──
@@ -208,8 +218,64 @@ if run_btn:
                     ])
                     st.dataframe(bt_df, use_container_width=True, hide_index=True)
 
-            # ── Tab 2: Agent Overview ──
+            # ── Tab 2: Evidence Report ──
             with tab2:
+                st.subheader("📋 证据报告 — 不只是分数")
+
+                if result.get("final_report", {}).get("simulation_results"):
+                    from engine.evidence_report import generate_evidence_report
+                    sim_results = result["final_report"]["simulation_results"]
+                    agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+
+                    for p in sim_results[:5]:
+                        pid = p.get("product_id", p.get("id", ""))
+                        pname = p.get("product_name", p.get("name", "?"))
+                        score = p.get("survival_score", 0)
+                        status = p.get("status", "dead")
+                        emoji = "🟢" if status == "alive" else ("🟡" if status == "struggling" else "🔴")
+
+                        with st.expander(f"{emoji} {pname[:40]} — score: {score:.2f} | {p.get('purchasers',0)} buyers | ¥{p.get('total_revenue_cny',0)}"):
+                            # Generate evidence report from simulation data
+                            try:
+                                # Use the result's coupling stats
+                                coupling_stats = result.get("stages", {}).get("simulation", {}).get("cross_domain_coupling", {})
+                                mock_states = {}  # Post-hoc — states not available in pipeline result
+                                mock_agents = agents_list
+
+                                if mock_agents:
+                                    from engine.evidence_report import build_buyer_profile, compare_with_competitors, generate_risk_signals
+                                    buyer = build_buyer_profile(pid, {}, mock_agents)
+                                    comps = compare_with_competitors(pid, sim_results)
+                                    risks = generate_risk_signals(pid, buyer, coupling_stats)
+
+                                    c1, c2 = st.columns(2)
+                                    with c1:
+                                        st.write("**买家画像**")
+                                        if buyer["total_buyers"] > 0:
+                                            for seg in buyer["segments"]:
+                                                st.write(f"- {seg['name']}: {seg['pct']}%")
+                                            st.write(f"平均月预算: ¥{buyer['avg_budget']}")
+                                        else:
+                                            st.write("无买家数据")
+
+                                        st.write("**风险信号**")
+                                        for r in risks:
+                                            level_color = {"low": "green", "medium": "orange", "high": "red"}
+                                            st.markdown(f":{level_color.get(r['level'],'gray')}[{r['signal']}] — {r['detail']}")
+
+                                    with c2:
+                                        st.write("**竞品对比**")
+                                        for c in comps:
+                                            icon = "🟢" if c["status"] == "alive" else "🔴"
+                                            death = f" — {c['death_cause']}" if c.get("death_cause") else ""
+                                            st.write(f"{icon} {c['name'][:25]}: score={c['score']:.2f}, buyers={c['purchasers']}{death}")
+                            except Exception as e:
+                                st.caption(f"Evidence extraction limited: {e}")
+                else:
+                    st.info("无模拟结果数据")
+
+            # ── Tab 3: Agent Overview ──
+            with tab3:
                 st.subheader("🤖 异质 Agent 群体")
 
                 stages = result.get("stages", {})
@@ -247,8 +313,58 @@ if run_btn:
                                     ])
                                     st.bar_chart(strat_df.set_index("策略维度"), height=200)
 
-            # ── Tab 3: Coupling & Network ──
-            with tab3:
+            # ── Tab 4: Agent Graph ──
+            with tab4:
+                st.subheader("🕸️ Agent 社交网络")
+
+                agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+                if agents_list:
+                    try:
+                        from engine.network_viz import build_agent_graph_html
+                        graph_html = build_agent_graph_html(agents_list, height="550px")
+                        st.components.v1.html(graph_html, height=580, scrolling=False)
+                        st.caption(f"{len(agents_list)} agents · 小世界网络")
+                    except Exception as e:
+                        st.warning(f"图谱生成失败: {e}")
+                else:
+                    st.info("无 agent 数据")
+
+                # Bipartite graph
+                sim_results = result.get("final_report", {}).get("simulation_results", [])
+                if sim_results:
+                    st.subheader("📊 产品-买家 二分图")
+                    try:
+                        from engine.network_viz import build_bipartite_graph_html
+                        bp_html = build_bipartite_graph_html(sim_results, {}, agents_list, height="500px")
+                        st.components.v1.html(bp_html, height=530, scrolling=False)
+                    except Exception as e:
+                        st.caption(f"二分图暂不可用: {e}")
+
+            # ── Tab 5: Agent Dialogue ──
+            with tab5:
+                st.subheader("💬 和 Agent 对话")
+                st.caption("选中一个 agent，用它的身份和你聊天")
+
+                agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+                if agents_list:
+                    from engine.agent_dialogue import list_chatable_agents
+                    chatable = list_chatable_agents(agents_list, {}, min_history=0)
+                    agent_options = {f"{a['name'][:20]} ({a['type']}, {a['actions']} actions)": a["id"] for a in chatable[:30]}
+
+                    if agent_options:
+                        selected = st.selectbox("选择 Agent", list(agent_options.keys()))
+                        user_msg = st.text_input("你的消息", placeholder="你为什么买了这个产品？")
+
+                        if user_msg and selected:
+                            aid = agent_options[selected]
+                            st.info(f"💬 **Agent 回复**: _（需要完整 agent_states 数据，当前仅展示接口）_\n\n> Agent ID: {aid}\n> 模式: validate/hybrid 模式运行后可对话")
+                    else:
+                        st.info("无可对话的 agent — 请先运行管道")
+                else:
+                    st.info("无 agent 数据 — 请先运行管道")
+
+            # ── Tab 6: Coupling & Network ──
+            with tab6:
                 st.subheader("🕸️ 跨域耦合 & 小世界网络")
 
                 # Sentiment timeline
@@ -286,8 +402,8 @@ if run_btn:
                             f"{data.get('rounds', 0)} rounds",
                         )
 
-            # ── Tab 4: RL Strategy ──
-            with tab4:
+            # ── Tab 7: RL Strategy ──
+            with tab7:
                 st.subheader("🧠 经济对齐 RL — 策略自适应")
 
                 st.markdown("""
@@ -322,8 +438,8 @@ if run_btn:
                                 })
                                 st.bar_chart(compare_df.set_index("维度"), height=300)
 
-            # ── Tab 5: Raw Data ──
-            with tab5:
+            # ── Tab 8: Raw Data ──
+            with tab8:
                 st.subheader("📋 完整 JSON 输出")
                 st.json(result.get("final_report", {}).get("synthesis", {}))
 
