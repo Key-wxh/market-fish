@@ -99,8 +99,8 @@ if not seed:
     st.stop()
 
 # ── KPI Bar ──
-from engine.agent_factory import _get_batches
-AGENT_BATCHES = _get_batches()
+from engine.config import agent_batches
+AGENT_BATCHES = agent_batches()
 total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Mode", {"explore": "探索", "validate": "验证", "hybrid": "混合"}[input_mode])
@@ -174,7 +174,7 @@ if not run_btn:
     try:
         result_files = [f for f in os.listdir("uploads") if f.endswith(".json") and "validate" in f]
         if result_files:
-            latest = sorted(result_files)[-1]
+            latest = max(result_files, key=lambda f: os.path.getmtime(f"uploads/{f}"))
             with open(f"uploads/{latest}", encoding='utf-8') as lf:
                 _last_result = json.load(lf)
     except Exception:
@@ -311,17 +311,20 @@ if run_btn or _last_result:
                 coupling_stats = sim_stage.get("cross_domain_coupling", {})
                 sim_log = sim_stage.get("sim_log", [])
 
-                if sim_results:
-                    # Try to rebuild agent_states from simulation log
-                    agent_states = {}
-                    if sim_log:
-                        from engine.evidence_report import _rebuild_agent_states_from_log
-                        agent_states = _rebuild_agent_states_from_log(result)
-                        st.caption(f"从 {len(sim_log)} 条模拟日志重建了 {len(agent_states)} 个 agent 状态")
-                    else:
-                        st.warning("⚠️ 此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。")
-                        st.caption("以下是基于汇总数据的有限分析：")
+                # Try to rebuild agent_states from simulation log (shared across tabs)
+                if "agent_states" not in st.session_state:
+                    st.session_state.agent_states = {}
+                agent_states = {}
+                if sim_log:
+                    from engine.evidence_report import _rebuild_agent_states_from_log
+                    agent_states = _rebuild_agent_states_from_log(result)
+                    st.session_state.agent_states = agent_states
+                    st.caption(f"从 {len(sim_log)} 条模拟日志重建了 {len(agent_states)} 个 agent 状态")
+                else:
+                    st.warning("⚠️ 此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。")
+                    st.caption("以下是基于汇总数据的有限分析：")
 
+                if sim_results:
                     # Dedup products
                     seen = {}
                     for r in sim_results:
@@ -444,7 +447,7 @@ if run_btn or _last_result:
                     st.subheader("📊 产品-买家 二分图")
                     try:
                         from engine.network_viz import build_bipartite_graph_html
-                        bp_html = build_bipartite_graph_html(sim_results, {}, agents_list, height="500px")
+                        bp_html = build_bipartite_graph_html(sim_results, st.session_state.get("agent_states", {}), agents_list, height="500px")
                         st.components.v1.html(bp_html, height=530, scrolling=False)
                     except Exception as e:
                         st.caption(f"二分图暂不可用: {e}")

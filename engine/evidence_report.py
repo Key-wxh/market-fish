@@ -31,12 +31,16 @@ def build_buyer_profile(product_id: str, agent_states: dict, agents: list) -> di
     buyers = []
     for aid, state in agent_states.items():
         if product_id in state.get("purchased_products", {}):
-            strategy = state.get("rl_strategy", {})
             profile = state.get("profile", {})
+            atype = profile.get("type", "consumer")
+            # Exclude competitor/environment agents from buyer profile (they aren't real consumers)
+            if atype in ("competitor", "environment"):
+                continue
+            strategy = state.get("rl_strategy", {})
             buyers.append({
                 "agent_id": aid,
                 "type": profile.get("type", "consumer"),
-                "budget": profile.get("budget_monthly_cny", 0),
+                "budget": _safe_float(profile.get("budget_monthly_cny", 0)),
                 "decision_speed": profile.get("decision_speed", "days"),
                 "strategy": strategy,
             })
@@ -44,10 +48,24 @@ def build_buyer_profile(product_id: str, agent_states: dict, agents: list) -> di
     if not buyers:
         return {"total_buyers": 0, "segments": []}
 
-    # Cluster into segments based on strategy dimensions
-    price_sensitive = [b for b in buyers if b.get("strategy", {}).get("price_sensitivity", 0) > 0.6]
-    impulsive = [b for b in buyers if b.get("decision_speed") == "impulse"]
-    rational = [b for b in buyers if b.get("strategy", {}).get("social_susceptibility", 0) < 0.3]
+    # Cluster into segments based on strategy dimensions (with profile fallback)
+    price_sensitive = [b for b in buyers if (
+        b.get("strategy", {}).get("price_sensitivity", 0) > 0.6 or
+        _safe_float(b.get("budget", 0)) < 300  # Low budget → price sensitive
+    )]
+    impulsive = [b for b in buyers if (
+        b.get("decision_speed") == "impulse" or
+        b.get("strategy", {}).get("early_adopter", 0) > 0.6
+    )]
+    rational = [b for b in buyers if (
+        b.get("strategy", {}).get("social_susceptibility", 0) < 0.3 or
+        b.get("decision_speed") in ("weeks", "months")
+    )]
+    # Remove overlap: an agent can only be in one segment (prioritize impulsive > price_sensitive > rational)
+    impulsive_ids = {b["agent_id"] for b in impulsive}
+    price_sensitive = [b for b in price_sensitive if b["agent_id"] not in impulsive_ids]
+    rational_ids = {b["agent_id"] for b in impulsive + price_sensitive}
+    rational = [b for b in rational if b["agent_id"] not in rational_ids]
 
     total = len(buyers)
     return {
@@ -318,25 +336,71 @@ def generate_all_reports(pipeline_result: dict, agent_states: dict = None,
 def _rebuild_agent_states_from_log(pipeline_result: dict) -> dict:
     """Rebuild agent_states from the simulation log (for post-hoc evidence extraction)."""
     states = {}
-    sim_stage = pipeline_result.get("stages", {}).get("simulation", {})
-    log = sim_stage.get("sim_log", sim_stage.get("log", []))
 
-    # Build agent lookup from saved agents list
+    # ── Build agent profile lookup ──
     agent_profiles = {}
     agents_data = pipeline_result.get("stages", {}).get("agents_v2", {})
     if isinstance(agents_data, dict) and "agents" in agents_data:
         for a in agents_data["agents"]:
             agent_profiles[a["id"]] = a
 
+    # ── Build RL strategy lookup from pipeline RL summary ──
+    # RL summary is stored in simulation stage under economic_alignment_rl
+    # The raw strategies per agent are in the simulate() return but not saved.
+    # We reconstruct basic strategy from agent profile defaults.
+    # Future: save per-agent strategies in pipeline output.
+
+    # ── Rebuild from sim_log ──
+    sim_stage = pipeline_result.get("stages", {}).get("simulation", {})
+    log = sim_stage.get("sim_log", sim_stage.get("log", []))
+
     for entry in log:
         if not isinstance(entry, dict):
             continue
         aid = entry.get("agent_id", "")
+        if not aid:
+            continue
+
         if aid not in states:
             profile = agent_profiles.get(aid, {})
-            states[aid] = {"profile": profile, "history": [], "purchased_products": {},
-                           "emotional_state": "neutral", "rl_strategy": {}}
-        states[aid]["history"].append(entry)
-        states[aid]["emotional_state"] = entry.get("emotional_state", "neutral")
+            states[aid] = {
+                "profile": profile,
+                "history": [],
+                "purchased_products": {},
+                "discovered_products": set(),
+                "total_spent": 0,
+                "emotional_state": "neutral",
+                "rl_strategy": {},
+            }
+
+        state = states[aid]
+        pid = entry.get("product_id")
+        action = entry.get("action", "ignore")
+        rnd = entry.get("round", 0)
+
+        # Track history
+        state["history"].append(entry)
+        state["emotional_state"] = entry.get("emotional_state", "neutral")
+
+        # Rebuild purchased_products from purchase/churn actions
+        if action == "purchase" and pid:
+            wtp = _safe_float(entry.get("willingness_to_pay_cny", 0))
+            state["purchased_products"][pid] = {"round": rnd, "price_paid": wtp}
+            state["total_spent"] += wtp
+            state["discovered_products"].add(pid)
+        elif action == "discover" and pid:
+            state["discovered_products"].add(pid)
+        elif action == "churn" and pid and pid in state["purchased_products"]:
+            state["purchased_products"][pid]["churned_at"] = rnd
 
     return states
+
+
+def _safe_float(v, default=0.0):
+    """Handle string/none values from LLM output."""
+    if v is None:
+        return default
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return default
