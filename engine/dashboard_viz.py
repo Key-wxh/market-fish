@@ -112,7 +112,7 @@ def buyer_segments_donut(buyer_profile: dict, height: int = 260) -> go.Figure:
     ))
 
     fig.update_layout(
-        title=dict(text=_t("evidence_tab.buyer_segments") + " ({buyer_profile.get('total_buyers', 0)} buyers · avg ¥{buyer_profile.get('avg_budget', 0):.0f})", font=dict(size=13)),
+        title=dict(text=f"{_t('evidence_tab.buyer_segments')} ({buyer_profile.get('total_buyers', 0)} buyers · avg ¥{buyer_profile.get('avg_budget', 0):.0f})", font=dict(size=13)),
         height=height,
         showlegend=False,
     )
