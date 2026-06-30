@@ -374,5 +374,10 @@
     "verdict": "判定",
     "factors": "因子",
     "killers": "杀手"
+  },
+  "history": {
+    "title": "历史记录",
+    "desc": "最近的管道运行结果",
+    "empty": "暂无历史记录"
   }
 }

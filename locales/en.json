@@ -374,5 +374,10 @@
     "verdict": "Verdict",
     "factors": "Factors",
     "killers": "Kill Flags"
+  },
+  "history": {
+    "title": "History",
+    "desc": "Recent pipeline results",
+    "empty": "No history yet"
   }
 }

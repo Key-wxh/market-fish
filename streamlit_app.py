@@ -16,33 +16,68 @@ import pandas as pd
 from engine.i18n import t, tabs as i18n_tabs, get_lang, set_lang
 
 st.set_page_config(
-    page_title=t("page.title"),
+    page_title="MarketFish v5 — Market Prediction Engine | 市场预测引擎",
     page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS for polished look ──
+# ── Custom CSS ──
 st.markdown("""
 <style>
-    .main-header { font-size: 2.2rem; font-weight: 800; margin-bottom: 0; }
-    .sub-header { color: #888; font-size: 1rem; margin-top: 0; }
-    .metric-card { background: #1a1a2e; border-radius: 12px; padding: 1.2rem; text-align: center; }
-    .metric-value { font-size: 2rem; font-weight: 700; color: #00d4ff; }
-    .metric-label { font-size: 0.85rem; color: #aaa; }
+    /* ── Global ── */
+    .stApp { background: linear-gradient(180deg, #0a0a1a 0%, #0d0d2b 100%); }
+    section[data-testid="stSidebar"] { background: #0d0d24; border-right: 1px solid #1a1a3e; }
+
+    /* ── Header ── */
+    .mf-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.3rem; }
+    .mf-logo { font-size: 2rem; }
+    .mf-title { font-size: 1.8rem; font-weight: 800; color: #00d4ff; letter-spacing: -0.5px; }
+    .mf-badge { font-size: 0.7rem; background: #00ff88; color: #0a0a1a; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px; }
+    .mf-subtitle { color: #666; font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem; }
+
+    /* ── KPI row ── */
+    .mf-kpi-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .mf-kpi-row > div { flex: 1; background: #111133; border: 1px solid #1a1a4e; border-radius: 10px; padding: 0.8rem 0.5rem; text-align: center; }
+    .mf-kpi-row [data-testid="stMetricValue"] { font-size: 1.4rem !important; color: #00d4ff !important; }
+    .mf-kpi-row [data-testid="stMetricDelta"] { font-size: 0.75rem !important; color: #666 !important; }
+
+    /* ── Expanders ── */
+    [data-testid="stExpander"] { border: 1px solid #1a1a3e !important; border-radius: 10px !important; margin-bottom: 0.5rem !important; }
+    [data-testid="stExpander"] .streamlit-expanderHeader { font-weight: 600; color: #ccc; background: #0d0d28; border-radius: 10px; }
+
+    /* ── Tabs ── */
+    .stTabs [data-baseweb="tab"] { font-size: 0.85rem; padding: 0.5rem 0.8rem; }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { border-bottom: 2px solid #00d4ff; color: #00d4ff; }
+
+    /* ── Cards ── */
+    .metric-card { background: #111133; border: 1px solid #1a1a4e; border-radius: 10px; padding: 1rem; text-align: center; }
+    .metric-value { font-size: 1.8rem; font-weight: 700; color: #00d4ff; }
+    .metric-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
     .alive-badge { color: #00ff88; font-weight: 600; }
     .dead-badge { color: #ff4444; font-weight: 600; }
     .promising-badge { color: #ffaa00; font-weight: 600; }
     .agent-card { background: #16213e; border-radius: 8px; padding: 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
     .stage-done { color: #00ff88; }
     .stage-running { color: #00d4ff; animation: pulse 1.5s infinite; }
+
+    /* ── Animations ── */
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+    /* ── Footer ── */
+    .mf-footer { text-align: center; color: #444; font-size: 0.75rem; padding: 1rem 0; border-top: 1px solid #111; margin-top: 2rem; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Header ──
-st.markdown('<p class="main-header"> MarketFish v5</p>', unsafe_allow_html=True)
-st.markdown(f'<p class="sub-header">{t("page.subtitle")}</p>', unsafe_allow_html=True)
+st.markdown(f"""
+<div class="mf-header">
+    <span class="mf-logo"></span>
+    <span class="mf-title">MarketFish</span>
+    <span class="mf-badge">v5</span>
+</div>
+<p class="mf-subtitle">{t("page.subtitle")}</p>
+""", unsafe_allow_html=True)
 
 # ── Sidebar ──
 with st.sidebar:
@@ -97,6 +132,22 @@ with st.sidebar:
         st.markdown(f"{'🟢' if s['key_configured'] else '⚫'} {name}")
 
     st.divider()
+
+    # ── History ──
+    with st.expander(t("history.title"), expanded=False):
+        st.caption(t("history.desc"))
+        try:
+            all_files = [f for f in os.listdir("uploads") if f.endswith(".json")]
+            all_files.sort(key=lambda f: os.path.getmtime(f"uploads/{f}"), reverse=True)
+            for f in all_files[:10]:
+                fsize = os.path.getsize(f"uploads/{f}") / 1024
+                ftime = datetime.fromtimestamp(os.path.getmtime(f"uploads/{f}")).strftime("%m-%d %H:%M")
+                cols = st.columns([3, 1, 1])
+                cols[0].caption(f"`{f[:35]}`")
+                cols[1].caption(f"{fsize:.0f}KB")
+                cols[2].caption(ftime)
+        except Exception:
+            st.caption(t("history.empty"))
 
     st.subheader(t("sidebar.load_result"))
     uploaded_result = st.file_uploader(t("sidebar.load_result") + " JSON", type=["json"], key="result_uploader",
@@ -769,4 +820,4 @@ else:
 
 # ── Footer ──
 st.divider()
-st.caption(t("footer.tagline"))
+st.markdown(f'<p class="mf-footer">{t("footer.tagline")}</p>', unsafe_allow_html=True)
