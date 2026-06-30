@@ -73,7 +73,7 @@ with st.sidebar:
             product_name = st.text_input(t("sidebar.product_name"), placeholder=t("sidebar.product_name_placeholder"))
             product_desc = st.text_area(t("sidebar.product_desc"), placeholder=t("sidebar.product_desc_placeholder"))
             product_target = st.selectbox(t("sidebar.product_target"), ["consumer", "smb", "enterprise"])
-            product_price = st.text_input(t("sidebar.product_price"), placeholder="¥3-6 一次性")
+            product_price = st.text_input(t("sidebar.product_price"), placeholder=t("sidebar.price_placeholder"))
             if product_name:
                 user_product = {"name": product_name, "description": product_desc,
                                 "target_market": product_target, "pricing": product_price}
@@ -606,7 +606,7 @@ if run_btn or _last_result:
                     st.caption(t("chat_tab.total", total=len(agents_list), active=len(chatable)))
 
                     # Show all agents with history first, then type filter
-                    filter_type = st.selectbox("筛选类型", ["全部"] + sorted(set(a.get("type","unknown") for a in chatable)), key="dialogue_filter")
+                    filter_type = st.selectbox(t("chat_tab.filter_type"), [t("chat_tab.filter_all")] + sorted(set(a.get("type","unknown") for a in chatable)), key="dialogue_filter")
                     if filter_type != t("chat_tab.filter_all"):
                         chatable = [a for a in chatable if a["type"] == filter_type]
 
@@ -637,7 +637,7 @@ if run_btn or _last_result:
                             if bdi.get("beliefs"):
                                 st.caption(f"{t('chat_tab.beliefs')}: {', '.join(bdi['beliefs'][:2])}")
 
-                        user_msg = st.text_input("你的消息", placeholder="你为什么会买这个产品？", key="chat_input")
+                        user_msg = st.text_input(t("chat_tab.your_message"), placeholder=t("chat_tab.msg_placeholder"), key="chat_input")
 
                         if user_msg:
                             # Get or init chat history for this agent

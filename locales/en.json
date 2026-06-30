@@ -33,7 +33,8 @@
     "reset": "Reset",
     "reset_help": "Clear uploaded results and session state",
     "version": "v5.0",
-    "lang_status": "Lang: EN | Chinese available"
+    "lang_status": "Lang: EN | Chinese available",
+    "price_placeholder": "-6 one-time"
   },
   "kpi": {
     "mode": "Mode",
@@ -263,7 +264,8 @@
     "beliefs": "Beliefs",
     "type_info": "Type: {t} | Budget: ¥{b} | Decision: {d}",
     "thinking": "{name} is thinking...",
-    "select_label": "Select Agent"
+    "select_label": "Select Agent",
+    "msg_placeholder": "Why would you buy this product?"
   },
   "network_tab": {
     "title": "Network Topology — Watts-Strogatz Small-World",
