@@ -1,0 +1,248 @@
+{
+  "_comment": "MarketFish 简体中文 locale",
+
+  "sidebar": {
+    "title": "⚙️ 配置",
+    "language": "语言",
+    "seed_sources": "种子数据源",
+    "select_sources": "选择数据源",
+    "sim_params": "🧪 模拟参数",
+    "sim_rounds": "模拟轮数",
+    "agent_count": "Agent 数量",
+    "rounds_help": "轮数越多越精确，但耗时更长。30轮为标准配置。",
+    "agent_help": "消费者数量。100+用并行批量生成, 1000+需OASIS架构(时间引擎+RecSys)。当前v5上限: 128(8批次×16), v6目标: 10000",
+    "agent_limit_warn": "v5 当前上限 128 agent。{n} 需 v6 OASIS架构 (RecSys+时间引擎)。已自动截断。",
+    "input_mode": "输入模式",
+    "explore": "🔍 探索",
+    "explore_desc": "LLM自动发现方向",
+    "validate": "✅ 验证",
+    "validate_desc": "测试你的产品",
+    "hybrid": "⚔️ 混合",
+    "hybrid_desc": "你的产品 + AI竞品",
+    "product_info": "📝 产品信息",
+    "product_name": "产品名",
+    "product_desc": "描述",
+    "product_target": "目标市场",
+    "product_price": "定价",
+    "product_name_placeholder": "一键翻译",
+    "product_desc_placeholder": "复制文本自动弹窗翻译，无需切换App",
+    "model_config": "模型配置",
+    "load_result": "📂 加载结果",
+    "load_help": "上传之前运行保存的 JSON 结果文件",
+    "load_success": "已加载: {name}",
+    "load_fail": "加载失败: {error}",
+    "reset": "🔄 重置",
+    "reset_help": "清除上传的结果，恢复自动加载",
+    "version": "v5.0",
+    "lang_status": "语言: 中文 | 英文版完善中"
+  },
+
+  "kpi": {
+    "mode": "Mode",
+    "target_agents": "目标Agent",
+    "batches": "批次",
+    "sim_rounds": "模拟轮数",
+    "seed_sources": "种子数据源",
+    "providers": "模型",
+    "active": "在线"
+  },
+
+  "seed_transparency": {
+    "title": "📊 种子数据来源 & 偏差声明",
+    "desc": "种子数据影响本体生成和知识图谱。当前为 LLM 聚合的公开信息快照，非实时数据。",
+    "collection_method": "采集方式",
+    "bias": "偏差声明",
+    "limitations": "局限",
+    "upload_hint": "💡 上传你自己的种子 JSON 文件替换默认数据（可选）",
+    "upload_label": "上传种子 JSON (格式: {\"freelancer\": {...}, \"economy\": {...}, ...})",
+    "merged": "已合并 {n} 个自定义种子数据源"
+  },
+
+  "calibration": {
+    "title": "🧪 校准验证 — 20个已知产品验证准确率",
+    "desc": "用已知成败的外部产品独立验证管道预测能力。方向性验证（非统计显著性）。",
+    "total_cases": "案例总数",
+    "success": "成功",
+    "failure": "失败",
+    "estimated_time": "预计耗时",
+    "view_all": "📋 查看全部案例",
+    "public": "公开",
+    "anon": "脱敏",
+    "run_calibration": "🚀 运行校准",
+    "run_help": "用{n}个已知产品验证管道。预计{t}分钟。不调LLM则用模拟基线。",
+    "ready": "⏳ 校准功能已就绪。完整校准需调用 LLM，耗时较长。",
+    "baseline_note": "以下为基线参考（无需 LLM）：",
+    "keyword_accuracy": "关键词基线准确率",
+    "random_accuracy": "随机基线准确率",
+    "sim_estimate": "模拟需跑管道",
+    "factor_analysis": "📊 因子分析 (来自20案例)",
+    "discrimination": "区分度"
+  },
+
+  "pipeline": {
+    "run_btn": "🚀 运行市场预测",
+    "load_hint": "👆 点击「🚀 运行市场预测」启动全管道。",
+    "loading": "加载已保存结果...",
+    "stages": {
+      "ontology": "阶段 1/5: 本体生成...",
+      "graph": "阶段 2/5: 知识图谱...",
+      "agents": "阶段 3/5: Agent + 产品方向...",
+      "simulation": "阶段 4/5: 市场模拟 (耦合+RL)...",
+      "report": "阶段 5/5: 报告生成..."
+    },
+    "complete": "管道完成",
+    "elapsed": "{s}s",
+    "stages_done": "阶段: {stages}",
+    "results": "结果: {n}",
+    "no_result": "无结果数据"
+  },
+
+  "tabs": {
+    "products": "📊 产品预测",
+    "evidence": "📋 证据报告",
+    "agents": "🤖 Agent 总览",
+    "graph": "🕸️ Agent 图谱",
+    "chat": "💬 Agent 对话",
+    "network": "🕸️ 耦合 & 网络",
+    "rl": "🧠 RL 策略",
+    "raw": "📋 原始数据"
+  },
+
+  "products_tab": {
+    "title": "🎯 产品存活预测",
+    "survival_chart": "产品存活分数",
+    "adoption_curve": "📈 采纳曲线 (S-Curve)",
+    "emotion_timeline": "💭 市场情绪 × 采纳率",
+    "no_products": "无产品数据"
+  },
+
+  "evidence_tab": {
+    "title": "📋 证据报告 — 不只是分数",
+    "rebuilt_states": "从 {m} 条模拟日志重建了 {n} 个 agent 状态",
+    "old_pipeline_warn": "⚠️ 此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。",
+    "limited_analysis": "以下是基于汇总数据的有限分析：",
+    "buyer_profile": "买家画像",
+    "needs_sim_log": "买家细节需模拟日志（新管道运行后可用）",
+    "total_buyers": "买家总数",
+    "revenue": "营收",
+    "buyer_segments": "买家画像",
+    "avg_budget": "平均月预算",
+    "risk_signals": "风险信号",
+    "competitor_comparison": "竞品对比",
+    "purchase_motivation": "购买动机",
+    "evidence_error": "证据提取受限: {e}",
+    "no_sim_data": "无模拟结果数据",
+    "price_scanner": {
+      "title": "💰 价格弹性扫描 — 找到最优定价",
+      "desc": "同一产品注入不同价格点，对比买家数/营收曲线，定位最优定价。",
+      "price_input": "价格点 (逗号分隔)",
+      "price_help": "例如: 1,3,6,9,12,18,30",
+      "scan_rounds": "每价格点模拟轮数",
+      "rounds_help": "轮数越少越快，但精度降低",
+      "scan_btn": "🔍 开始价格扫描",
+      "min_prices": "至少需要 2 个价格点",
+      "no_agents": "无 Agent 数据。请先运行管道。",
+      "scanning": "扫描 {n} 个价格点，每点 {r} 轮...",
+      "progress": "扫描 ¥{price} ({i}/{total})...",
+      "done": "已完成 {done}/{total} 个价格点",
+      "optimal_revenue": "营收最优",
+      "optimal_score": "得分最优",
+      "elapsed": "耗时",
+      "price_error": "价格格式错误。请用逗号分隔数字，例如: 1,3,6,9"
+    }
+  },
+
+  "agents_tab": {
+    "title": "🤖 异质 Agent 群体",
+    "total": "Agent 总数",
+    "type_distribution": "Agent 类型分布",
+    "market_comparison": "📊 市场对比",
+    "sentiment": "情绪",
+    "rl_agents": "RL agents",
+    "coupling_stats": "耦合统计",
+    "rounds": "轮数",
+    "final_sentiment": "最终情绪",
+    "rl_stats": "RL 统计",
+    "active_rounds": "活跃轮数",
+    "final_strategies": "最终策略",
+    "no_agent_data": "无 agent 数据"
+  },
+
+  "graph_tab": {
+    "title": "🕸️ Agent 社交网络",
+    "caption": "{n} agents · 小世界网络",
+    "bipartite_title": "📊 产品-买家 二分图",
+    "graph_error": "图谱生成失败: {e}",
+    "no_agent_data": "无 agent 数据"
+  },
+
+  "chat_tab": {
+    "title": "💬 和 Agent 对话",
+    "desc": "选中一个 agent，用它的身份和你聊天",
+    "total_agents": "共 {total} 个 agent，{active} 个有模拟记录",
+    "filter_type": "筛选类型",
+    "all": "全部",
+    "type_dot": "{type}",
+    "your_message": "你的消息",
+    "send": "发送",
+    "chat_fail": "对话失败: {e}",
+    "select_agent": "请先选择一个 agent"
+  },
+
+  "network_tab": {
+    "title": "🌐 网络拓扑 — Watts-Strogatz 小世界",
+    "fully_connected": "全连接网络: 过早收敛, 杀死多样性",
+    "ring": "环形网络: 扩散太慢, 保留多样性但无传播",
+    "small_world": "小世界网络: 最优平衡 — 既保留多样性又有传播速度",
+    "wrong": "✗",
+    "correct": "✓"
+  },
+
+  "rl_tab": {
+    "title": "🧠 经济对齐 RL — 策略自适应",
+    "desc": "5 轴策略向量 (每个 Agent 独立学习)",
+    "price_sensitivity": "价格敏感度",
+    "early_adopter": "尝鲜倾向",
+    "social_susceptibility": "社交影响力敏感度",
+    "loyalty": "忠诚度 (低=容易流失)",
+    "risk_tolerance": "风险承受力",
+    "active_rl_rounds": "{market} 市场 ({rounds}/30 轮活跃)",
+    "b2c_vs_smb": "B2C 消费者 vs SMB 商家策略差异"
+  },
+
+  "raw_tab": {
+    "title": "📋 完整 JSON 输出",
+    "sim_log": "模拟日志",
+    "download": "📥 下载完整结果 (JSON)",
+    "download_help": "保存完整管道输出供后续分析"
+  },
+
+  "footer": {
+    "tagline": "MarketFish v5 · 6篇论文 · 6 LLMs · Keystart AI 出品",
+    "github": "GitHub"
+  },
+
+  "emotions": {
+    "excited": "兴奋",
+    "satisfied": "满意",
+    "curious": "好奇",
+    "neutral": "中性",
+    "indifferent": "不在意",
+    "skeptical": "怀疑",
+    "frustrated": "沮丧"
+  },
+
+  "status": {
+    "alive": "存活",
+    "struggling": "挣扎",
+    "dead": "死亡",
+    "untested": "未验证",
+    "promising": "有希望",
+    "risky": "高风险",
+    "fail": "不通过"
+  },
+
+  "sim_log": {
+    "skipped": "无模拟日志数据"
+  }
+}

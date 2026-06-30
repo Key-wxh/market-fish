@@ -1,0 +1,248 @@
+{
+  "_comment": "MarketFish English locale — default for GitHub / Product Hunt",
+
+  "sidebar": {
+    "title": "Settings",
+    "language": "Language",
+    "seed_sources": "Seed Data",
+    "select_sources": "Select sources",
+    "sim_params": "Simulation Params",
+    "sim_rounds": "Rounds",
+    "agent_count": "Agent Count",
+    "rounds_help": "More rounds = more accurate, but slower. 30 is standard.",
+    "agent_help": "Consumer count. 100+ uses parallel batches. v5 max: 128 (8 batches). v6 target: 10,000.",
+    "agent_limit_warn": "v5 is capped at 128 agents. {n} agents requires v6 OASIS architecture. Auto-capped.",
+    "input_mode": "Input Mode",
+    "explore": "Explore",
+    "explore_desc": "LLM generates directions",
+    "validate": "Validate",
+    "validate_desc": "Test your product",
+    "hybrid": "Hybrid",
+    "hybrid_desc": "Your product + AI competitors",
+    "product_info": "Product Info",
+    "product_name": "Product Name",
+    "product_desc": "Description",
+    "product_target": "Target Market",
+    "product_price": "Pricing",
+    "product_name_placeholder": "One-click translate",
+    "product_desc_placeholder": "Copy text, auto popup translation, no app switching",
+    "model_config": "Model Config",
+    "load_result": "Load Result",
+    "load_help": "Upload a previously saved pipeline result JSON",
+    "load_success": "Loaded: {name}",
+    "load_fail": "Load failed: {error}",
+    "reset": "Reset",
+    "reset_help": "Clear uploaded results and session state",
+    "version": "v5.0",
+    "lang_status": "Lang: EN | Chinese available"
+  },
+
+  "kpi": {
+    "mode": "Mode",
+    "target_agents": "Target Agents",
+    "batches": "batches",
+    "sim_rounds": "Rounds",
+    "seed_sources": "Seed Sources",
+    "providers": "Providers",
+    "active": "active"
+  },
+
+  "seed_transparency": {
+    "title": "Seed Data Sources & Bias Declaration",
+    "desc": "Seed data affects ontology generation and knowledge graph construction. Current data is LLM-aggregated public snapshots, NOT real-time.",
+    "collection_method": "Collection Method",
+    "bias": "Bias Statement",
+    "limitations": "Limitations",
+    "upload_hint": "Upload your own seed JSON to replace defaults (optional)",
+    "upload_label": "Upload seed JSON (format: {\"freelancer\": {...}, \"economy\": {...}, ...})",
+    "merged": "Merged {n} custom seed sources"
+  },
+
+  "calibration": {
+    "title": "Calibration — Validate against 20 known products",
+    "desc": "Independently verify prediction accuracy using known-outcome products. Directional validation (not statistical significance).",
+    "total_cases": "Total Cases",
+    "success": "Success",
+    "failure": "Failure",
+    "estimated_time": "Est. Time",
+    "view_all": "View All Cases",
+    "public": "Public",
+    "anon": "Anonymized",
+    "run_calibration": "Run Calibration",
+    "run_help": "Validate pipeline against {n} known products. ~{t} min estimate.",
+    "ready": "Calibration is ready. Full run requires LLM calls and takes time.",
+    "baseline_note": "Baseline reference (no LLM needed):",
+    "keyword_accuracy": "Keyword Baseline Accuracy",
+    "random_accuracy": "Random Baseline Accuracy",
+    "sim_estimate": "Simulation needs pipeline",
+    "factor_analysis": "Factor Analysis (from 20 cases)",
+    "discrimination": "Discrimination"
+  },
+
+  "pipeline": {
+    "run_btn": "Run Market Prediction",
+    "load_hint": "Click Run to start pipeline.",
+    "loading": "Loading saved result...",
+    "stages": {
+      "ontology": "Stage 1/5: Ontology",
+      "graph": "Stage 2/5: Knowledge Graph",
+      "agents": "Stage 3/5: Agents + Products",
+      "simulation": "Stage 4/5: Market Simulation (Coupling + RL)",
+      "report": "Stage 5/5: Report Generation"
+    },
+    "complete": "PIPELINE COMPLETE",
+    "elapsed": "{s}s",
+    "stages_done": "Stages: {stages}",
+    "results": "Results: {n}",
+    "no_result": "No result data"
+  },
+
+  "tabs": {
+    "products": "Products",
+    "evidence": "Evidence",
+    "agents": "Agents",
+    "graph": "Graph",
+    "chat": "Chat",
+    "network": "Network",
+    "rl": "RL Strategy",
+    "raw": "Raw Data"
+  },
+
+  "products_tab": {
+    "title": "Product Survival Prediction",
+    "survival_chart": "Product Survival Scores",
+    "adoption_curve": "Adoption Curve (S-Curve)",
+    "emotion_timeline": "Market Sentiment x Adoption",
+    "no_products": "No product data"
+  },
+
+  "evidence_tab": {
+    "title": "Evidence Report — More Than Just a Score",
+    "rebuilt_states": "Rebuilt {n} agent states from {m} simulation log entries",
+    "old_pipeline_warn": "This result is from an older pipeline without simulation logs. Run a new pipeline for full evidence.",
+    "limited_analysis": "Limited analysis based on summary data:",
+    "buyer_profile": "Buyer Profile",
+    "needs_sim_log": "Buyer details require simulation log (available after new pipeline run)",
+    "total_buyers": "Total Buyers",
+    "revenue": "Revenue",
+    "buyer_segments": "Buyer Segments",
+    "avg_budget": "Avg Budget",
+    "risk_signals": "Risk Signals",
+    "competitor_comparison": "Competitor Comparison",
+    "purchase_motivation": "Purchase Motivations",
+    "evidence_error": "Evidence extraction limited: {e}",
+    "no_sim_data": "No simulation data",
+    "price_scanner": {
+      "title": "Price Elasticity Scanner — Find Optimal Pricing",
+      "desc": "Test the same product at multiple price points. Compare adoption/revenue curves.",
+      "price_input": "Price Points (comma-separated)",
+      "price_help": "e.g. 1,3,6,9,12,18,30",
+      "scan_rounds": "Rounds per price point",
+      "rounds_help": "Fewer rounds = faster but less accurate",
+      "scan_btn": "Start Price Scan",
+      "min_prices": "Need at least 2 price points",
+      "no_agents": "No agent data. Run pipeline first.",
+      "scanning": "Scanning {n} price points, {r} rounds each...",
+      "progress": "Price {price} ({i}/{total})...",
+      "done": "{done}/{total} price points done",
+      "optimal_revenue": "Optimal Revenue",
+      "optimal_score": "Optimal Score",
+      "elapsed": "Elapsed",
+      "price_error": "Price format error. Use comma-separated numbers: 1,3,6,9"
+    }
+  },
+
+  "agents_tab": {
+    "title": "Heterogeneous Agent Population",
+    "total": "Agent Total",
+    "type_distribution": "Agent Type Distribution",
+    "market_comparison": "Market Comparison",
+    "sentiment": "Sentiment",
+    "rl_agents": "RL agents",
+    "coupling_stats": "Coupling Stats",
+    "rounds": "Rounds",
+    "final_sentiment": "Final Sentiment",
+    "rl_stats": "RL Stats",
+    "active_rounds": "Active Rounds",
+    "final_strategies": "Final Strategies",
+    "no_agent_data": "No agent data"
+  },
+
+  "graph_tab": {
+    "title": "Agent Social Network",
+    "caption": "{n} agents · Small-World Network",
+    "bipartite_title": "Product-Buyer Bipartite Graph",
+    "graph_error": "Graph generation failed: {e}",
+    "no_agent_data": "No agent data"
+  },
+
+  "chat_tab": {
+    "title": "Chat with an Agent",
+    "desc": "Select an agent and talk to it using its simulated identity",
+    "total_agents": "{total} agents, {active} with simulation history",
+    "filter_type": "Filter by type",
+    "all": "All",
+    "type_dot": "{type}",
+    "your_message": "Your message...",
+    "send": "Send",
+    "chat_fail": "Chat failed: {e}",
+    "select_agent": "Select an agent first"
+  },
+
+  "network_tab": {
+    "title": "Network Topology — Watts-Strogatz Small-World",
+    "fully_connected": "Fully Connected: premature convergence, kills diversity",
+    "ring": "Ring: too slow, preserves diversity but no diffusion",
+    "small_world": "Small-World: optimal balance — preserves diversity with fast diffusion",
+    "wrong": "WRONG",
+    "correct": "CORRECT"
+  },
+
+  "rl_tab": {
+    "title": "Economic Alignment RL — Strategy Adaptation",
+    "desc": "5-axis strategy vector (each agent learns independently)",
+    "price_sensitivity": "Price sensitivity",
+    "early_adopter": "Early adopter tendency",
+    "social_susceptibility": "Social influence susceptibility",
+    "loyalty": "Loyalty (low = easy churn)",
+    "risk_tolerance": "Risk tolerance",
+    "active_rl_rounds": "{market} Market ({rounds}/30 rounds active)",
+    "b2c_vs_smb": "B2C consumers vs SMB business strategy differences"
+  },
+
+  "raw_tab": {
+    "title": "Full JSON Output",
+    "sim_log": "Simulation Log",
+    "download": "Download Full Result (JSON)",
+    "download_help": "Save the complete pipeline output for later analysis"
+  },
+
+  "footer": {
+    "tagline": "MarketFish v5 · 6 academic papers · 6 LLMs · Built by Keystart AI",
+    "github": "GitHub"
+  },
+
+  "emotions": {
+    "excited": "Excited",
+    "satisfied": "Satisfied",
+    "curious": "Curious",
+    "neutral": "Neutral",
+    "indifferent": "Indifferent",
+    "skeptical": "Skeptical",
+    "frustrated": "Frustrated"
+  },
+
+  "status": {
+    "alive": "Alive",
+    "struggling": "Struggling",
+    "dead": "Dead",
+    "untested": "Untested",
+    "promising": "Promising",
+    "risky": "Risky",
+    "fail": "Fail"
+  },
+
+  "sim_log": {
+    "skipped": "No simulation log data available"
+  }
+}

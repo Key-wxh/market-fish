@@ -13,7 +13,7 @@ load_dotenv()
 
 import streamlit as st
 import pandas as pd
-from engine.i18n import T, tabs as i18n_tabs, set_lang, _get_lang
+from engine.i18n import t, tabs as i18n_tabs, get_lang, set_lang
 
 st.set_page_config(
     page_title="MarketFish v5 — 市场预测引擎",
@@ -48,48 +48,48 @@ st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Net
 with st.sidebar:
     # Language toggle
     if "lang" not in st.session_state:
-        st.session_state.lang = "zh"
-    lang = st.radio(T("语言", "Language"), ["🇨🇳 中文", "🇺🇸 English"],
-                    index=0 if st.session_state.lang == "zh" else 1,
+        st.session_state.lang = "en"
+    lang = st.radio(t("sidebar.language"), ["🇨🇳 中文", "🇺🇸 English"],
+                    index=0 if get_lang() == "zh" else 1,
                     horizontal=True)
-    st.session_state.lang = "zh" if lang == "🇨🇳 中文" else "en"
+    set_lang("zh" if lang == "🇨🇳 中文" else "en")
 
-    st.header(T("⚙️ 配置", "⚙️ Settings"))
+    st.header(t("sidebar.title"))
 
-    st.subheader(T("种子数据源", "Seed Data Sources"))
+    st.subheader(t("sidebar.seed_sources"))
     seed_sources = st.multiselect(
-        T("选择数据源", "Select sources"),
+        t("sidebar.select_sources"),
         ["freelancer", "economy", "tech", "consumer", "b2b"],
         default=["freelancer", "economy", "tech", "consumer", "b2b"],
     )
 
-    st.subheader(T("输入模式", "Input Mode"))
+    st.subheader(t("sidebar.input_mode"))
     input_mode = st.radio("", ["explore", "validate", "hybrid"],
                           format_func=lambda m: {"explore": "🔍 探索", "validate": "✅ 验证", "hybrid": "⚔️ 混合"}[m])
 
     user_product = None
     if input_mode in ("validate", "hybrid"):
-        with st.expander("📝 产品信息", expanded=True):
-            product_name = st.text_input("产品名", placeholder="一键翻译")
-            product_desc = st.text_area("描述", placeholder="复制文本自动弹窗翻译，无需切换App")
-            product_target = st.selectbox("目标市场", ["consumer", "smb", "enterprise"])
-            product_price = st.text_input("定价", placeholder="¥3-6 一次性")
+        with st.expander(t("sidebar.product_info"), expanded=True):
+            product_name = st.text_input(t("sidebar.product_name"), placeholder=t("sidebar.product_name_placeholder"))
+            product_desc = st.text_area(t("sidebar.product_desc"), placeholder=t("sidebar.product_desc_placeholder"))
+            product_target = st.selectbox(t("sidebar.product_target"), ["consumer", "smb", "enterprise"])
+            product_price = st.text_input(t("sidebar.product_price"), placeholder="¥3-6 一次性")
             if product_name:
                 user_product = {"name": product_name, "description": product_desc,
                                 "target_market": product_target, "pricing": product_price}
 
-    st.subheader("🧪 模拟参数")
-    sim_rounds = st.slider("模拟轮数", 10, 50, 30, 5,
-                           help="轮数越多越精确，但耗时更长。30轮为标准配置。")
-    agent_count = st.select_slider("Agent 数量",
+    st.subheader(t("sidebar.sim_params"))
+    sim_rounds = st.slider(t("sidebar.sim_rounds"), 10, 50, 30, 5,
+                           help=t("sidebar.rounds_help"))
+    agent_count = st.select_slider(t("sidebar.agent_count"),
                                     options=[30, 50, 100, 200, 500, 1000, 5000, 10000],
                                     value=50,
-                                    help="消费者数量。100+用并行批量生成, 1000+需OASIS架构(时间引擎+RecSys)。当前v5上限: 128(8批次×16), v6目标: 10000")
+                                    help=t("sidebar.agent_help"))
     agent_cap = min(agent_count, 128)  # v5 max: 128 agents (8 batches × 16)
     if agent_count > 128:
-        st.warning(f"v5 当前上限 128 agent。{agent_count} 需 v6 OASIS架构 (RecSys+时间引擎)。已自动截断。")
+        st.warning(t("sidebar.agent_limit_warn", n=agent_count))
 
-    st.subheader("模型配置")
+    st.subheader(t("sidebar.model_config"))
     from engine.model_registry import get_registry
     registry = get_registry()
     status = registry.status_report()
@@ -98,16 +98,16 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("📂 加载结果")
-    uploaded_result = st.file_uploader("上传管道结果 JSON", type=["json"], key="result_uploader",
-                                        help="上传之前运行保存的 JSON 结果文件")
+    st.subheader(t("sidebar.load_result"))
+    uploaded_result = st.file_uploader(t("sidebar.load_result") + " JSON", type=["json"], key="result_uploader",
+                                        help=t("sidebar.load_help"))
     if uploaded_result is not None:
         try:
             st.session_state.uploaded_result = json.loads(uploaded_result.read())
-            st.success(f"已加载: {uploaded_result.name}")
+            st.success(t("sidebar.load_success", name=uploaded_result.name))
         except Exception as e:
-            st.error(f"加载失败: {e}")
-    elif st.button("🔄 重置", use_container_width=True, help="清除上传的结果，恢复自动加载"):
+            st.error(t("sidebar.load_fail", error=str(e)))
+    elif st.button(t("sidebar.reset"), use_container_width=True, help=t("sidebar.reset_help")):
         st.session_state.pop("uploaded_result", None)
         st.session_state.pop("agent_states", None)
         st.session_state.pop("dialogue_history", None)
@@ -116,7 +116,7 @@ with st.sidebar:
     st.divider()
     st.caption(f"v5.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     st.caption("[GitHub](https://github.com/key-night-day/market-fish) · Keystart AI")
-    st.caption(T("语言: 中文 | 英文版完善中", "Lang: EN | Chinese WIP"))
+    st.caption(t("sidebar.lang_status"))
 
 # ── Load seed data ──
 @st.cache_data
@@ -149,8 +149,8 @@ col4.metric("Seed Sources", str(len(seed)))
 col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
 
 # ── Seed Data Transparency ──
-with st.expander("📊 种子数据来源 & 偏差声明", expanded=False):
-    st.caption("种子数据影响本体生成和知识图谱。当前为 LLM 聚合的公开信息快照，非实时数据。")
+with st.expander(t("seed_transparency.title"), expanded=False):
+    st.caption(t("seed_transparency.desc"))
     for key in seed_sources:
         meta = seed.get(key, {}).get("_meta", {})
         if meta:
@@ -161,32 +161,32 @@ with st.expander("📊 种子数据来源 & 偏差声明", expanded=False):
 
     # File upload for custom seed data
     st.divider()
-    st.caption("💡 上传你自己的种子 JSON 文件替换默认数据（可选）")
+    st.caption(t("seed_transparency.upload_hint"))
     uploaded_seed = st.file_uploader("上传种子 JSON (格式: {\"freelancer\": {...}, \"economy\": {...}, ...})",
                                       type=["json"], key="seed_uploader")
     if uploaded_seed is not None:
         try:
             custom = json.loads(uploaded_seed.read())
             seed.update(custom)
-            st.success(f"已合并 {len(custom)} 个自定义种子数据源")
+            st.success(t("seed_transparency.merged", n=len(custom)))
         except Exception as e:
             st.error(f"JSON 解析失败: {e}")
 
 # ── Calibration Section ──
-with st.expander("🧪 校准验证 — 20个已知产品验证准确率", expanded=False):
-    st.caption("用已知成败的外部产品独立验证管道预测能力。方向性验证（非统计显著性）。")
+with st.expander(t("calibration.title"), expanded=False):
+    st.caption(t("calibration.desc"))
 
     from engine.config import calibration_cases
     cases = calibration_cases()
     tested = [c for c in cases if c['outcome'] != 'untested']
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("案例总数", len(cases))
-    c2.metric("成功", sum(1 for c in cases if c['outcome'] == 'success'))
-    c3.metric("失败", sum(1 for c in cases if c['outcome'] == 'failure'))
-    c4.metric("预计耗时", f"~{len(tested) * 5}min")
+    c1.metric(t("calibration.total_cases"), len(cases))
+    c2.metric(t("calibration.success"), sum(1 for c in cases if c['outcome'] == 'success'))
+    c3.metric(t("calibration.failure"), sum(1 for c in cases if c['outcome'] == 'failure'))
+    c4.metric(t("calibration.estimated_time"), f"~{len(tested) * 5}min")
 
-    with st.expander("📋 查看全部案例", expanded=False):
+    with st.expander(t("calibration.view_all"), expanded=False):
         for c in cases:
             icon = "🟢" if c['outcome'] == 'success' else ("🔴" if c['outcome'] == 'failure' else "⚪")
             source = "公开" if not c['name'].startswith('某') else "脱敏"
@@ -215,10 +215,10 @@ with st.expander("🧪 校准验证 — 20个已知产品验证准确率", expan
 
         r1, r2, r3 = st.columns(3)
         r1.metric("关键词基线准确率", f"{kw_correct}/{len(tested)} ({kw_correct/len(tested):.0%})")
-        r2.metric("随机基线准确率", "50%")
-        r3.metric("模拟需跑管道", f"~{len(tested)*cal_runs*5}min")
+        r2.metric(t("calibration.random_accuracy"), "50%")
+        r3.metric(t("calibration.sim_estimate"), f"~{len(tested)*cal_runs*5}min")
 
-        with st.expander("📊 因子分析 (来自20案例)", expanded=False):
+        with st.expander(t("calibration.factor_analysis"), expanded=False):
             for f, d in patterns['factor_analysis'].items():
                 disc = d['discrimination']
                 bar = "█" * int(abs(disc) * 20) + ("░" * (20 - int(abs(disc) * 20)))
