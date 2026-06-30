@@ -134,7 +134,8 @@
     "emotion_timeline": "💭 市场情绪 × 采纳率",
     "no_products": "无产品数据",
     "survival_score_axis": "存活分数",
-    "cumulative_buyers": "累计买家"
+    "cumulative_buyers": "累计买家",
+    "adoption_rate": "采纳率"
   },
   "evidence_tab": {
     "title": "📋 证据报告 — 不只是分数",

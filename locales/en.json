@@ -134,7 +134,8 @@
     "emotion_timeline": "Market Sentiment x Adoption",
     "no_products": "No product data",
     "survival_score_axis": "Survival Score",
-    "cumulative_buyers": "Cumulative Buyers"
+    "cumulative_buyers": "Cumulative Buyers",
+    "adoption_rate": "Adoption Rate"
   },
   "evidence_tab": {
     "title": "Evidence Report — More Than Just a Score",

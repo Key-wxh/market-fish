@@ -154,7 +154,7 @@ def adoption_curve(sim_log: list, height: int = 260) -> go.Figure:
         line=dict(color=COLORS["alive"], width=3, shape="spline"),
         marker=dict(size=6, color=COLORS["alive"]),
         fill="tozeroy", fillcolor="rgba(0,255,136,0.1)",
-        name="Cumulative Buyers",
+        name=_t("products_tab.cumulative_buyers"),
     ))
 
     # Add vertical markers for FOMO rounds (where adoption accelerates)
@@ -243,7 +243,7 @@ def emotion_timeline(timeline: list, height: int = 250) -> go.Figure:
     fig.add_trace(go.Bar(
         x=rounds, y=adoptions,
         marker=dict(color=COLORS["consumer"], opacity=0.3),
-        name="Adoption Rate",
+        name=_t("products_tab.adoption_rate"),
     ), secondary_y=True)
 
     fig.update_layout(
