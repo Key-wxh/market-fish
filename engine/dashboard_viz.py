@@ -15,7 +15,7 @@ COLORS = {
     "consumer": "#00d4ff", "smb": "#00ff88", "enterprise": "#ff6b6b",
     "competitor": "#ffaa00", "environment": "#aa88ff",
     "price_sensitive": "#ff6b6b", "impulsive": "#ffaa00", "rational": "#00d4ff",
-    "b2c": "#00ff88", "smb": "#00d4ff",
+    "b2c": "#00ff88", "smb_market": "#00d4ff",
 }
 
 PLOT_BG = "rgba(0,0,0,0)"  # transparent — lets Streamlit dark theme through

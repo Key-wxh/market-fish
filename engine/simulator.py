@@ -246,11 +246,16 @@ def _compute_results(agent_states: dict, products: list) -> list:
                 purchasers.append(aid)
         pc = len(purchasers)
         churned = sum(1 for aid in purchasers if "churned_at" in agent_states[aid]["purchased_products"].get(pid, {}))
-        churn_r = churned / pc if pc > 0 else 0.0  # No purchasers = no one to churn
+        # Zero buyers → zero retention score (nothing to measure)
+        if pc == 0:
+            churn_r = 0.0
+            retention_term = 0.0
+        else:
+            churn_r = churned / pc
+            retention_term = (1 - churn_r) * _cfg()["score_retention_weight"]
         revenue = sum(_safe_float(st["purchased_products"].get(pid, {}).get("price_paid", 0)) for st in agent_states.values())
         adoption = pc / max(1, total_agents * _cfg()["score_adoption_denominator"])
         adoption_term = adoption * _cfg()["score_adoption_weight"]
-        retention_term = (1 - churn_r) * _cfg()["score_retention_weight"]
         revenue_norm = min(revenue / max(pc * _cfg()["score_revenue_per_user_baseline"], 1), 1.0)
         revenue_term = revenue_norm * _cfg()["score_revenue_weight"]
         score = adoption_term + retention_term + revenue_term

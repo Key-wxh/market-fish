@@ -1,14 +1,14 @@
 """
 JSON-based i18n — MiroFish-inspired architecture.
 Locales loaded from locales/{lang}.json. Dotted key lookup: t("sidebar.title")
-Default: English (for GitHub / Product Hunt). Chinese available via toggle.
+Default: Chinese for pipeline execution. English available via toggle.
+
+IMPORTANT: streamlit is lazily imported — no dependency pollution for CLI/FastAPI.
 """
 
 import json
 import os
 from pathlib import Path
-
-import streamlit as st
 
 _LOCALES = {}
 _LOCALE_DIR = Path(__file__).parent.parent / "locales"
@@ -27,28 +27,36 @@ def _load_locale(lang: str) -> dict:
     return _LOCALES[lang]
 
 
-def get_lang() -> str:
-    """Get current language. Returns 'en' by default (GitHub/PH-friendly)."""
+def _get_st_session():
+    """Lazy-load streamlit session_state. Returns None outside streamlit context."""
     try:
-        if "lang" not in st.session_state:
-            st.session_state.lang = "zh"
-        return st.session_state.lang
-    except Exception:
-        return "zh"  # fallback: Chinese for pipeline execution context
+        import streamlit as st  # lazy import — no pollution for CLI/FastAPI
+        return st.session_state
+    except (ImportError, Exception):
+        return None
+
+
+def get_lang() -> str:
+    """Get current language. Returns 'zh' for CLI/FastAPI, respects toggle in Streamlit."""
+    session = _get_st_session()
+    if session is not None:
+        if "lang" not in session:
+            session.lang = "zh"
+        return session.lang
+    return "zh"  # CLI/FastAPI default
 
 
 def set_lang(lang: str):
-    """Set language. Safe outside streamlit context."""
-    try:
-        st.session_state.lang = lang
-    except Exception:
-        pass
+    """Set language. No-op outside streamlit context."""
+    session = _get_st_session()
+    if session is not None:
+        session.lang = lang
 
 
 def t(key: str, **kwargs) -> str:
     """
     Translate a dotted key. Falls back to the key itself if not found.
-    Usage: t("sidebar.title") → "⚙️ 配置" (zh) or "Settings" (en)
+    Usage: t("sidebar.title") → "配置" (zh) or "Settings" (en)
     Supports {var} interpolation: t("sidebar.agent_limit_warn", n=1000)
     """
     lang = get_lang()
