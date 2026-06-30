@@ -5,6 +5,7 @@ MiroFish OasisProfileGenerator pattern + TwinMarket BDI architecture.
 
 import json
 from engine.llm_client import get_llm
+from engine.network import build_agent_network
 
 AGENT_SYSTEM_PROMPT = """You generate realistic market agents from a knowledge graph. Each agent must have a BDI (Belief-Desire-Intention) cognitive model for decision-making.
 
@@ -69,7 +70,7 @@ Remember: heterogeneous agents (Machine Spirits 2026 principle), BDI cognitive m
     if "agents" not in result:
         raise ValueError("Agent generation missing 'agents' field")
 
-    # Validate minimum agent diversity — warn but don't block on missing types
+    # Validate minimum agent diversity
     types = set(a["type"] for a in result["agents"])
     required = {"consumer", "smb"}
     missing = required - types
@@ -78,5 +79,11 @@ Remember: heterogeneous agents (Machine Spirits 2026 principle), BDI cognitive m
     optional_missing = {"competitor", "enterprise", "environment"} - types
     if optional_missing:
         print(f"  [WARN] Missing optional agent types: {optional_missing}")
+
+    # Apply small-world network topology (UChicago 2025)
+    result["agents"] = build_agent_network(result["agents"])
+    from engine.network import network_stats
+    stats = network_stats(result["agents"])
+    print(f"  [NET] Small-world network: {stats['agents']} agents, {stats['total_edges']} edges, avg degree {stats['avg_degree']}")
 
     return result

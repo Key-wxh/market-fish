@@ -49,6 +49,13 @@ class Pipeline:
             self.status = "stage3b_ideas"
             product_directions = generate_product_directions(knowledge_graph)
             output["stages"]["ideas"] = {"status": "ok", "count": len(product_directions)}
+
+            # Backtest filter — score directions against validated success factors
+            from engine.backtest_filter import filter_and_rank
+            product_directions = filter_and_rank(product_directions)
+            promising = sum(1 for d in product_directions if d.get("backtest_verdict") == "promising")
+            print(f"  [FILTER] {len(product_directions)} directions: {promising} promising, {len(product_directions)-promising} risky/fail", flush=True)
+            output["stages"]["backtest_filter"] = {"status": "ok", "promising": promising, "total": len(product_directions)}
             output["product_directions"] = product_directions
             self.stages_completed.append("ideas")
 
