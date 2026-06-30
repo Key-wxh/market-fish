@@ -13,7 +13,7 @@ load_dotenv()
 
 import streamlit as st
 import pandas as pd
-from engine.i18n import T, tabs as i18n_tabs, set_lang
+from engine.i18n import T, tabs as i18n_tabs, set_lang, _get_lang
 
 st.set_page_config(
     page_title="MarketFish v5 — 市场预测引擎",
@@ -48,12 +48,12 @@ st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Net
 with st.sidebar:
     # Language toggle
     lang_choice = st.radio("", ["🇨🇳 中文", "🇺🇸 English"],
-                           index=0 if st.session_state.lang == "zh" else 1,
+                           index=0 if _get_lang() == "zh" else 1,
                            horizontal=True, key="lang_toggle")
     if lang_choice == "🇨🇳 中文":
-        st.session_state.lang = "zh"
+        set_lang("zh")
     else:
-        st.session_state.lang = "en"
+        set_lang("en")
 
     st.header(T("⚙️ 配置", "⚙️ Settings"))
 
