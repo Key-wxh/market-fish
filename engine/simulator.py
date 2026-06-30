@@ -9,7 +9,7 @@ v4 changes:
 - RL strategy context injected into agent decision prompts
 """
 
-import json, time, os
+import json, time, os, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from engine.llm_client import get_llm
 from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
