@@ -297,7 +297,8 @@ if run_btn or _last_result:
         # Update all progress bars
         for k, bar in progress_bars.items():
             if k in result.get("stages_completed", []):
-                bar.progress(100, f"✅ 阶段 {['1','2','3','4','5'][['ontology','graph','agents','simulation','report'].index(k)]}/5 完成")
+                stage_names = {"ontology":"1","graph":"2","agents":"3","simulation":"4","report":"5"}
+                bar.progress(100, t("pipeline.stage_done", stage_num=stage_names.get(k,"?")))
 
         if result.get("pipeline_status") == "complete":
             st.balloons()

@@ -102,7 +102,8 @@
     "error": "Fatal Error: {e}",
     "seed_missing": "Missing seed data: {path}",
     "no_seed": "No seed data available",
-    "json_error": "JSON parse error: {e}"
+    "json_error": "JSON parse error: {e}",
+    "stage_done": "Stage {stage_num}/5 Complete"
   },
   "tabs": {
     "products": "Products",

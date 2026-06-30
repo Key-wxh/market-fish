@@ -102,7 +102,8 @@
     "error": "💥 致命错误: {e}",
     "seed_missing": "种子数据缺失: {path}",
     "no_seed": "没有可用的种子数据",
-    "json_error": "JSON 解析失败: {e}"
+    "json_error": "JSON 解析失败: {e}",
+    "stage_done": "阶段 {stage_num}/5 完成"
   },
   "tabs": {
     "products": "📊 产品预测",
