@@ -24,7 +24,8 @@ def build_agent_graph_html(agents: list, height: str = "650px",
     """Build interactive small-world agent network graph."""
     net = Network(height=height, width="100%", bgcolor="#1a1a2e",
                   font_color="white", directed=False)
-    net.heading = title
+    if title:
+        net.heading = title
 
     for agent in agents:
         atype = agent.get("type", "unknown")

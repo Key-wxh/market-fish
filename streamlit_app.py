@@ -433,7 +433,7 @@ if run_btn or _last_result:
                 if agents_list:
                     try:
                         from engine.network_viz import build_agent_graph_html
-                        graph_html = build_agent_graph_html(agents_list, height="550px")
+                        graph_html = build_agent_graph_html(agents_list, height="550px", title="")
                         st.components.v1.html(graph_html, height=580, scrolling=False)
                         st.caption(f"{len(agents_list)} agents · 小世界网络")
                     except Exception as e:
