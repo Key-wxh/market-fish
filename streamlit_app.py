@@ -769,4 +769,4 @@ else:
 
 # ── Footer ──
 st.divider()
-st.caption("MarketFish v5 · 16 academic papers · 6 LLMs · Built by Keystart AI · https://github.com/key-night-day/market-fish")
+st.caption(t("footer.tagline"))
