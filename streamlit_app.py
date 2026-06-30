@@ -102,11 +102,11 @@ if not seed:
 from engine.agent_factory import BATCHES as AGENT_BATCHES
 total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
-col1.metric("LLMs", "6", "Multi-model")
+col1.metric("Mode", {"explore": "探索", "validate": "验证", "hybrid": "混合"}[input_mode])
 col2.metric("Target Agents", str(total_agent_target), f"{len(AGENT_BATCHES)} batches")
-col3.metric("Sim Rounds", str(sim_rounds))
+col3.metric("Sim Rounds", "30")
 col4.metric("Seed Sources", str(len(seed)))
-col5.metric("Backtest Factors", "4", "100% validated")
+col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
 
 # ── Main: Run Pipeline ──
 st.divider()
