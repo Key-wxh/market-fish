@@ -40,12 +40,7 @@ class MultiLLMClient:
             "model": "qwen3-max",  # Latest flagship
             "trait": "pragmatic, cost-aware, good at business logic",
         },
-        "kimi": {
-            "key": "KIMI_API_KEY",
-            "base_url": "https://api.moonshot.cn/v1",
-            "model": "moonshot-v1-auto",  # Auto-selects best Kimi variant
-            "trait": "long-context, strategic reasoning",
-        },
+        # Kimi excluded — API rate limited. Enterprise/Graph reassigned to Baidu/Qwen.
         "doubao": {
             "key": "DOUBAO_API_KEY",
             "base_url": "https://ark.cn-beijing.volces.com/api/v3",
@@ -76,13 +71,13 @@ class MultiLLMClient:
     AGENT_MODEL_MAP = {
         "consumer": "deepseek",     # Balanced, fast JSON
         "smb": "qwen",              # Pragmatic, cost-aware
-        "enterprise": "kimi",       # Long-context, strategic
+        "enterprise": "baidu",      # Broad knowledge, enterprise-ready (was Kimi, rate-limited)
         "competitor": "deepseek",   # Creative adaptation
         "environment": "baidu",     # Broad knowledge
         "reporter_student": "doubao",  # Analytical
         "reporter_teacher": "zhipu",   # Skeptical/critical
         "ontology": "deepseek",     # Core analysis
-        "graph": "kimi",            # Relationship extraction
+        "graph": "qwen",            # Relationship extraction (was Kimi, rate-limited)
         "idea": "deepseek",         # Creative generation
         "default": "deepseek",
     }
@@ -103,15 +98,16 @@ class MultiLLMClient:
         for name in self.clients:
             print(f"  - {name}: {self.MODELS[name]['model']} ({self.MODELS[name]['trait']})")
 
-    def get_model_for(self, agent_type: str) -> str:
-        """Get the assigned model name for a given agent type."""
-        model_name = self.AGENT_MODEL_MAP.get(agent_type, "default")
-        # Fallback to deepseek if assigned model is not configured
-        if model_name not in self.clients:
-            model_name = "deepseek"
-        if model_name not in self.clients:
-            model_name = list(self.clients.keys())[0]
-        return model_name
+    def _resolve_model(self, agent_type: str) -> str:
+        """Resolve model name with fallback. If assigned model is unavailable, use deepseek."""
+        primary = self.AGENT_MODEL_MAP.get(agent_type, "default")
+        if primary in self.clients:
+            return primary
+        # Fallback chain
+        for fallback in ["deepseek", "qwen", "doubao", "baidu", "hunyuan", "zhipu", "kimi"]:
+            if fallback in self.clients:
+                return fallback
+        return list(self.clients.keys())[0]
 
     def chat_json(
         self,
@@ -121,8 +117,8 @@ class MultiLLMClient:
         temperature: float = 0.7,
         max_retries: int = 3,
     ) -> dict:
-        """8-layer JSON pipeline with heterogeneous model selection."""
-        model_name = self.get_model_for(agent_type)
+        """8-layer JSON pipeline with heterogeneous model selection + automatic fallback."""
+        model_name = self._resolve_model(agent_type)
         client = self.clients[model_name]
         cfg = self.MODELS[model_name]
 
@@ -168,6 +164,25 @@ class MultiLLMClient:
                 # Layer 8: parse
                 result = json.loads(repaired)
                 return result
+
+            except Exception as e:
+                err_str = str(e)
+                # If auth failure, mark model as unavailable and fallback
+                if "401" in err_str or "Invalid Authentication" in err_str or "auth" in err_str.lower():
+                    if model_name in self.clients:
+                        print(f"  [AUTH_FAIL] {model_name} key invalid — removing from pool")
+                        del self.clients[model_name]
+                    # Retry with fallback model
+                    model_name = self._resolve_model(agent_type)
+                    if model_name not in self.clients:
+                        raise RuntimeError(f"All models exhausted after auth failure on {model_name}")
+                    client = self.clients[model_name]
+                    cfg = self.MODELS[model_name]
+                    continue
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(1.0)
+                continue
 
             except json.JSONDecodeError:
                 if attempt == max_retries - 1:
