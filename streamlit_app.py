@@ -30,7 +30,7 @@ st.markdown("""
     .mf-logo { font-size: 2rem; }
     .mf-title { font-size: 1.8rem; font-weight: 800; color: #00d4ff; letter-spacing: -0.5px; }
     .mf-badge { font-size: 0.7rem; background: #00ff88; color: #0a0a1a; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px; }
-    .mf-subtitle { opacity: 0.6; font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem; }
+    .mf-subtitle { color: #888; font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem; }
 
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab"] { font-size: 0.85rem; padding: 0.5rem 0.8rem; }
