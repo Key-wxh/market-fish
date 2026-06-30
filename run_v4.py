@@ -3,6 +3,12 @@ import json, sys, traceback, time, os, argparse
 from dotenv import load_dotenv
 load_dotenv()
 
+# Fix Windows GBK encoding when piping to file
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 from engine.pipeline import Pipeline
 
 

@@ -31,10 +31,10 @@ def init_strategy(agent_profile: dict) -> dict:
     Personality traits from agent profile map to initial strategy values.
     """
     agent_type = agent_profile.get("type", "consumer")
-    tech = agent_profile.get("tech_savviness", 0.5)
-    inf = agent_profile.get("influence_weight", 1.0)
-    budget = agent_profile.get("budget_monthly_cny", 500)
-    decision_speed = agent_profile.get("decision_speed", "days")
+    tech = float(agent_profile.get("tech_savviness", 0.5))
+    inf = float(agent_profile.get("influence_weight", 1.0))
+    budget = float(agent_profile.get("budget_monthly_cny", 500))
+    decision_speed = str(agent_profile.get("decision_speed", "days"))
     bdi = agent_profile.get("bdi", {})
 
     bounds = _cfg()["agent_type_bounds"].get(agent_type, _cfg()["agent_type_bounds"]["default"])

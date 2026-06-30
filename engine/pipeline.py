@@ -231,5 +231,9 @@ class Pipeline:
             output["error"] = str(e)
             output["failed_at_stage"] = self.status
             output["stages_completed"] = self.stages_completed
+            import traceback
+            output["traceback"] = traceback.format_exc()
+            print(f"  [ERROR] {e}", flush=True)
+            traceback.print_exc()
 
         return output
