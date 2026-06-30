@@ -547,7 +547,8 @@ if run_btn or _last_result:
                     st.subheader(t("agents_tab.market_comparison"))
                     for market, data in coupling_data.items():
                         rl_market = rl_data.get(market, {})
-                        with st.expander(t("market.market_header", m=market.upper(), s=data.get("final_sentiment", 0), n=rl_market.get("final_strategies_count", 0))):
+                        s_val = f"{data.get('final_sentiment', 0):.3f}"
+                        with st.expander(t("market.market_header", m=market.upper(), s=s_val, n=rl_market.get("final_strategies_count", 0))):
                             col_a, col_b = st.columns(2)
                             with col_a:
                                 st.write(t("agents_tab.coupling_stats"))
