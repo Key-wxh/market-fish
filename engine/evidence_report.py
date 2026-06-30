@@ -319,11 +319,8 @@ def _rebuild_agent_states_from_log(pipeline_result: dict) -> dict:
     """Rebuild agent_states from the simulation log (for post-hoc evidence extraction)."""
     states = {}
     sim_stage = pipeline_result.get("stages", {}).get("simulation", {})
-    log = []
-    # The simulation log is in the full result's timeline
-    for market_log in [pipeline_result.get("stages", {}).get("simulation", {}).get("log", [])]:
-        if isinstance(market_log, list):
-            log.extend(market_log)
+    # Try both key names (sim_log is the new name, log is legacy)
+    log = sim_stage.get("sim_log", sim_stage.get("log", []))
 
     for entry in log:
         if not isinstance(entry, dict):

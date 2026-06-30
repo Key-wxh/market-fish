@@ -253,55 +253,80 @@ if run_btn or _last_result:
             with tab2:
                 st.subheader("📋 证据报告 — 不只是分数")
 
-                if result.get("final_report", {}).get("simulation_results"):
-                    from engine.evidence_report import generate_evidence_report
-                    sim_results = result["final_report"]["simulation_results"]
-                    agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+                sim_results = result.get("final_report", {}).get("simulation_results", [])
+                sim_stage = result.get("stages", {}).get("simulation", {})
+                coupling_stats = sim_stage.get("cross_domain_coupling", {})
+                sim_log = sim_stage.get("sim_log", [])
 
-                    for p in sim_results[:5]:
-                        pid = p.get("product_id", p.get("id", ""))
-                        pname = p.get("product_name", p.get("name", "?"))
+                if sim_results:
+                    # Try to rebuild agent_states from simulation log
+                    agent_states = {}
+                    if sim_log:
+                        from engine.evidence_report import _rebuild_agent_states_from_log
+                        agent_states = _rebuild_agent_states_from_log(result)
+                        st.caption(f"从 {len(sim_log)} 条模拟日志重建了 {len(agent_states)} 个 agent 状态")
+                    else:
+                        st.warning("⚠️ 此结果来自旧版管道，缺少模拟日志。新管道运行后会有完整证据链。")
+                        st.caption("以下是基于汇总数据的有限分析：")
+
+                    # Dedup products
+                    seen = {}
+                    for r in sim_results:
+                        name = r.get('product_name', '')
+                        if name not in seen:
+                            seen[name] = dict(r)
+                        else:
+                            seen[name]['purchasers'] = seen[name].get('purchasers',0) + r.get('purchasers',0)
+                            seen[name]['total_revenue_cny'] = round(seen[name].get('total_revenue_cny',0) + r.get('total_revenue_cny',0), 2)
+
+                    for pname, p in seen.items():
                         score = p.get("survival_score", 0)
                         status = p.get("status", "dead")
                         emoji = "🟢" if status == "alive" else ("🟡" if status == "struggling" else "🔴")
 
                         with st.expander(f"{emoji} {pname[:40]} — score: {score:.2f} | {p.get('purchasers',0)} buyers | ¥{p.get('total_revenue_cny',0)}"):
-                            # Generate evidence report from simulation data
                             try:
-                                # Use the result's coupling stats
-                                coupling_stats = result.get("stages", {}).get("simulation", {}).get("cross_domain_coupling", {})
-                                mock_states = {}  # Post-hoc — states not available in pipeline result
-                                mock_agents = agents_list
+                                agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
+                                from engine.evidence_report import build_buyer_profile, compare_with_competitors, generate_risk_signals, extract_purchase_reasons
 
-                                if mock_agents:
-                                    from engine.evidence_report import build_buyer_profile, compare_with_competitors, generate_risk_signals
-                                    buyer = build_buyer_profile(pid, {}, mock_agents)
-                                    comps = compare_with_competitors(pid, sim_results)
-                                    risks = generate_risk_signals(pid, buyer, coupling_stats)
+                                buyer = build_buyer_profile(p.get('product_id',''), agent_states, agents_list)
+                                comps = compare_with_competitors(p.get('product_id',''), sim_results)
+                                risks = generate_risk_signals(p.get('product_id',''), buyer, coupling_stats)
 
-                                    c1, c2 = st.columns(2)
-                                    with c1:
-                                        st.write("**买家画像**")
-                                        if buyer["total_buyers"] > 0:
-                                            for seg in buyer["segments"]:
-                                                st.write(f"- {seg['name']}: {seg['pct']}%")
-                                            st.write(f"平均月预算: ¥{buyer['avg_budget']}")
-                                        else:
-                                            st.write("无买家数据")
+                                c1, c2 = st.columns(2)
+                                with c1:
+                                    st.write("**买家画像**")
+                                    if buyer["total_buyers"] > 0:
+                                        for seg in buyer["segments"]:
+                                            st.write(f"- {seg['name']}: {seg['pct']}%")
+                                        st.write(f"平均月预算: ¥{buyer['avg_budget']}")
+                                    else:
+                                        st.write("买家细节需模拟日志（新管道运行后可用）")
+                                        st.write(f"买家总数: {p.get('purchasers', 0)}")
+                                        st.write(f"营收: ¥{p.get('total_revenue_cny', 0)}")
 
-                                        st.write("**风险信号**")
-                                        for r in risks:
-                                            level_color = {"low": "green", "medium": "orange", "high": "red"}
-                                            st.markdown(f":{level_color.get(r['level'],'gray')}[{r['signal']}] — {r['detail']}")
+                                    st.write("**风险信号**")
+                                    for r in risks:
+                                        level_color = {"low": "green", "medium": "orange", "high": "red"}
+                                        st.markdown(f":{level_color.get(r['level'],'gray')}[{r['signal']}] — {r['detail']}")
 
-                                    with c2:
-                                        st.write("**竞品对比**")
-                                        for c in comps:
-                                            icon = "🟢" if c["status"] == "alive" else "🔴"
-                                            death = f" — {c['death_cause']}" if c.get("death_cause") else ""
-                                            st.write(f"{icon} {c['name'][:25]}: score={c['score']:.2f}, buyers={c['purchasers']}{death}")
+                                with c2:
+                                    st.write("**竞品对比**")
+                                    for c in comps:
+                                        icon = "🟢" if c["status"] == "alive" else "🔴"
+                                        death = f" — {c['death_cause']}" if c.get("death_cause") else ""
+                                        st.write(f"{icon} {c['name'][:25]}: score={c['score']:.2f}, buyers={c['purchasers']}{death}")
+
+                                    # Show purchase motivation if log available
+                                    if sim_log:
+                                        reasons = extract_purchase_reasons(p.get('product_id',''), agent_states)
+                                        if reasons:
+                                            st.write("**购买动机 (示例)**")
+                                            for r in reasons[:3]:
+                                                st.caption(f"\"{r['reasoning'][:80]}\"")
+
                             except Exception as e:
-                                st.caption(f"Evidence extraction limited: {e}")
+                                st.caption(f"证据提取受限: {e}")
                 else:
                     st.info("无模拟结果数据")
 

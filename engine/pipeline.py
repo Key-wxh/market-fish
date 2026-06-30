@@ -194,6 +194,9 @@ class Pipeline:
                 )
                 all_results.extend(sim_result.get("results", []))
 
+                # Save simulation log for post-hoc evidence extraction
+                output["stages"]["simulation"]["sim_log"].extend(sim_result.get("log", []))
+
                 if sim_result.get("coupling_history"):
                     coupling_stats[market_type] = {
                         "rounds": len(sim_result["coupling_history"]),
@@ -208,6 +211,7 @@ class Pipeline:
                 "total_results": len(all_results),
                 "cross_domain_coupling": coupling_stats,
                 "economic_alignment_rl": rl_stats,
+                "sim_log": [],  # populated per-market below
             }
             self.stages_completed.append("simulation")
 
