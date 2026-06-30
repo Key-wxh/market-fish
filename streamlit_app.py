@@ -22,50 +22,33 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ──
+# ── Custom CSS (dark/light adaptive) ──
 st.markdown("""
 <style>
-    /* ── Global ── */
-    .stApp { background: linear-gradient(180deg, #0a0a1a 0%, #0d0d2b 100%); }
-    section[data-testid="stSidebar"] { background: #0d0d24; border-right: 1px solid #1a1a3e; }
-
     /* ── Header ── */
     .mf-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.3rem; }
     .mf-logo { font-size: 2rem; }
     .mf-title { font-size: 1.8rem; font-weight: 800; color: #00d4ff; letter-spacing: -0.5px; }
     .mf-badge { font-size: 0.7rem; background: #00ff88; color: #0a0a1a; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px; }
-    .mf-subtitle { color: #666; font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem; }
-
-    /* ── KPI row ── */
-    .mf-kpi-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-    .mf-kpi-row > div { flex: 1; background: #111133; border: 1px solid #1a1a4e; border-radius: 10px; padding: 0.8rem 0.5rem; text-align: center; }
-    .mf-kpi-row [data-testid="stMetricValue"] { font-size: 1.4rem !important; color: #00d4ff !important; }
-    .mf-kpi-row [data-testid="stMetricDelta"] { font-size: 0.75rem !important; color: #666 !important; }
-
-    /* ── Expanders ── */
-    [data-testid="stExpander"] { border: 1px solid #1a1a3e !important; border-radius: 10px !important; margin-bottom: 0.5rem !important; }
-    [data-testid="stExpander"] .streamlit-expanderHeader { font-weight: 600; color: #ccc; background: #0d0d28; border-radius: 10px; }
+    .mf-subtitle { opacity: 0.6; font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem; }
 
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab"] { font-size: 0.85rem; padding: 0.5rem 0.8rem; }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] { border-bottom: 2px solid #00d4ff; color: #00d4ff; }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { border-bottom: 2px solid #00d4ff !important; }
 
-    /* ── Cards ── */
-    .metric-card { background: #111133; border: 1px solid #1a1a4e; border-radius: 10px; padding: 1rem; text-align: center; }
-    .metric-value { font-size: 1.8rem; font-weight: 700; color: #00d4ff; }
-    .metric-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-    .alive-badge { color: #00ff88; font-weight: 600; }
-    .dead-badge { color: #ff4444; font-weight: 600; }
-    .promising-badge { color: #ffaa00; font-weight: 600; }
-    .agent-card { background: #16213e; border-radius: 8px; padding: 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
-    .stage-done { color: #00ff88; }
+    /* ── Status badges ── */
+    .alive-badge { color: #00aa66; font-weight: 600; }
+    .dead-badge { color: #dd3333; font-weight: 600; }
+    .promising-badge { color: #dd8800; font-weight: 600; }
+    .agent-card { border: 1px solid rgba(128,128,128,0.2); border-radius: 8px; padding: 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
+
+    /* ── Progress states ── */
+    .stage-done { color: #00aa66; }
     .stage-running { color: #00d4ff; animation: pulse 1.5s infinite; }
-
-    /* ── Animations ── */
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
     /* ── Footer ── */
-    .mf-footer { text-align: center; color: #444; font-size: 0.75rem; padding: 1rem 0; border-top: 1px solid #111; margin-top: 2rem; }
+    .mf-footer { text-align: center; opacity: 0.45; font-size: 0.75rem; padding: 1rem 0; border-top: 1px solid rgba(128,128,128,0.15); margin-top: 2rem; }
 </style>
 """, unsafe_allow_html=True)
 
