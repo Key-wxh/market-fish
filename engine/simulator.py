@@ -11,6 +11,15 @@ v4 changes:
 
 import json, time, os, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def _safe_float(v, default=0.0):
+    """Convert LLM output to float, handling strings and None."""
+    if v is None:
+        return default
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return default
 from engine.llm_client import get_llm
 from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
 from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
@@ -79,8 +88,8 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
 
 def simulate(agents: list, product_directions: list, rounds: int = 30, market_type: str = "b2c") -> dict:
     """Run 30-round market simulation with parallel agent decisions, coupling, and RL."""
-    # Cap agents for speed
-    consumer_agents = [a for a in agents if a.get("type") == "consumer"][:30]
+    # Cap agents for speed — use more with batch generation
+    consumer_agents = [a for a in agents if a.get("type") == "consumer"][:50]
     other_agents = [a for a in agents if a.get("type") != "consumer"]
     selected_agents = consumer_agents + other_agents
 
@@ -98,7 +107,7 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
     log, timeline = [], []
     coupling_history = []
     rl_history = []
-    batch_size = 10
+    batch_size = 15  # More parallel workers for larger agent count
     started = time.time()
 
     for rnd in range(1, rounds + 1):
@@ -125,7 +134,7 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
 
                 # Apply coupling adjustments
                 emotional_state = decision.get("emotional_state", state["emotional_state"])
-                base_wtp = decision.get("willingness_to_pay_cny", 0)
+                base_wtp = _safe_float(decision.get("willingness_to_pay_cny", 0))
 
                 # FOMO boost
                 if pid and action in ("evaluate", "discover"):
@@ -142,8 +151,9 @@ def simulate(agents: list, product_directions: list, rounds: int = 30, market_ty
                 if action == "discover" and pid:
                     state["discovered_products"].add(pid)
                 if action == "purchase" and pid:
-                    state["purchased_products"][pid] = {"round": rnd, "price_paid": decision.get("willingness_to_pay_cny", 0)}
-                    state["total_spent"] += decision.get("willingness_to_pay_cny", 0)
+                    wtp = _safe_float(decision.get("willingness_to_pay_cny", 0))
+                    state["purchased_products"][pid] = {"round": rnd, "price_paid": wtp}
+                    state["total_spent"] += wtp
                 if action == "churn" and pid and pid in state["purchased_products"]:
                     state["purchased_products"][pid]["churned_at"] = rnd
                 if action == "recommend" and pid:
@@ -228,7 +238,7 @@ def _compute_results(agent_states: dict, products: list) -> list:
         pc = len(purchasers)
         churned = sum(1 for aid in purchasers if "churned_at" in st["purchased_products"].get(pid, {}))
         churn_r = churned / pc if pc > 0 else 1.0
-        revenue = sum(st["purchased_products"].get(pid, {}).get("price_paid", 0) for st in agent_states.values())
+        revenue = sum(_safe_float(st["purchased_products"].get(pid, {}).get("price_paid", 0)) for st in agent_states.values())
         score = (pc / max(1, total_agents * 0.1)) * 0.4 + ((1 - churn_r) * 0.3) + (min(revenue / max(pc * 50, 1), 1.0) * 0.3)
         results.append({"product_id": pid, "product_name": p.get("name", ""), "purchasers": pc,
                         "churn_rate": round(churn_r, 2), "total_revenue_cny": revenue,
