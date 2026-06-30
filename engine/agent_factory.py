@@ -47,8 +47,9 @@ MANDATORY:
 - Budgets in CNY must be realistic for the agent's income level.
 """
 
-# Batch definitions loaded from config/defaults.yaml
-BATCHES = _batches()
+# Batch definitions — lazy-loaded from config/defaults.yaml
+def _get_batches():
+    return _batches()
 
 
 def _generate_one_batch(batch_def: dict, knowledge_graph: dict, product_directions: list) -> list:
@@ -89,15 +90,15 @@ Use realistic 2026 China data. IDs must be unique slugs."""
 
 def generate_agents(knowledge_graph: dict, product_directions: list[dict]) -> dict:
     """Stage 3a: Generate 100+ agents via parallel batch LLM calls."""
-    print(f"  [AGENT] Generating agents in {len(BATCHES)} parallel batches...", flush=True)
+    print(f"  [AGENT] Generating agents in {len(_get_batches())} parallel batches...", flush=True)
 
     all_agents = []
     failures = 0
 
-    with ThreadPoolExecutor(max_workers=min(_cfg()["max_workers"], len(BATCHES))) as executor:
+    with ThreadPoolExecutor(max_workers=min(_cfg()["max_workers"], len(_get_batches()))) as executor:
         futures = {
             executor.submit(_generate_one_batch, batch, knowledge_graph, product_directions): batch["label"]
-            for batch in BATCHES
+            for batch in _get_batches()
         }
         for future in as_completed(futures):
             label = futures[future]

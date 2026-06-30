@@ -99,7 +99,8 @@ if not seed:
     st.stop()
 
 # ── KPI Bar ──
-from engine.agent_factory import BATCHES as AGENT_BATCHES
+from engine.agent_factory import _get_batches
+AGENT_BATCHES = _get_batches()
 total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Mode", {"explore": "探索", "validate": "验证", "hybrid": "混合"}[input_mode])

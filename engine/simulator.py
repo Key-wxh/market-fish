@@ -240,7 +240,7 @@ def _compute_results(agent_states: dict, products: list) -> list:
             if pid in st["purchased_products"]:
                 purchasers.append(aid)
         pc = len(purchasers)
-        churned = sum(1 for aid in purchasers if "churned_at" in st["purchased_products"].get(pid, {}))
+        churned = sum(1 for aid in purchasers if "churned_at" in agent_states[aid]["purchased_products"].get(pid, {}))
         churn_r = churned / pc if pc > 0 else 1.0
         revenue = sum(_safe_float(st["purchased_products"].get(pid, {}).get("price_paid", 0)) for st in agent_states.values())
         adoption = pc / max(1, total_agents * _cfg()["score_adoption_denominator"])
