@@ -47,13 +47,12 @@ st.markdown('<p class="sub-header">6-LLM Heterogeneous Agents · Small-World Net
 # ── Sidebar ──
 with st.sidebar:
     # Language toggle
-    lang_choice = st.radio("", ["🇨🇳 中文", "🇺🇸 English"],
-                           index=0 if _get_lang() == "zh" else 1,
-                           horizontal=True, key="lang_toggle")
-    if lang_choice == "🇨🇳 中文":
-        set_lang("zh")
-    else:
-        set_lang("en")
+    if "lang" not in st.session_state:
+        st.session_state.lang = "zh"
+    lang = st.radio(T("语言", "Language"), ["🇨🇳 中文", "🇺🇸 English"],
+                    index=0 if st.session_state.lang == "zh" else 1,
+                    horizontal=True)
+    st.session_state.lang = "zh" if lang == "🇨🇳 中文" else "en"
 
     st.header(T("⚙️ 配置", "⚙️ Settings"))
 
