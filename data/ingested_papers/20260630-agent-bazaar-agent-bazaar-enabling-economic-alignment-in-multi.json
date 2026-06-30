@@ -1,0 +1,120 @@
+{
+  "paper_metadata": {
+    "title": "Agent Bazaar: Enabling Economic Alignment in Multi-Agent Marketplaces",
+    "authors": "Seth Karten, Cameron Crow, Chi Jin",
+    "venue": "arXiv",
+    "year": "2026",
+    "arxiv_id": "2605.17698v1"
+  },
+  "key_findings": [
+    {
+      "finding": "LLM agents fail to self-regulate in multi-agent marketplaces, exhibiting two distinct failure modes: Algorithmic Instability (The Crash) where firms undercut prices below cost causing market collapse, and Sybil Deception (The Lemon Market) where a single agent uses multiple identities to flood the market with fraudulent listings.",
+      "strength": 0.95,
+      "category": "empirical"
+    },
+    {
+      "finding": "Economically aligned harnesses (Stabilizing Firms and Skeptical Guardians) improve market outcomes but remain fragile under harder conditions, such as higher consumer discovery limits or larger Sybil clusters.",
+      "strength": 0.85,
+      "category": "empirical"
+    },
+    {
+      "finding": "REINFORCE++ training with an adaptive curriculum on market trajectories produces a 9B model (AI Bazaar) that outperforms all evaluated frontier and open-weight models, achieving an Economic Alignment Score (EAS) of 0.79.",
+      "strength": 0.9,
+      "category": "empirical"
+    },
+    {
+      "finding": "Economic alignment is orthogonal to general reasoning capability; model size does not predict EAS, and targeted RL can directly train agents to internalize market externalities.",
+      "strength": 0.8,
+      "category": "theoretical"
+    }
+  ],
+  "new_concepts": [
+    {
+      "name": "Economic Alignment",
+      "definition": "The capacity of agentic systems to preserve market stability and integrity, ensuring smooth dynamics and protecting human welfare against exploitation.",
+      "marketfish_relevance": "Defines a new safety dimension for agents in MarketFish simulations, beyond individual helpfulness."
+    },
+    {
+      "name": "The Crash (B2C Market Failure)",
+      "definition": "A destructive price spiral where firms recursively undercut each other below unit cost, triggering cascading bankruptcies and market collapse.",
+      "marketfish_relevance": "Models a risk in agent‑populated B2C platforms within MarketFish, requiring stabilisation mechanisms."
+    },
+    {
+      "name": "The Lemon Market (C2C Market Failure)",
+      "definition": "A Sybil attack where a single deceptive principal operates multiple coordinated seller identities to flood the market with fraudulent listings, eroding trust.",
+      "marketfish_relevance": "Highlights a vulnerability in C2C marketplaces simulated by MarketFish, motivating fraud detection agents."
+    },
+    {
+      "name": "Stabilizing Firm",
+      "definition": "An agent harness that instructs a firm to hold prices above unit cost regardless of competitor behaviour, acting as a price anchor to prevent crashes.",
+      "marketfish_relevance": "Can be implemented as a configurable agent persona in MarketFish to enforce economic alignment."
+    },
+    {
+      "name": "Skeptical Guardian",
+      "definition": "An agent harness that instructs buyers to cross‑reference listing prices, seller reputation, and historical transactions to detect and avoid fraudulent listings.",
+      "marketfish_relevance": "Provides a buyer‑side fraud detection module for MarketFish simulations."
+    },
+    {
+      "name": "Economic Alignment Score (EAS)",
+      "definition": "A scalar metric aggregating market stability, integrity, welfare, and profitability into a single 0‑1 score for cross‑model comparison.",
+      "marketfish_relevance": "Offers a holistic evaluation metric for agent behaviour in MarketFish experiments."
+    },
+    {
+      "name": "REINFORCE++ Training for Economic Alignment",
+      "definition": "An RL fine‑tuning method using LoRA and an adaptive curriculum that trains agents to internalise market externalities, avoiding failures like crashes or fraud.",
+      "marketfish_relevance": "Enables MarketFish to produce robust, aligned agents without manual rule design."
+    }
+  ],
+  "config_implications": {
+    "new_parameters": [
+      {
+        "name": "discovery_limit",
+        "type": "int",
+        "range": "1 to 10",
+        "default": "3",
+        "reason": "Controls how many counterparties an agent can observe per timestep; higher values increase competitive pressure and risk of crashes."
+      },
+      {
+        "name": "stabilizing_firm_count",
+        "type": "int",
+        "range": "0 to N",
+        "default": "0",
+        "reason": "Number of agents using the Stabilizing Firm harness; reduces bankruptcy rates in B2C markets."
+      },
+      {
+        "name": "sybil_cluster_size",
+        "type": "int",
+        "range": "0 to N",
+        "default": "0",
+        "reason": "Number of coordinated fraudulent identities in C2C markets; tests robustness against Sybil attacks."
+      },
+      {
+        "name": "use_economic_alignment_harness",
+        "type": "str",
+        "range": "['none', 'stabilizing_firm', 'skeptical_guardian']",
+        "default": "none",
+        "reason": "Activates in‑context reflection and alignment instructions for agents."
+      },
+      {
+        "name": "use_rl_training",
+        "type": "bool",
+        "range": "true/false",
+        "default": "false",
+        "reason": "Enables REINFORCE++ fine‑tuning to produce economically aligned agents, as shown in the paper."
+      }
+    ],
+    "modify_existing": [
+      {
+        "param_path": "SIMULATION.rounds",
+        "current": "100",
+        "suggested": "365",
+        "reason": "Longer horizons (≥365 days) are necessary to observe collapse and recovery dynamics in The Crash scenario."
+      }
+    ]
+  },
+  "pipeline_implications": {
+    "new_stage": "Economic Alignment Finetuning and Evaluation",
+    "modify_stage": null,
+    "rationale": "The paper demonstrates that after standard training, agents can be further fine‑tuned with RL on market episodes to prevent instabilities and fraud. A dedicated pipeline stage should be added to train and evaluate agents using the Economic Alignment Score (EAS) before deployment."
+  }
+}

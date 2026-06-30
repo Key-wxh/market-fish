@@ -632,77 +632,8 @@ if run_btn or _last_result:
 else:
     st.info("👆 点击「🚀 运行市场预测」启动全管道。已有的验证结果会自动加载。")
 
-    # Clean up old idle code
-    if False:
-        latest = sorted(result_files)[-1]
-        filepath = f"uploads/{latest}"
-        try:
-            with open(filepath, encoding='utf-8') as f:
-                last_result = json.load(f)
-        except Exception:
-            last_result = None
-
-        if last_result:
-            st.success(f"📁 上次运行: `{latest}` ({last_result.get('elapsed_seconds',0):.0f}s, {last_result.get('input_mode','?')} mode)")
-
-            if st.button("📊 展开完整报告", use_container_width=True):
-                # Re-use the same tab display logic from above by setting result
-                result = last_result
-                sim_lines = []
-                # Show tabs (same code as post-run)
-                if result.get("pipeline_status") == "complete":
-                    st.balloons()
-                    # Re-import tab rendering by re-running the tab block inline
-                    # For now, show key metrics
-                    sim_results = result.get("final_report", {}).get("simulation_results", [])
-                    # Deduplicate by product name
-                    seen_names = {}
-                    unique_results = []
-                    for r in sim_results:
-                        name = r.get('product_name', '')
-                        if name not in seen_names:
-                            seen_names[name] = r
-                            unique_results.append(r)
-                        else:
-                            # Merge: sum purchasers and revenue
-                            seen_names[name]['purchasers'] = seen_names[name].get('purchasers',0) + r.get('purchasers',0)
-                            seen_names[name]['total_revenue_cny'] = round(
-                                seen_names[name].get('total_revenue_cny',0) + r.get('total_revenue_cny',0), 2)
-                            seen_names[name]['survival_score'] = max(
-                                seen_names[name].get('survival_score',0), r.get('survival_score',0))
-
-                    if unique_results:
-                        st.subheader("🎯 产品预测")
-                        cols = st.columns(min(len(unique_results), 4))
-                        for i, name in enumerate(list(seen_names.keys())[:4]):
-                            r = seen_names[name]
-                            with cols[i % 4]:
-                                status = r.get("status", "dead")
-                                emoji = "🟢" if status == "alive" else "🔴"
-                                st.metric(f"{emoji} {name[:25]}",
-                                    f"Score: {r.get('survival_score',0):.2f}",
-                                    f"Buyers: {r.get('purchasers',0)} | Rev: ¥{r.get('total_revenue_cny',0)}")
-
-                    # Show coupling & RL summary
-                    sim_stage = result.get("stages", {}).get("simulation", {})
-                    coupling = sim_stage.get("cross_domain_coupling", {})
-                    rl_data = sim_stage.get("economic_alignment_rl", {})
-                    if coupling:
-                        st.subheader("📊 市场对比")
-                        c1, c2 = st.columns(2)
-                        for idx, (mkt, data) in enumerate(coupling.items()):
-                            rl_mkt = rl_data.get(mkt, {})
-                            with [c1, c2][idx % 2]:
-                                st.metric(f"{mkt.upper()} 情绪", f"{data.get('final_sentiment',0):.3f}")
-                                st.metric("RL Agents", rl_mkt.get('final_strategies_count', 0))
-                        # Total unique buyers across all markets
-                        total_buyers = sum(seen_names[n].get('purchasers', 0) for n in seen_names)
-                        st.metric("总买家", total_buyers)
-                    st.info("💡 点击「🚀 运行市场预测」触发完整管道，跑完后可查看全部 8 个 tab")
-                else:
-                    st.error(f"管道失败: {result.get('error','?')}")
     else:
-        st.info("👆 点击「🚀 运行市场预测」启动全管道。上次验证结果: `v5_validate_v3.json` (蜜洲翻译, 51min, 6/6 stages)")
+        st.info("👆 点击「🚀 运行市场预测」启动全管道。")
 
 # ── Footer ──
 st.divider()

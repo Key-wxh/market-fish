@@ -147,7 +147,9 @@ def propagate_emotions(agent_states: dict) -> dict:
 
         # Compute new valence: own + social + macro, clamped to [-1, 1]
         own_valence = current_emotions[aid]
-        new_valence = own_valence * (1 - _cfg()["contagion_strength"] * susceptibility - _cfg()["market_sentiment_weight"])
+        own_weight = 1 - _cfg()["contagion_strength"] * susceptibility - _cfg()["market_sentiment_weight"]
+        own_weight = max(0.1, own_weight)  # Agent always retains ≥10% of own emotion
+        new_valence = own_valence * own_weight
         new_valence += social_influence + macro_influence
         new_valence = max(-1.0, min(1.0, new_valence))
 

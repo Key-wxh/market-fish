@@ -147,7 +147,15 @@ class ModelRegistry:
     # ── Client management ──
 
     def _get_client(self, provider_name: str, pinfo: dict, api_type: str):
-        """Get or create a client for a provider."""
+        """Get or create a client for a provider.
+
+        Currently supports:
+        - openai_compatible: Any OpenAI-compatible API (DeepSeek, Qwen, Doubao, Zhipu, Baidu, Hunyuan, etc.)
+        - anthropic_messages: REQUIRES anthropic SDK (`pip install anthropic`) — not yet implemented
+        - google_gemini: REQUIRES google-generativeai SDK (`pip install google-generativeai`) — not yet implemented
+
+        Providers with unsupported api_types are skipped during resolve().
+        """
         if provider_name in self.clients:
             return self.clients[provider_name]
 
@@ -167,30 +175,20 @@ class ModelRegistry:
                     max_retries=max_retries,
                 )
             elif api_type == "anthropic_messages":
-                # Anthropic uses the same OpenAI-compatible base (with /v1/messages)
-                # Their Messages API is accessible via the same base_url pattern
-                client = OpenAI(
-                    api_key=api_key,
-                    base_url=pinfo.get("base_url", "https://api.anthropic.com/v1"),
-                    timeout=timeout,
-                    max_retries=max_retries,
-                )
+                # Anthropic Messages API uses a different request format.
+                # Requires `pip install anthropic` and an Anthropic(api_key=...) client.
+                # TODO(v6): Implement AnthropicMessagesAdapter class.
+                print(f"  [REGISTRY] {provider_name}: anthropic_messages requires SDK — skipped", flush=True)
+                return None
             elif api_type == "google_gemini":
-                # Google Gemini has a different API structure
-                # We create an OpenAI-compatible wrapper for now
-                client = OpenAI(
-                    api_key=api_key,
-                    base_url=pinfo.get("base_url", ""),
-                    timeout=timeout,
-                    max_retries=max_retries,
-                )
+                # Google Gemini API uses a different request format.
+                # Requires `pip install google-generativeai` and genai.Client.
+                # TODO(v6): Implement GeminiAdapter class.
+                print(f"  [REGISTRY] {provider_name}: google_gemini requires SDK — skipped", flush=True)
+                return None
             else:
-                client = OpenAI(
-                    api_key=api_key,
-                    base_url=pinfo.get("base_url", ""),
-                    timeout=timeout,
-                    max_retries=max_retries,
-                )
+                print(f"  [REGISTRY] {provider_name}: unknown api_type '{api_type}' — skipped", flush=True)
+                return None
 
             self.clients[provider_name] = client
             return client
@@ -203,6 +201,13 @@ class ModelRegistry:
         for pname, pinfo in self.data.get("providers", {}).items():
             api_type = pinfo.get("api_type", "openai_compatible")
             self._get_client(pname, pinfo, api_type)
+
+    def invalidate_client(self, provider_name: str):
+        """Remove a failed client from cache so resolve() can try the next provider.
+        Called by MultiLLMClient when auth fails or provider returns 401."""
+        if provider_name in self.clients:
+            del self.clients[provider_name]
+            print(f"  [REGISTRY] Invalidated client: {provider_name}", flush=True)
 
     def status_report(self) -> dict:
         """Return a status report of all providers and models."""

@@ -92,6 +92,11 @@ def simulate(agents: list, product_directions: list, rounds: int = None, market_
     """Run 30-round market simulation with parallel agent decisions, coupling, and RL."""
     if rounds is None:
         rounds = _cfg()["rounds"]
+
+    # Apply random seed for reproducibility (also set by pipeline entry, but we are callable standalone)
+    seed_val = _cfg().get("random_seed", 42)
+    if seed_val:
+        random.seed(seed_val)
     # Cap agents for speed — use more with batch generation
     consumer_agents = [a for a in agents if a.get("type") == "consumer"][:_pcfg()["agent_consumer_cap"]]
     other_agents = [a for a in agents if a.get("type") != "consumer"]
@@ -241,7 +246,7 @@ def _compute_results(agent_states: dict, products: list) -> list:
                 purchasers.append(aid)
         pc = len(purchasers)
         churned = sum(1 for aid in purchasers if "churned_at" in agent_states[aid]["purchased_products"].get(pid, {}))
-        churn_r = churned / pc if pc > 0 else 1.0
+        churn_r = churned / pc if pc > 0 else 0.0  # No purchasers = no one to churn
         revenue = sum(_safe_float(st["purchased_products"].get(pid, {}).get("price_paid", 0)) for st in agent_states.values())
         adoption = pc / max(1, total_agents * _cfg()["score_adoption_denominator"])
         adoption_term = adoption * _cfg()["score_adoption_weight"]

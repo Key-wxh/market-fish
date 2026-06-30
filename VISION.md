@@ -175,30 +175,35 @@ MarketFish 做产品市场预测。不同赛道。
 
 ---
 
-## 16 篇论文学术基础（12 篇已落地，4 篇计划中）
+## 学术基础（6 篇已摄入，其余为参考 inspo）
 
-不是拍脑袋做的。每篇论文的核心思想都工程化落地到了代码里。
+不是拍脑袋做的。每篇论文的核心思想都工程化落地到了代码里。v5 期间摄入了 6 篇核心论文，全部完成结构化提取。
 
-| 论文 | 出处 | 核心思想 | 状态 |
-|------|------|------|:--:|
-| MiroFish | GitHub 53K⭐ | 5 阶段多智能体管道 | ✅ |
-| SMIF | ETASR 2026 | 0.893 真实市场相关性基准 | 📋 |
-| TwinMarket | NeurIPS 2025 | BDI 认知架构 | ✅ |
-| Machine Spirits | arXiv 2026 | 异质 agent > 同质 agent | ✅ |
-| UChicago Innovation | 2025 | 小世界网络最优扩散 | ✅ |
-| MENTOR | FITEE 2025 | Teacher-Student 迭代推理 | ✅ |
-| Social Agents | ICLR 2025 | Wisdom-of-Crowds > 单 LLM | ✅ |
-| Agent Bazaar | arXiv 2026 | 经济对齐 ≠ 通用能力 | ✅ |
-| EconSimulacra | arXiv 2026 | 跨域耦合产生涌现行为 | ✅ |
-| MiroFish-ES | 2025 | Neo4j + Ollama 本地栈 | 📋 |
-| MetaGPT | ICLR 2024 | 多 agent 协作范式 | ✅ |
-| ChatDev | ACL 2024 | Agent 角色扮演 | ✅ |
-| CAMEL | NeurIPS 2023 | Agent 社会模拟 | ✅ |
-| Generative Agents | UIST 2023 | 可信 agent 行为 | ✅ |
-| SMIF-Validation | ETASR 2026 | 150 案例校准方法 | 📋 |
-| OASIS | arXiv 2026 | 百万 agent 架构理论 | 📋 |
+### 核心论文（已摄入，v6 直接可用）
 
-✅ = 已实现  📋 = 计划中
+| 论文 | 出处 | arxiv | 核心贡献 | v6 模块 |
+|------|------|:--:|------|:--:|
+| Generative Agents | UIST 2023 | `2304.03442` | 记忆流+反思+规划 — 1825条记忆驱动agent行为 | Memory |
+| OASIS | 2025 | `2411.11581` | 百万agent+RecSys+时间引擎 — 群体极化/羊群效应复现 | RecSys+TimeEngine |
+| SMIF | ETASR 2026 | DOI `10.48084/etasr.16536` | r=0.893 校准+Grounding+状态压缩 — 150案例验证 | Calibration+Grounding |
+| Agent Bazaar | Princeton 2026 | `2605.17698` | 经济对齐RL+EAS四维评分 — 9B模型打败全部前沿 | alignment_rl v2 |
+| TwinMarket | **NeurIPS 2025** | `2502.01506` | BDI六步循环+动态社交网+hot score — ICLR Best Paper | Agent认知架构 v2 |
+| EconSimulacra | 2026 | `2606.26883` | 跨域耦合+共享stress状态 — 线上关注→线下消费非线性涌现 | coupling v2 |
+
+### 参考论文（inspired by，未全文摄入）
+
+| 论文 | 出处 | 核心思想 | 工程落地 |
+|------|------|------|------|
+| MiroFish | GitHub 53K⭐ | 5阶段多agent管道 | pipeline.py 五阶段 |
+| UChicago Innovation | MA thesis 2025 | 小世界网络最优扩散 (Watts-Strogatz β=0.1) | engine/network.py |
+| MetaGPT | ICLR 2024 | 多agent协作范式 | agent_factory.py 批量并行 |
+| ChatDev | ACL 2024 | Agent角色扮演 | agent BDI字段+决策prompt |
+| CAMEL | NeurIPS 2023 | Agent社会模拟 | simulator.py 市场循环 |
+| MiroFish-ES | 2025 | Neo4j+Ollama本地栈 | 📋 v7 本地化 |
+
+> ⚠️ **MENTOR (FITEE 2025) 已移除** — 原以为是 Teacher-Student report generation，实际是金融叙事预测，与 MarketFish report 模块不相关。report 模块的 teacher-student 设计为自创，不受此论文支撑。
+
+✅ = 已摄入+工程化  📋 = 计划中
 
 ---
 

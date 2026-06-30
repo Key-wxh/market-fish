@@ -70,22 +70,34 @@ PRODUCT DIRECTIONS (agents will evaluate these):
 CRITICAL: Generate EXACTLY {batch_def['count']} agents. Each with different occupation, income, pain points.
 Use realistic 2026 China data. IDs must be unique slugs."""
 
-    try:
-        result = llm.chat_json(
-            system=BATCH_PROMPT,
-            user=user_prompt,
-            agent_type=batch_def["agent_type"],
-            temperature=_cfg()["temperature"],
-        )
-        agents = result.get("agents", [])
-        # Tag with batch label
-        for a in agents:
-            a["batch_label"] = batch_def["label"]
-        print(f"  [BATCH] {batch_def['label']}: generated {len(agents)}/{batch_def['count']} {batch_def['agent_type']}s", flush=True)
-        return agents
-    except Exception as e:
-        print(f"  [BATCH FAIL] {batch_def['label']}: {e}", flush=True)
-        return []
+    max_retries = _cfg().get("batch_retries", 2)
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            result = llm.chat_json(
+                system=BATCH_PROMPT,
+                user=user_prompt,
+                agent_type=batch_def["agent_type"],
+                temperature=_cfg()["temperature"],
+            )
+            agents = result.get("agents", [])
+            # Tag with batch label
+            for a in agents:
+                a["batch_label"] = batch_def["label"]
+            print(f"  [BATCH] {batch_def['label']}: generated {len(agents)}/{batch_def['count']} {batch_def['agent_type']}s", flush=True)
+            return agents
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                import time
+                wait = 2 ** attempt  # exponential backoff: 1s, 2s
+                print(f"  [BATCH RETRY] {batch_def['label']}: attempt {attempt+1} failed ({e}) — retrying in {wait}s...", flush=True)
+                time.sleep(wait)
+                continue
+
+    print(f"  [BATCH FAIL] {batch_def['label']}: {last_error} (after {max_retries} attempts)", flush=True)
+    return []
 
 
 def generate_agents(knowledge_graph: dict, product_directions: list[dict]) -> dict:

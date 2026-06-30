@@ -16,9 +16,16 @@ _CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
-    """Recursively merge override into base. Lists are replaced, not merged."""
+    """Recursively merge override into base. Lists are replaced, not merged.
+    Returns a NEW dict — does not mutate either input.
+    Handles None values and type mismatches gracefully."""
     result = deepcopy(base)
+    if override is None:
+        return result
     for key, value in override.items():
+        if value is None:
+            # Explicit None in override means "keep base value" (not "set to None")
+            continue
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = _deep_merge(result[key], value)
         else:

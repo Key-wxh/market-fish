@@ -1,0 +1,137 @@
+{
+  "paper_metadata": {
+    "title": "TwinMarket: A Scalable Behavioral and Social Simulation for Financial Markets",
+    "authors": "Yuzhe Yang, Yifei Zhang, Minghao Wu, Kaidi Zhang, Yunmiao Zhang, Honghai Yu, Yan Hu, Benyou Wang",
+    "venue": "NeurIPS 2025",
+    "year": "2025",
+    "arxiv_id": "2502.01506"
+  },
+  "key_findings": [
+    {
+      "finding": "TwinMarket integrates LLM agents with a BDI cognitive architecture, a dynamic social network, and a realistic market environment to simulate financial markets, outperforming traditional ABMs in replicating stylized facts.",
+      "strength": 0.95,
+      "category": "empirical"
+    },
+    {
+      "finding": "Ablation studies confirm that both the BDI framework and agent heterogeneity are essential for generating realistic fat tails, leverage effects, and volatility clustering.",
+      "strength": 0.9,
+      "category": "empirical"
+    },
+    {
+      "finding": "Scaling the number of agents improves predictive accuracy (lower RMSE/MAE) and enriches emergent macro-level phenomena, supporting the scaling law.",
+      "strength": 0.85,
+      "category": "empirical"
+    },
+    {
+      "finding": "The framework successfully reproduces emergent social and market phenomena such as opinion leaders, self-fulfilling prophecies, and rumor-induced market turbulence.",
+      "strength": 0.9,
+      "category": "empirical"
+    },
+    {
+      "finding": "Micro-level agent behaviors (e.g., higher trading frequency correlating with lower returns) align with real-world investor data, validating behavioral fidelity.",
+      "strength": 0.88,
+      "category": "empirical"
+    }
+  ],
+  "new_concepts": [
+    {
+      "name": "BDI-driven LLM Agent",
+      "definition": "An agent architecture where Beliefs, Desires, and Intentions guide perception, information-seeking, and trading decisions, enabling heterogeneous and adaptive behaviors grounded in cognitive science.",
+      "marketfish_relevance": "Can be integrated into MarketFish to enhance agent realism, allowing for dynamic belief updates and goal-oriented decision-making that capture behavioral biases."
+    },
+    {
+      "name": "Dynamic Social Network Based on Trading Similarity",
+      "definition": "A time-weighted graph where edges represent behavioral similarity between agents, enabling personalized information propagation and influence, with edge strengths decaying over time.",
+      "marketfish_relevance": "Enables MarketFish to simulate information diffusion and social influence among agents, allowing study of herding, polarization, and opinion leader emergence."
+    },
+    {
+      "name": "Information Aggregation with Hot Score",
+      "definition": "A mechanism that ranks and recommends social media posts to agents based on a score balancing popularity (upvotes) and recency, controlling each agent's perception field.",
+      "marketfish_relevance": "Provides a realistic model of how agents selectively receive information, which can be used in MarketFish to simulate echo chambers and filter bubbles."
+    },
+    {
+      "name": "TwinMarket Framework",
+      "definition": "A scalable multi-agent simulation platform combining LLM agents, BDI cognition, a dynamic social network, and an order-driven trading system to study micro-macro emergence in financial markets.",
+      "marketfish_relevance": "Can serve as a blueprint for building a next-generation agent-based market simulator within MarketFish, replacing simpler rule-based models."
+    }
+  ],
+  "config_implications": {
+    "new_parameters": [
+      {
+        "name": "bdi_enabled",
+        "type": "bool",
+        "range": "true/false",
+        "default": "true",
+        "reason": "Enables the Belief-Desire-Intention cognitive framework for agents, improving behavioral realism."
+      },
+      {
+        "name": "social_network_enabled",
+        "type": "bool",
+        "range": "true/false",
+        "default": "true",
+        "reason": "Activates the dynamic social network and information propagation mechanisms."
+      },
+      {
+        "name": "similarity_threshold",
+        "type": "float",
+        "range": "0.0-1.0",
+        "default": "0.2",
+        "reason": "Minimum trading similarity to form an edge in the social graph; controls network density."
+      },
+      {
+        "name": "time_decay_factor",
+        "type": "float",
+        "range": "0.0-1.0",
+        "default": "0.5",
+        "reason": "Exponential decay rate for weighing past trades in computing similarity; higher values emphasize recent behavior."
+      },
+      {
+        "name": "hot_score_alpha",
+        "type": "float",
+        "range": "0.1-10.0",
+        "default": "86400",
+        "reason": "Normalization constant for post recency in the hot score formula; set so that influence halves after ~2 weeks."
+      },
+      {
+        "name": "top_k_posts",
+        "type": "int",
+        "range": "1-50",
+        "default": "10",
+        "reason": "Number of top posts recommended to each agent daily from its neighbors."
+      },
+      {
+        "name": "llm_temperature",
+        "type": "float",
+        "range": "0.0-2.0",
+        "default": "1.3",
+        "reason": "Temperature for LLM calls; higher values increase output diversity but core decisions remain stable."
+      },
+      {
+        "name": "agent_activation_rate",
+        "type": "float",
+        "range": "0.0-1.0",
+        "default": "0.8",
+        "reason": "Fraction of agents active in trading each day; affects volume and market dynamics."
+      }
+    ],
+    "modify_existing": [
+      {
+        "param_path": "SIMULATION.rounds",
+        "current": "?",
+        "suggested": "1000+",
+        "reason": "Longer simulations needed to observe emergent phenomena; paper uses 5 months."
+      },
+      {
+        "param_path": "AGENT.decision_model",
+        "current": "rule-based",
+        "suggested": "LLM with BDI",
+        "reason": "Replace simple heuristics with LLM-based reasoning to capture behavioral biases and adaptive strategies."
+      }
+    ]
+  },
+  "pipeline_implications": {
+    "new_stage": "Social Interaction Stage",
+    "modify_stage": "Agent Decision Stage",
+    "rationale": "Introduce a stage where agents post, read, and repost on a simulated social media platform using the hot-score ranking, enabling information propagation. Modify the agent decision stage to incorporate BDI reasoning: belief update from news/social posts, desire-driven querying, intention-driven trading and posting actions. These changes are essential to replicate emergent market phenomena like herding and bubbles."
+  }
+}

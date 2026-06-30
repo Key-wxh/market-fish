@@ -105,10 +105,11 @@ class MultiLLMClient:
                 continue
             except Exception as e:
                 err_str = str(e)
-                # Auth failure → remove provider and retry with next
+                # Auth failure → invalidate provider in both caches and retry with next
                 if "401" in err_str or "Invalid Authentication" in err_str or "auth" in err_str.lower():
+                    print(f"  [AUTH_FAIL] {provider} key invalid — invalidating from pool", flush=True)
+                    self.registry.invalidate_client(provider)
                     if provider in self.clients:
-                        print(f"  [AUTH_FAIL] {provider} key invalid — removing from pool", flush=True)
                         del self.clients[provider]
                     try:
                         provider, model_name, client = self._resolve(agent_type)

@@ -1,0 +1,117 @@
+{
+  "paper_metadata": {
+    "title": "OASIS: Open Agent Social Interaction Simulations with One Million Agents",
+    "authors": "Ziyi Yang, Zaibin Zhang, Zirui Zheng, Yuxian Jiang, Ziyue Gan, Zhiyu Wang, Zijian Ling, Jinsong Chen, Martz Ma, Bowen Dong, Prateek Gupta, Shuyue Hu, Zhenfei Yin, Guohao Li, Xu Jia, Lijun Wang, Bernard Ghanem, Huchuan Lu, Chaochao Lu, Wanli Ouyang, Yu Qiao, Philip Torr, Jing Shao",
+    "venue": "arXiv preprint",
+    "year": "2025",
+    "arxiv_id": "2411.11581"
+  },
+  "key_findings": [
+    {
+      "finding": "OASIS replicates real-world information spreading in terms of scale and max breadth without offset, but depth trend is smaller due to simplified RecSys.",
+      "strength": 0.8,
+      "category": "empirical"
+    },
+    {
+      "finding": "OASIS reproduces group polarization, with opinions becoming more extreme during propagation, especially with uncensored LLMs.",
+      "strength": 0.9,
+      "category": "empirical"
+    },
+    {
+      "finding": "LLM agents are more susceptible to herd effect than humans; they follow negative initial ratings more strongly, unlike humans who show critical thinking.",
+      "strength": 0.7,
+      "category": "empirical"
+    },
+    {
+      "finding": "Larger agent groups (10k–100k) produce more diverse and helpful opinions in polarization scenarios, demonstrating emergent collective intelligence.",
+      "strength": 0.8,
+      "category": "empirical"
+    },
+    {
+      "finding": "Agents exhibit herd effect only on disliked counterfactual posts, and this effect intensifies with larger agent populations.",
+      "strength": 0.7,
+      "category": "empirical"
+    },
+    {
+      "finding": "The recommendation system (RecSys) and real-world temporal activity patterns are crucial for realistic information propagation; ablations show significant performance drops without them.",
+      "strength": 0.9,
+      "category": "methodology"
+    }
+  ],
+  "new_concepts": [
+    {
+      "name": "OASIS Simulator",
+      "definition": "A modular, scalable agent-based simulation platform using LLM agents to replicate social media dynamics, featuring dynamic environments, dual recommendation systems (interest-based and hot-score-based), and support for up to one million agents.",
+      "marketfish_relevance": "Can be adapted to simulate large-scale multi-agent financial markets, enabling studies of information propagation, herding, and polarization among traders."
+    },
+    {
+      "name": "Interest-based and Hot-score-based Recommendation Systems",
+      "definition": "Two RecSys modules: one using TwHIN-BERT embeddings for interest matching (mimicking X's out-of-network recommendations) and another using a hot score formula for ranking (mimicking Reddit), controlling the information agents see.",
+      "marketfish_relevance": "Models how traders receive filtered market news or signals, crucial for studying biased information flows in trading environments."
+    },
+    {
+      "name": "Temporal Agent Activation",
+      "definition": "A Time Engine that probabilistically activates agents each hour based on a 24-dimensional probability vector derived from real user activity patterns, ensuring realistic engagement rhythms.",
+      "marketfish_relevance": "Allows simulation of intraday trading activity patterns, where trader participation varies by hour, affecting market dynamics."
+    }
+  ],
+  "config_implications": {
+    "new_parameters": [
+      {
+        "name": "agent_count",
+        "type": "int",
+        "range": "[100, 1000000]",
+        "default": "1000",
+        "reason": "Enables large-scale simulations; paper shows emergent behaviors at scales above 10k agents."
+      },
+      {
+        "name": "recsys_enabled",
+        "type": "bool",
+        "range": "[true, false]",
+        "default": "true",
+        "reason": "Controls whether content is filtered through a recommendation system; critical for realistic information flow."
+      },
+      {
+        "name": "recsys_type",
+        "type": "str",
+        "range": "[\"interest\", \"hot_score\"]",
+        "default": "\"interest\"",
+        "reason": "Switches between X-like (interest-based) and Reddit-like (hot-score) recommendation strategies."
+      },
+      {
+        "name": "temporal_activation",
+        "type": "bool",
+        "range": "[true, false]",
+        "default": "true",
+        "reason": "Enables time-based agent activation using hourly probabilities; ablation shows it is essential for accurate propagation simulation."
+      },
+      {
+        "name": "activation_probabilities",
+        "type": "list of float (len 24)",
+        "range": "each element [0.0, 1.0]",
+        "default": "all 1.0",
+        "reason": "Hourly activity probabilities for agents; can be set from real data or synthetic distributions."
+      },
+      {
+        "name": "timestep_minutes",
+        "type": "float",
+        "range": "[1.0, 60.0]",
+        "default": "3.0",
+        "reason": "Mapping of simulation time step to real minutes; used for post timestamps and recommendation recency calculations."
+      }
+    ],
+    "modify_existing": [
+      {
+        "param_path": "SIMULATION.rounds",
+        "current": "unknown",
+        "suggested": "time_steps=80",
+        "reason": "Paper uses 80 time steps for polarization experiments; replace fixed rounds with configurable time steps aligned with temporal activation."
+      }
+    ]
+  },
+  "pipeline_implications": {
+    "new_stage": "RecommendationFiltering",
+    "modify_stage": "AgentActivation",
+    "rationale": "Introduce a stage where the RecSys selects and filters posts for each agent before they act, and modify the activation stage to use time-engine probabilities instead of simultaneous activation. This mirrors real social media dynamics where content curation and temporal engagement patterns drive information spread and group behavior."
+  }
+}

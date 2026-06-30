@@ -1,0 +1,74 @@
+{
+  "paper_metadata": {
+    "title": "EconSimulacra: A Digital Twin Platform of Socio-Economic Systems Powered by LLM Agents",
+    "authors": "Ryuji Hashimoto, Masahiro Kaneko, kentaro Ueda, Takehiro Takayanagi, Kiyoshi Izumi",
+    "venue": "arXiv",
+    "year": "2026",
+    "arxiv_id": "2606.26883v1"
+  },
+  "key_findings": [
+    {
+      "finding": "EconSimulacra couples consumer economy, mobility, and social networks through shared internal states (stress levels) derived from multi-domain experiences.",
+      "strength": 0.95,
+      "category": "methodology"
+    },
+    {
+      "finding": "Introducing stress levels enables the emergence of realistic cross-domain dynamics, such as nonlinear relationship between online social attention and offline local popularity.",
+      "strength": 0.9,
+      "category": "empirical"
+    },
+    {
+      "finding": "Ablation experiments show that removing stress-level coupling weakens emergent cross-domain patterns, confirming its necessity.",
+      "strength": 0.95,
+      "category": "empirical"
+    },
+    {
+      "finding": "Shared internal representations serve as an effective mechanism for integrating heterogeneous constraints, providing a design principle for multi-domain simulations.",
+      "strength": 0.9,
+      "category": "methodology"
+    }
+  ],
+  "new_concepts": [
+    {
+      "name": "Stress-level coupling mechanism",
+      "definition": "A method where agents' past experiences from multiple domains are aggregated into interpretable stress levels (e.g., hunger, economic state) that guide cross-domain decision-making.",
+      "marketfish_relevance": "In MarketFish, this could model trader stress from factors like portfolio losses, market volatility, and social sentiment, influencing their trading decisions."
+    },
+    {
+      "name": "Multi-domain artificial society",
+      "definition": "An LLM-based simulation where agents operate in multiple co-evolving domains (e.g., economy, mobility, social) with explicit cross-domain feedback loops.",
+      "marketfish_relevance": "MarketFish could simulate interactions between financial markets, social media discussions, and regulatory policies, enabling analysis of coupled dynamics."
+    }
+  ],
+  "config_implications": {
+    "new_parameters": [
+      {
+        "name": "stress_enabled",
+        "type": "bool",
+        "range": "[true, false]",
+        "default": "true",
+        "reason": "Enables or disables the shared internal state mechanism for cross-domain coupling, as shown in the paper's ablation study."
+      },
+      {
+        "name": "stress_model",
+        "type": "str",
+        "range": "list of available stress models, e.g., 'economic', 'social', 'fatigue'",
+        "default": "'economic'",
+        "reason": "Defines which stress factors are computed from agent experiences, allowing domain-specific tailoring."
+      }
+    ],
+    "modify_existing": [
+      {
+        "param_path": "AGENT.observations",
+        "current": "possibly raw environment observations",
+        "suggested": "include computed stress levels as additional input",
+        "reason": "To implement cross-domain coupling, agents must receive stress representations alongside raw observations, as shown in EconSimulacra."
+      }
+    ]
+  },
+  "pipeline_implications": {
+    "new_stage": "stress_evaluation",
+    "modify_stage": "agent_decision",
+    "rationale": "The paper demonstrates that computing shared internal states (stress levels) from memory before decision-making is crucial for cross-domain dynamics. Adding a stress evaluation stage allows agents to integrate multi-domain experiences."
+  }
+}

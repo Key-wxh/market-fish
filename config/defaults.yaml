@@ -192,6 +192,7 @@ network:
 
 agent_generation:
   batch_timeout: 300
+  batch_retries: 3
   max_workers: 6
   min_consumers_warn: 30
   min_smb_warn: 10
@@ -456,3 +457,118 @@ agent_batches:
      diversity: "Existing SaaS/tool providers. Include AI-native startups and traditional software vendors."}
   - {agent_type: environment, count: 5, label: Macro factors,
      diversity: "Economic trends, policy signals, technology shifts, platform rule changes."}
+
+# ═══════════════════════════════════════════════════════════
+# v6 — 六篇论文驱动的参数扩展（已定义，v6 pipeline 未激活）
+# ═══════════════════════════════════════════════════════════
+
+# ── Memory (Generative Agents, UIST 2023, 2304.03442) ──
+memory:
+  enabled: false                    # TODO: wire into v6 pipeline
+  capacity: 1000                    # max memories per agent
+  reflection_interval: 10           # auto-reflect every N rounds
+  retrieval_importance_min: 0.3     # minimum importance score to recall
+  retrieval_recency_weight: 0.6     # weight for recency in importance scoring
+  retrieval_relevance_weight: 0.3   # weight for relevance
+  retrieval_importance_weight: 0.1  # weight for memory importance tag
+  reflection_top_k: 3               # top memories for reflection prompt
+
+# ── RecSys (OASIS, 2025, 2411.11581) ──
+recsys:
+  enabled: false                    # TODO: wire into v6 pipeline
+  type: interest_based              # "interest_based" | "hot_score"
+  top_k_posts: 5                    # posts recommended per agent per round
+  hot_score_alpha: 0.015            # time-decay constant (heat halves every ~2 weeks in real time)
+  hot_score_recency_weight: 1.0     # weight for recency in hot score
+  interest_embedding_dim: 768       # dimension for interest matching embeddings
+
+# ── Temporal Activation (OASIS, 2025, 2411.11581) ──
+temporal:
+  enabled: false                    # TODO: wire into v6 pipeline
+  timestep_minutes: 60              # one simulation step = N real minutes
+  # Hourly activation probabilities (24-dim vector, sum ~1.0)
+  activation_probabilities: [0.01, 0.005, 0.003, 0.005, 0.02, 0.05, 0.08, 0.10, 0.09, 0.07, 0.06, 0.05, 0.05, 0.04, 0.04, 0.05, 0.06, 0.07, 0.08, 0.07, 0.05, 0.03, 0.02, 0.015]
+
+# ── Economic Alignment (Agent Bazaar, Princeton 2026, 2605.17698) ──
+economic_alignment:
+  enabled: false                    # TODO: wire into v6 pipeline
+  discovery_limit: 5                # counterparties agent can observe per timestep
+  stabilizing_firm_count: 2         # anchor firms that hold price above cost
+  skeptical_guardian_count: 3       # buyer agents that cross-reference for fraud
+  sybil_cluster_size: 0             # fraudulent identities to stress-test (0 = disabled)
+  eas_weights:                      # EAS 4-component weighting
+    stability: 0.25
+    integrity: 0.25
+    welfare: 0.25
+    profitability: 0.25
+  rl_training:
+    enabled: false                  # REINFORCE++ finetuning (Agent Bazaar showed 9B > frontier)
+    lora_rank: 16
+    curriculum_stages: 3
+    episodes_per_stage: 100
+
+# ── Cross-Domain Stress (EconSimulacra, 2026, 2606.26883) ──
+stress:
+  enabled: false                    # TODO: wire into v6 coupling module
+  model:                            # factors that contribute to agent stress
+    financial_pressure_weight: 0.4
+    social_comparison_weight: 0.3
+    information_overload_weight: 0.2
+    emotional_contagion_weight: 0.1
+  stress_to_wtp_map:                # stress level → WTP multiplier
+    low: 1.10                       # calm → slightly more willing to spend
+    moderate: 0.90                  # moderate stress → cautious
+    high: 0.70                      # high stress → freeze spending
+    extreme: 0.40                   # crisis → stop spending entirely
+
+# ── BDI v2 (TwinMarket, NeurIPS 2025, 2502.01506) ──
+bdi_v2:
+  enabled: false                    # TODO: wire into v6 agent_cognition
+  # 6-step daily loop: Belief → Desire → Intention → Action → Response → Update
+  belief_dimensions: 5              # fundamentals, valuation, trend, peer_sentiment, self_assessment
+  intention_constraints:
+    max_concurrent_intentions: 3
+    intention_persistence_rounds: 5
+  behavioral_biases:
+    overconfidence_enabled: true
+    loss_aversion_enabled: true     # losses feel ~2x worse than gains
+    herding_enabled: true
+
+# ── Social Network v2 (TwinMarket, NeurIPS 2025, 2502.01506) ──
+social_v2:
+  enabled: false                    # TODO: wire into v6 network
+  dynamic_rewiring: true            # edges evolve based on trading similarity
+  similarity_threshold: 0.15        # minimum trade-similarity to form/keep edge
+  time_decay_factor: 0.05           # exponential decay for past trade weighting
+  max_connections_per_agent: 15     # prevent hub domination
+  echo_chamber_detection: true      # flag communities with high internal similarity
+  # Social interaction stage (new pipeline stage in v6)
+  social_interaction:
+    posts_per_agent_per_round: 0.3  # probability an agent posts this round
+    repost_probability: 0.15        # probability of reposting if exposed
+    like_weight_on_hot_score: 0.3   # how much likes boost hot score
+
+# ── Grounding (SMIF, ETASR 2026, DOI 10.48084/etasr.16536) ──
+grounding:
+  enabled: false                    # TODO: wire into v6 pipeline
+  rag_enabled: true                 # retrieval-augmented generation for market data
+  rule_constraints_enabled: true    # hard constraints on agent outputs
+  persona_pool_size: 200            # synthetic customer personas pool
+  state_compression:
+    enabled: true                   # relevance-weighted retention
+    max_state_chars: 8000           # truncation threshold
+    temporal_weight: 0.7            # weight for recent observations
+    relevance_weight: 0.3           # weight for persistent important facts
+
+# ── Pipeline v6 stages (ordered — insert into pipeline after v5 stages) ──
+pipeline_v6:
+  stages:
+    - memory_retrieval              # retrieve relevant memories before decision
+    - recsys_filter                 # filter content through recommendation system
+    - temporal_activate             # activate subset of agents based on time
+    - social_interact               # agents post/read/repost on social platform
+    - bdi_decision                  # 6-step BDI cognitive architecture
+    - stress_evaluate               # compute shared internal states (stress)
+    - economic_align                # apply EAS-aligned strategies (Stabilizing/Skeptical)
+    - memory_consolidate            # store experiences, trim memory, run reflection
+    - ground_validate               # RAG + rule constraints on final outputs

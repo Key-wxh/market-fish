@@ -1,0 +1,1448 @@
+General Table Question Answering via Answer-Formula Joint Generation
+Zhongyuan Wang1, Richong Zhang1,2*, Zhijie Nie1,3, Hangyu Mao4,
+1CCSE, School of Computer Science and Engineering, Beihang University, Beijing, China
+2Zhongguancun Laboratory, Beijing, China
+3Shen Yuan Honors College, Beihang University, Beijing, China
+4Kuaishou Technology
+Abstract
+Advanced table question answering (TableQA) methods
+prompt large language models (LLMs) to generate answer
+text, SQL query, Python code, or custom operation, which
+impressively improve the complex reasoning problems in the
+TableQA task. However, these methods lack the versatility
+to cope with specific question types or table structures. In
+contrast, the Spreadsheet Formula, the widely used and well-
+defined operation language for tabular data, has not been thor-
+oughly explored to solve TableQA. In this paper, we first at-
+tempt to use the Formula as the executable representation for
+solving complex reasoning on tables with different structures.
+Specifically, we construct FormulaQA, a large Formula-
+annotated TableQA dataset from existing datasets. In addi-
+tion, we propose TabAF, a general table answering frame-
+work to solve multiple types of tasks over multiple types of
+tables simultaneously, which decodes answers and Formulas
+with a single LLM backbone. Extensive experiments demon-
+strate the versatility and generalization of TabAF. Under the
+same model size, TabAF achieves new state-of-the-art per-
+formance on the WikiTableQuestion, HiTab, and TabFact. 1
+Introduction
+A table is an arrangement of information or data in rows
+and columns, which is ubiquitous and serves as an important
+data carrier in many domains. The Table Question Answer-
+ing (TableQA) task aims to answer natural language ques-
+tions based on tables, requiring models to comprehend and
+analyze tabular content. Unlike the database tables in the
+Text-to-SQL task, tabular data in TableQA exhibits more
+flexible structures and mixed data types, making it more
+challenging to handle with SQL queries. The questions in
+TableQA can be categorized into two types: lookup ques-
+tions, which select part of the table contents as answers, and
+complex reasoning questions, which require calculating or
+aggregating multiple values from tables.
+Current mainstream TableQA methods leverage the ca-
+pability of large language models (LLMs), either prompt-
+ing LLMs to generate outputs without training (Cheng et al.
+2023; Wang et al. 2024; Yang et al. 2025) or fine-tuning
+LLMs to enhance table reasoning capabilities (Zhang et al.
+*Corresponding author
+1Our code and dataset is available at https://github.com/inforin/
+TabAF
+Direct Prompt
+Spreadsheet Formula
+Lookup Question: Specialty
+Table Structure: Unlimited
+Complex Reasoning: Difficult
+    Table Structure: Unlimited
+   Complex Reasoning: Efficient 
+     Data Type Friendly
+Output: (CoT…). So, the answer is … 
+Output: =COUNTIF(D2:D15, "<>*West Yorkshire*")   
+Custom Operators
+Table Structure: Unlimited
+Reasoning Operators: Limited
+Output: abs || - || 2005 || 2008 ||
+SQL Query
+Output: SELECT agg(…) FROM w … 
+Python Code
+Table Structure: Pandas-friendly 
+Complex Reasoning: Partial Challenging
+Output: df[‘col1’].value_counts()
+Table Structure: Database-Like
+Complex Reasoning: Challenging
+Datetime :
+June, 13, 1994
+5 june 2023
+Number :
+1,234,567
+1234
+$1,234
+=DATEDIF(C4,B3,"d")
+Various Flexible Operators
+Figure 1: Different generation modes in TableQA.
+2024a,b). In general, four generation modes are used in
+existing LLM-based TableQA methods: Direct Prompting
+(DP) mode aims at prompting LLMs to generate textual an-
+swers directly or to conclude the final answers after reason-
+ing through Chain-of-Thought (CoT) (Liu, Wang, and Chen
+2024; Jiang, Wang, and Deng 2024), which are highly flexi-
+ble and are not restricted by table structures. The DP-based
+methods excel at looking up existing answers from tables,
+particularly when extracting substring content from complex
+cells. The remaining three are the generation modes via ex-
+ecutable representations, including generating SQL queries
+(Cheng et al. 2023; Ni et al. 2023), Python codes (Su et al.
+2024; Yang et al. 2025), and custom operations (Mouravieff,
+Piwowarski, and Lamprier 2024). These modes generate ex-
+ecutable representations and invoke external engines to de-
+rive answers, which are more adept at complex reasoning.
+However, as illustrated in Figure 1, existing generation
+modes all have non-negligible limitations: (1) The DP mode
+relies on the intrinsic reasoning capability of LLMs, strug-
+gling to solve complex reasoning over tables;(2) The SQL-
+arXiv:2503.12345v3  [cs.CL]  31 Aug 2025
+based methods assume tables are database-like, making it
+difficult to apply to hierarchical tables (Shi et al. 2020); (3)
+The Python mode often struggles with complex table struc-
+tures. For instance, the commonly used third-party toolkit
+Pandas2 mishandles horizontal tables and requires extra
+steps for mixed data processing and multi-index lookup
+(Liu, Wang, and Chen 2024), increasing code complexity;
+(4) The methods generating custom operations define a lim-
+ited set of reasoning operators, exhibiting poor scalability.
+Therefore, a crucial question arises: Whether there is
+a generalized executable representation that can deal
+with various questions on the diverse tables? In this pa-
+per, we explore the potential of one promising candidate,
+Spreadsheet Formulas (abbreviated as Formulas). As the
+native operation language of tabular data, Formulas pro-
+vide rich operators specifically designed for tabular data.
+Prior work (Cheng et al. 2022a) shows its potential on sim-
+ple arithmetic reasoning over tables, overlooking its gen-
+eral question-answering capabilities. Meanwhile, generating
+Formulas via LLMs for TableQA has not been explored.
+We believe that generating Formulas offers the following
+advantages: (1) Flexible: Similar to DP-based methods, For-
+mulas can adapt to tables with different structures, such as
+horizontal tables, hierarchical tables, or tables with mixed
+data types. (2) Data-Friendly: The Formula execution en-
+gine is compatible with different formatted values, such as
+formatted numbers or dates, with no need for data type trans-
+ferring; (3) Efficient: Formulas contain rich table opera-
+tors, enabling complex reasoning with concise expressions,
+which are difficult for Python or SQL to achieve.
+To unleash the potential of LLMs in generating For-
+mulas, we constructed FormulaQA, a large Formula-
+annotated dataset for TableQA. Specifically, we first de-
+velop FormulaQA(Direct), a large-scale dataset tai-
+lored for direct Formula generation, aimed at enhanc-
+ing the ability of LLMs to generate task-specific Formu-
+las for TableQA. FormulaQA(Direct) is through a
+combination of existing Formula data collection, SQL-to-
+Formula conversion, and annotations by a strong LLM.
+It contains 24,738 samples, each with complete (question,
+table, answer) triplets and corresponding Formulas. Fur-
+thermore, we construct FormulaQA(CoT), a small-scale
+reasoning-focused subset with high-quality CoT annotations
+by Claude-Sonnet-4, serving as cold start data for RL fine-
+tuning of TabAF-CoT, which encourages LLMs to think
+before generating answers or Formulas.
+Both DP and Formula modes are well-suited for differ-
+ent tables, with distinct problem-solving focuses. The DP
+mode is tailored for lookup questions, while the Formula
+mode excels at handling complex reasoning questions. To
+combine their advantages, we propose TabAF, an answer-
+Formula joint generation and aggregation framework,
+which supports both DP and Formula generation modes by
+producing outputs from both modes and selecting the final
+answer to a question via majority voting. TabAF comprises
+two variants: TabAF-Fast, which directly generates an-
+swers or Formulas based on the question and table without
+2https://pandas.pydata.org/
+an explicit reasoning process, balancing performance and ef-
+ficiency; and TabAF-CoT, which generates answers or For-
+mulas after a CoT reasoning process, aiming for higher per-
+formance. To fully exploit the potential of LLMs, we first
+perform supervised fine-tuning (SFT) to both variants, fol-
+lowed by a reinforcement learning (RL) training stage.
+Based on FormulaQA, we trained TabAF on Qwen2.5-
+Coder-7B (Hui et al. 2024) and Llama3.1-8B (Dubey et al.
+2024) using FormulaQA. Extensive experiment analy-
+sis shows the superiority of our approach: for in-domain
+setting, TabAF-Fast significantly surpasses fine-tuning-
+based baselines on WTQ, HiTab, and TabFact while main-
+taining high token efficiency; TabAF-CoT demonstrates
+stronger reasoning ability through CoT generation; for out-
+of-domain setting, both variants demonstrate generaliza-
+tion capabilities on AIT-QA for aviation-field tableQA and
+FinQA for finance-field HybridQA, achieving substantially
+better performance than existing TableQA LLMs; Ablation
+studies demonstrate the necessity of both modes in TabAF
+and the effectiveness of each training stage in our methods.
+Related Work
+Prompting-based TableQA Methods
+Most LLM-based
+methods leverage the in-context learning ability of LLMs to
+predict answers or executable representations such as SQL
+or Python code. Binder (Cheng et al. 2023) prompts LLMs
+to generate SQL queries. Chain-of-Table (Wang et al. 2024)
+and API-Assisted (Cao et al. 2023) design Python functions
+to filter flat and hierarchical tables, respectively. Recently,
+(Liu, Wang, and Chen 2024) and (Yang et al. 2025) perform
+joint reasoning over multiple outputs from different meth-
+ods, achieving the best performance on flat tables. However,
+most existing methods are limited to either flat or hierar-
+chical tables and lack generalizability across diverse table
+structures. Furthermore, many rely on closed-source models
+such as ChatGPT for generation.
+Fine-tuning-based TableQA Methods
+Traditional meth-
+ods (Yin et al. 2020; Herzig et al. 2020) utilize data with dif-
+ferent input or output formats during pretraining to enhance
+the reasoning ability of small models. FORTAP (Cheng et al.
+2022a) first introduces Formulas into the TableQA task,
+training models with Formulas annotated in Hitab (Cheng
+et al. 2022b), where the Formulas are limited to arith-
+metic operations. Several recent studies, including TableL-
+Lama (Zhang et al. 2024a), TableLLM (Zhang et al. 2024b),
+TableBench (Wu et al. 2024), and TableGPT2 (Su et al.
+2024), attempt to improve the table reasoning ability of
+LLMs by fine-tuning on more tabular data. Their fine-tuned
+LLMs struggle to perform well on a single task.
+SpreadSheet Formula Prediction
+The Formula predic-
+tion task aims to complete or derive spreadsheet content
+without relying on natural language questions, which dif-
+fers from TableQA. SpreadSheetCoder (Chen et al. 2021a)
+completes Formulas for cells in given tables. Auto-Formula
+(Chen et al. 2024) recommends Formulas for cells based on
+similar tables. In contrast, NL2Formula (Zhao et al. 2024)
+provides a benchmark for generating verbose and inefficient
+formulas for database-like tables, which differ significantly
+from the tabular data addressed in TableQA.
+FormulaQA
+Spreadsheet Formulas are a native and widely used tool
+for handling tabular data. However, open-source LLMs of-
+ten struggle with Formula reasoning due to limited expo-
+sure during training, especially for Formulas tailored to
+TableQA tasks. To enhance the Formula generation capa-
+bility for LLMs and leverage the advantages of Formulas
+in accomplishing complex reasoning over different struc-
+tured tables, we first construct FormulaQA(Direct),
+a large-scale spreadsheet dataset, enabling the LLMs to
+reestablish proficiency in Formula generation for TableQA.
+FormulaQA(Direct) avoids explicit reasoning steps,
+enabling efficient use of existing data and reducing CoT
+annotation overhead. To further elicit the reasoning ca-
+pability, we introduce FormulaQA(CoT), a small-
+scale CoT dataset used after extensive training on
+FormulaQA(Direct), to guide the LLMs toward a
+reasoning-then-generation paradigm, preparing them for
+subsequent RL training. We do not construct a separate
+test set for either variants , as we only reformulate the train
+and dev sets from existing TableQA datasets. Their original
+test sets can be directly used for evaluation.
+FormulaQA(Direct)
+To ensure our Formula dataset covers common TableQA
+scenarios, we first collect existing Formula data in QA do-
+mains. Then, to address the insufficient Formula data from
+existing datasets and expand the basic complex reason-
+ing capability, we utilize the SQL-solvable subset within
+TableQA by converting SQL queries into Formulas via tem-
+plates. Finally, we annotate Formulas using the powerful
+LLM for SQL-unsolvable or SQL-intractable questions.
+Existing Formula Collection
+We collect Formulas from
+HiTab (Cheng et al. 2022b), as it is the only TableQA dataset
+with Formula annotations. The Formulas in HiTab are rel-
+atively short, mainly involving assignment Formulas (e.g.,
+“= B2”) and basic arithmetic Formulas, which ensures the
+fundamental capability for reasoning.
+Templated-Based SQL to Formula
+We collect the SQL
+data annotated for TableQA to convert into Formulas. WTQ
+(Pasupat and Liang 2015) is a mainstream challenging
+TableQA benchmark. Squall (Shi et al. 2020) standardizes
+and extends WTQ tables, annotating SQL queries and asso-
+ciated templates for SQL-solvable questions. We count their
+SQL templates and manually write conversion programs for
+common templates. We provide example SQL queries and
+the corresponding Formulas for partial templates in Table 1,
+and explain the conversion details in Appendix A.
+Annotation by the Powerful LLM
+Since the remaining
+long-tail templates in Squall are difficult to convert, and
+many SQL-unsolvable questions can still be expressed using
+Formulas, we annotate the remaining WTQ questions using
+GPT-4o. For each question, we prompt the LLM to gener-
+ate 10 Formulas, execute them, and select the most concise
+one with correct results. If no Formula executes correctly,
+back the incorrect outputs for new Formula generation, up
+to 3 attempts per question. We also randomly select sam-
+ples from TabFact, a fact-checking dataset commonly used
+in TableQA, to enhance the variety of Formula. The prompt
+used for annotation can be found in Appendix D.1.
+FormulaQA(CoT)
+To ensure a high-quality cold start for subsequent RL
+training, we employ Claude-Sonnet-4, the SOTA reasoning
+model, to annotate CoT-style reasoning paths. Specifically,
+we randomly sample examples from the train sets of WTQ,
+HiTab, and TabFact, prompting the powerful LLM to think
+before generating answers or Formulas. Each question al-
+lows up to three annotation attempts; only outputs with cor-
+rect answers or Formula-executed results are retained, while
+failed samples are discarded. The prompt used for CoT an-
+notation can be found in Appendix D.2.
+Dataset Statistic
+The statistics of FormulaQA are summarized in Table 2.
+For FormulaQA(Direct), we follow the original dataset
+splits to construct the train and dev sets. We also report the
+token statistics of Formulas from different datasets. Formu-
+las in Hitab consist of only a few tokens, mainly including
+lookup and simple arithmetic Formulas. Formulas for WTQ
+and Squall are longer, containing more complex reasoning
+operators such as filtering, sorting, and aggregations. For-
+mulas for TabFact are even longer, as the fact-checking task
+requires Formulas to perform verifications across multiple
+conditions. For FormulaQA(CoT), we randomly sample
+and annotate 600 CoT examples for Formula generation and
+600 for answer generation from the train set of each dataset.
+TabAF
+We introduce TabAF, an answer-Formula joint generation
+framework for TableQA that combines the strengths of For-
+mula mode in complex reasoning and DP mode in lookup
+questions. As shown in Figure 2, given a new question,
+TabAF is guided by mode-specific instructions to generate
+5 Formulas and 5 answers. Following previous works (Liu,
+Wang, and Chen 2024), we employ the mix self-consistency
+strategy to determine the final answer from 10 candidates.
+To meet practical demands in real-world scenarios, we de-
+velop two variants of TabAF: TabAF-Fast prioritizes in-
+ference efficiency by directly generating answers or For-
+mulas, whereas TabAF-CoT emphasizes performance
+by incorporating a reasoning process before generating
+answers or Formulas. The two-generation modes of both
+variants of TabAF can be expressed as
+fLLM(IDP, T, Q) →[R, ] YDP
+fLLM(IFormula, Tex, Q) →[R, ] YFormula
+(1)
+where YDP and YFormula are the output answer and Formula,
+separately. R, included exclusively in TabAF-CoT, denotes
+the reasoning process before generating the final output. IDP
+and IFormula refers to the instructions of different modes, Q
+Type
+Formula
+SQL Template Example
+Lookup
+=F28
+SELECT c4 FROM w WHERE c3 = ‘jaime quintana’
+=B39
+SELECT c2 FROM w ORDER BY id DESC LIMIT 1
+=MIN(G2:G35)
+SELECT MIN(c3) FROM w WHERE agg = 0
+=COUNTA(A2:A36)
+SELECT COUNT(*) FROM w WHERE agg = 0
+Complex
+=COUNTA(UNIQUE(A2:A39))
+SELECT COUNT(DISTINCT c1) FROM w WHERE agg = 0
+Reasoning
+=SUMIFS(N2:N22, G2:G22,“=60”
+SELECT SUM(c4 number) FROM w WHERE c2 year = 60
+=MINIFS(D2:D33, G2:G33,“=a”, H2:H33,“¡¿b”)
+SELECT MIN(c2) FROM w WHERE c3 = ‘a’ AND c4 != ‘b’
+=INDEX(A2:A13, MATCH(MIN(D2:D13),D2:D13,0))
+SELECT c1 FROM w ORDER BY c2 parsed ASC LIMIT 1
+Table 1: Examples of some SQL templates we utilize for Formula conversion.
+Table
+0
+A
+B
+C
+1
+sub-component
+basket weight
+imputation donor
+2
+household operations, furnishings and equipment
+3
+child care services
+0.15
+all-items
+4
+housekeeping services
+0.31
+all-items
+5
+transportation
+6
+air transportation
+0.35
+imputed from parent
+7
+health and personal care
+8
+personal care services
+0.93
+all-items
+9
+recreation
+10
+recreational services
+0.13
+all-items
+11
+travel tours
+1.21
+all-items
+12
+spectator entertainment
+0.35
+all-items
+Title: imputation donors for select products and services 
+unavailable, or partially unavailable for consumption in april 2020.
+Mix Self-Consistency
+Large Language Model
+Final Answer:  3.43    From Formula: =SUM(B3:B12)
+What is the percentage of these 
+products and services…?
+Formula
+Instruction
+Question
+DP
+Instruction
+Think10
+Think1
+Think5
+Think6
+……
+……
+Formula5
+Answer1
+Answer5
+Formula1
+……
+……
+Answer6
+Answer10
+……
+Formula Execution
+Figure 2: The overall structure of TabAF. The models are trained using FormulaQA and existing tabular data. We prompt
+the models with different instructions to generate Formulas and answers, where thinking is optional. The mix self-consistency
+strategy is employed to obtain the final answer from the Formula-executed answers and the DP-based generated ones.
+Dataset
+FormulaQA(Direct)
+FormulaQA
+Train
+Dev
+Avg Token
+(CoT)
+HiTab
+7,409
+1,671
+3.45
+1,200
+Squall & WTQ
+9,829
+2,439
+19.35
+1,200
+TabFact
+7,500
+1,800
+36.49
+1,200
+Table 2: Statistics of Formulas dataset, the average token
+count is calculated using the Qwen tokenizer.
+refers to the question. T refers to the origin table in mark-
+down format, while Tex refers to the augmented view of the
+table T, which is added with column labels (A, B, C...) and
+row numbers (1, 2, 3, ...) of the spreadsheets to assist LLMs
+in generating Formulas. The prompts for these two variants
+can be found in Appendix D.3 and D.4.
+For Formula execution, due to the limited usability of the
+Excel engine on Linux, we use the open-source package
+formulas 3 for efficient batched Formula execution. As
+this package is relatively lightweight, it does not fully match
+the Excel engine in terms of the number and functionality
+of supported Formulas. To address this, we extended its For-
+mula coverage based on the needs observed in Formula an-
+3https://github.com/vinci1it2000/formulas
+notations to better simulate the behavior of the Excel engine.
+Training Pipeline
+To simultaneously enhance the generation capabilities of
+LLMs under both generation modes, fine-tune the LLMs
+in a multi-task learning approach, where LLMs are guided
+by mode-specific instructions to produce the expected out-
+puts. In terms of the training pipeline, for TabAF-Fast,
+which directly generates answers or Formulas, we first per-
+form supervised fine-tuning (SFT), followed by reinforce-
+ment learning (RL). For TabAF-CoT, we introduce an ad-
+ditional cold-start stage before RL training, enabling LLMs
+to internalize the CoT style reasoning.
+Supervised Finetuning Stage
+To familiarize the LLMs
+with the downstream TableQA task and the use of Formu-
+las within it, we train LLMs on FormulaQA(Direct)
+and the (question, table, answer) triplets from the original
+TableQA datasets, which include the training splits of WTQ
+and HiTab, and a sampled subset of TabFact for balance.
+Cold Start Stage for TabAF-CoT
+The model trained in
+the previous SFT stage is only capable of directly gener-
+ating Formulas or answers. Therefore, before RL training,
+we warm up the model using a small amount of CoT-style
+data to activate its ability to produce CoT-style outputs. In
+this stage, we use FormulaQA(CoT) for training, which
+contains CoT examples for both the DP mode and Formula
+mode, sampled from the same datasets as in SFT.
+RL Training Stage
+We further fine-tune the LLMs us-
+ing reinforcement learning with Group Relative Policy Op-
+timization (GRPO) (Shao et al. 2024). To avoid introducing
+new datasets or scaling data volume, we continue to use the
+full train sets of WTQ and HiTab, along with the subset of
+TabFact. LLMs are guided by specific instructions to gener-
+ate either answers or Formulas. Rewards are assigned based
+on the correctness and format consistency of the generated
+outputs. In terms of reward function design:
+• For TabAF-Fast, since it directly generates direct an-
+swers or Formulas, only correctness-based rewards are
+needed. The reward function is defined as:
+R =
+1,
+if Correct(Y ) = 1
+0,
+otherwise
+where Correct(Y ) indicates whether the output Y (ei-
+ther a predicted answer or an executed Formula result)
+matches the ground truth.
+• For TabAF-CoT, which generates intermediate reason-
+ing steps before producing the final output, we further re-
+quire the response to follow a specific format—namely, a
+<think>...</think> reasoning segment followed
+by a mode-specific <mode tag>...</mode tag>
+output. Therefore, the reward function jointly considers
+both format correctness and answer correctness:
+R =
+
+
+
+1.5,
+if Format(R, Y ) = 1 ∧Correct(Y ) = 1
+0.5,
+if Format(R, Y ) = 1 ∧Correct(Y ) = 0
+0,
+if Format(R, Y ) = 0
+where Format(R, Y ) indicates whether the reasoning
+process R and the final output Y adhere to the format.
+Experiments
+Experiment Setup
+In-Domain Datasets
+We evaluate our method on Wik-
+iTableQuestion (WTQ) (Pasupat and Liang 2015), HiTab
+(Cheng et al. 2022b), and TabFact (Chen et al. 2020), with
+the corresponding training sets included in the training data.
+WTQ is the most commonly used TableQA benchmark, with
+4,344 test samples. It contains complex questions that re-
+quire reasoning across multiple entities in the given table to
+obtain the answers. HiTab is a hierarchical web table bench-
+mark derived from statistical reports and Wikipedia pages,
+where the tables usually contain rich table structures and nu-
+merical values. The test set has 1,584 samples. TabFact is a
+table-based fact verification dataset that determines whether
+a statement matches a given table. We evaluate on its test-
+small set (2,024 samples). We also divide the complex sub-
+sets for WTQ and HiTab (with 2,421 and 217 examples, re-
+spectively) to evaluate the complex reasoning capabilities,
+and the division criteria are illustrated in Appendix B.
+Out-of-Domain Dataset
+We choose AIT-QA (Katsis et al.
+2022) and FinQA (Chen et al. 2021b) as out-of-domain
+datasets to evaluate the generalization ability of TabAF.
+AIT-QA is a hierarchical table benchmark, containing 515
+samples with 113 tables from airline domains. FinQA is a
+hybrid QA dataset in the financial domain, which requires
+numerical reasoning over tables and the surrounding text to
+obtain answers. Its public test set contains 1,147 samples.
+Evaluation Metrics
+Following previous work (Cheng
+et al. 2023; Ye et al. 2023), we employ denotation accu-
+racy as the evaluation metric for WTQ and utilize the official
+evaluation script. For TabFact, we use binary classification
+accuracy, and for other datasets, we use accuracy. We also
+report the average tokens generated (#Token) on WTQ to
+illustrate the efficiency of TabAF-Fast.
+LLMs
+We apply TabAF to two widely used LLMs:
+Qwen2.5-Coder-7B (Hui et al. 2024), and Llama3.1-8B
+(Dubey et al. 2024). During the training stage, we utilize
+LlamaFactory (Zheng et al. 2024) for SFT and verl (Sheng
+et al. 2025) for RL training. During inference, we utilize
+vLLM (Kwon et al. 2023) for efficient LLM generation. All
+experiments are conducted on 8 NVIDIA GPUs with per-
+formance no less than that of the A100 40GB or 80GB. All
+hyperparameters can be found in Appendix C.
+Baselines
+We compare our framework with a wide range
+of baselines, including both prompting-based methods and
+fine-tuning-based methods. Prompting-based methods are
+the mainstream Table approaches, most of which rely on
+large, closed-source models. We compare our approach with
+these methods: API-Assistied (Cao et al. 2023), ReAcTable
+(Zhang et al. 2024c), Chain-of-Table (Wang et al. 2024),
+Norm (Liu, Wang, and Chen 2024), TIDE (Yang et al. 2025),
+E5 (Zhang, Gao, and Lou 2024). For the fine-tuning-based
+methods, we choose LLMs that are fine-tuned or developed
+for the TableQA task, which includes TableLlama (Zhang
+et al. 2024a), TableLLM (Wu et al. 2024), TableGPT2 (Su
+et al. 2024). For a fair comparison, we only report their in-
+domain results on WTQ, HiTab, and TabFact.
+Main results
+In-Domain Performance
+TabAF consistently outper-
+forms existing methods across both variants. As shown in
+Table 3, Both variants of TabAF based on Qwen2.5-Coder-
+7B and Llama3.1-8B achieves significant performance on
+three datasets compared to other fine-tuning-based methods.
+The performance-oriented TabAF-CoT surpasses all other
+methods with a margin of at least 6.14%, 3.41% on WTQ,
+TabFact, respectively. On HiTab, it outperforms all methods
+except E5, which is specifically designed for hierarchical ta-
+bles and uses the powerful closed-source LLM. On the com-
+plex reasoning subset of HiTab, TabAF-Fast outperforms
+TabAF-CoT, possibly because the latter overthinks or over-
+complicates the numerical reasoning questions in HiTab.
+TabAF-Fast exhibits inference token efficiency. Since
+TabAF-Fast generates direct Formulas and answers with-
+out thinking, TabAF-Fast consumes the least number of
+tokens compared to methods that utilize Chain-of-Thought,
+Method
+Backbone
+#Token
+WTQ
+HiTab
+TabFact
+Comp.
+ALL
+Comp.
+ALL
+Prompting-Based Methods
+API-Assisted (Cao et al. 2023)
+CodeX
+-
+-
+42.40
+-
+69.30
+-
+ReAcTable (Zhang et al. 2024c)
+CodeX
+-
+-
+68.00
+-
+-
+86.10
+Chain-of-Table (Wang et al. 2024)
+PaLM 2
+-
+-
+67.31
+-
+-
+86.61
+Norm-DP&Agent (Liu, Wang, and Chen 2024)
+GPT-3.5
+-
+-
+73.65
+-
+-
+88.50
+TIDE DP&Agent (Yang et al. 2025)
+GPT-3.5
+-
+-
+75.00
+-
+-
+89.82
+E5 (Zhang, Gao, and Lou 2024)
+GPT-4
+-
+-
+-
+-
+85.08
+-
+Fine-tuning-Based Methods
+TAPEX-Large (Liu et al. 2022)
+BART-Large
+-
+-
+59.10
+-
+-
+84.20
+TableLlama (Zhang et al. 2024a)
+Llama2-7B
+7.47
+22.12
+60.48
+82.55
+TableLLM(TCoT) (Wu et al. 2024)
+Qwen2-7B
+364.40
+45.77
+53.59
+12.9
+43.88
+69.81
+TableLLM(TCoT) (Wu et al. 2024)
+Llama3.1-8B
+320.84
+44.28
+50.18
+9.22
+44.7
+30.29
+TableGPT2 (Su et al. 2024)
+Qwen2.5-7B
+116.36
+-
+61.42
+-
+70.27
+77.80
+TabAF-Fast
+Qwen2.5-Coder-7B
+109.13*
+73.36
+76.10
+60.83
+78.03
+85.03
+Llama3.1-8B
+78.08*
+69.02
+74.26
+60.37
+79.99
+83.00
+TabAF-CoT
+Qwen2.5-Coder-7B
+4257.80*
+80.92
+82.94
+54.38
+80.49
+93.23
+Llama3.1-8B
+4646.09*
+82.07
+83.79
+58.53
+81.69
+94.91
+Table 3: In-Domain performance of TabAF on WTQ, HiTab and TabFact, “Comp.” refers to the complex reasoning subset.
+“#Token” refers to the average tokens generated on WTQ. “*” denotes the total number of tokens across 10 outputs.
+Method
+Backbone
+AIT-QA
+FinQA
+TableLlama
+Llama2-7B
+26.99
+2.27
+TableLLM(TCoT)
+Qwen2-7B
+64.85*
+8.63
+TableLLM(TCoT)
+Llama3.1-8B
+60.39*
+6.63
+TableGPT2
+Qwen2.5-7B
+12.43
+40.28
+TabAF-Fast
+Qwen2.5-Coder-7B
+79.03
+50.65
+Llama3.1-8B
+79.81
+47.95
+TabAF-CoT
+Qwen2.5-Coder-7B
+87.18
+60.68
+Llama3.1-8B
+88.74
+57.80
+Table 4: Out-of-domain performance of TabAF on AIT-QA
+and FinQA. “*” indicates partially in-domain performance.
+or multi-stage iterative reasoning, indicating that TabAF can
+achieve fast and accurate responses in practical scenarios.
+Efficiency experiments show that TabAF-Fast takes 57
+seconds to perform inference on all test sets using 8 H800
+GPUs, achieving 8.4× faster inference speed compared to
+TabAF-CoT, which takes 481 seconds.
+TabAF shows versatility across different table scenarios.
+Most baseline methods are designed for specific table sce-
+narios and achieve optimal results on a single dataset. In
+contrast, our method consistently outperforms different spe-
+cialized methods across multiple datasets, further highlight-
+ing the universality of the DP and Formula approach in the
+table reasoning task and the effectiveness of TabAF.
+Out-of-Domain Performance
+As shown in Table 4,
+TabAF maintains performance on both out-of-domain
+datasets. For AIT-QA, the hierarchical table dataset, our For-
+mula execution is not limited by the table structure, whereas
+TableGPT-2 struggles to execute its Python code success-
+fully on such raw hierarchical tables. For FinQA, the Hy-
+bridQA dataset that requires reasoning questions on both ta-
+bles and texts associated with tables, TabAF, despite not
+being specifically fine-tuned on the HybridQA task, can still
+leverage its ability to perform complex reasoning like nu-
+merical calculation on the FinQA dataset by Formula gener-
+ation, outperforming other fine-tuning-based methods. The
+DP-based methods, TableLlama and TableLLM (TCoT),
+struggle with such complex reasoning questions. TableGPT2
+benefits from the ability to generate Python code to solve
+some complex reasoning questions, but still exhibits a high
+code error rate in HybridQA scenarios.
+Ablation Study
+Effectiveness of generation modes
+To evaluate the ef-
+fectiveness of the two generation modes (Formula and
+DP) in our framework, we conduct the ablation study for
+TabAF-Fast and TabAF-CoT (Qwen2.5-Coder-7B) in
+Table 5. For both variants, excluding either generation mode
+generally leads to a performance decline. Specifically, for
+TabAF-Fast, directly generating Formulas significantly
+outperforms directly generating answers, with improve-
+ments of 24.41% and 11.53% on the complex reasoning sub-
+sets of WTQ and HiTab, respectively. The Formula mode
+can concisely express the semantic intent of a question with
+a small number of tokens, whereas the DP mode struggles to
+directly generate answers without reasoning. In efficiency-
+critical scenarios, using only the Formula mode can be a
+viable solution. For TabAF-CoT, the CoT-style paradigm
+substantially improves performance, but the Formula mode
+no longer has a clear advantage over the DP mode due to
+possible execution errors and the limited Formula support
+of the formulas toolkit, which cannot fully match the ca-
+Method
+WTQ
+HiTab
+TabFact
+Comp.
+ALL
+Comp.
+ALL
+TabAF-Fast
+Upper Bound
+82.69
+85.20
+67.28
+84.22
+96.00
+DP&Formula
+73.36
+76.10
+60.83
+78.03
+85.03
+Formula
+72.12
+73.92
+58.53
+76.64
+87.01
+DP
+47.71
+60.98
+47.00
+76.39
+80.24
+TabAF-CoT
+Upper Bound
+90.17
+91.32
+66.82
+88.13
+98.47
+DP&Formula
+80.92
+82.94
+54.38
+80.49
+93.23
+Formula
+76.70
+79.17
+53.92
+78.41
+90.76
+DP
+77.53
+81.33
+52.07
+80.93
+92.69
+Base Model
+DP
+46.84
+54.81
+18.81
+55.62
+69.76
+Table 5: Ablation study for the generation modes of
+TabAF-Fast and TabAF-CoT (Qwen2.5-Coder-7B).
+“Upper Bound” indicates that at least one output is correct.
+59.63
+56.06
+76.04
+75.83
+76.77
+86.61
+79.24
+75.57
+92.74
+82.94
+80.49
+94.07
+WTQ
+HiTab
+TabFact
+50
+60
+70
+80
+90
+100
+BaseModel
++SFT
++Cold Start
++RL
+Accuracy
+(a) TabAF-CoT (Qwen2.5-Coder-7B)
+53.64
+61.43
+74.11
+77.44
+82.13
+85.38
+78.13
+76.26
+91.30
+82.07
+80.43
+93.87
+WTQ
+HiTab
+TabFact
+50
+60
+70
+80
+90
+100
+BaseModel
++SFT
++Cold Start
++RL
+Accuracy
+(b) TabAF-CoT (Llama3.1-8B)
+Figure 3: Ablation study for the training stages of
+TabAF-CoT (Qwen2.5-Coder-7B and Llama3.1-8B).
+pabilities of the Excel engine. Nevertheless, the two modes
+remain complementary, and their combination via mix self-
+consistency still yields better overall performance.
+Effectiveness of training stages
+To analyze the effective-
+ness of the training stages, we conduct the ablation study
+for TabAF-CoT (Qwen2.5-Coder-7B and Llama3.1-8B) in
+Figure 3. Across all models in this study, both DP and For-
+mula modes are jointly used for generation, with the final an-
+swer also determined by mix self-consistency. Before train-
+ing, the base models show limited ability in TableQA. As the
+training progresses, the performance improves step by step.
+The SFT stage using a large-scale training dataset brings
+the most significant improvement, where both Formula gen-
+eration and table understanding capabilities are greatly en-
+hanced. During the Cold Start stage, we guide the model
+to perform reasoning before generating answers or Formu-
+las. On WTQ and TabFact, this further unleashes the reason-
+3600
+7200
+10800
+#Cold Start Samples
+75
+78
+81
+84
+Denotation Accuracy
+WTQ
+3600
+7200
+10800
+#Cold Start Samples
+75
+77
+79
+81
+HiTab
+3600
+7200
+10800
+#Cold Start Samples
+85
+88
+91
+94
+TabFact
+SFT
++Cold Start
++RL
+Figure 4: Impact of cold start samples for TabAF-CoT
+(Qwen2.5-Coder-7B).
+ing potential of LLMs, while on HiTab, performance drops
+slightly, possibly due to the limited size of cold-start data,
+which leads the model to overthink the simple questions in
+HiTab. The RL training stage enables further performance
+improvement by encouraging the model to explore and rein-
+forcing successful reasoning through rewards.
+Additional Analysis
+Impact of Cold Start Samples
+In Figure 4, we com-
+pare the impact of different amounts of cold start samples
+on TabAF-CoT (Qwen2.5-Coder-7B). In previous exper-
+iments, we used 3,600 samples from FormulaQA(CoT)
+as the cold start data before RL training. Here, we ad-
+ditionally annotate 7,200 more cold start samples using
+Claude-Sonnet-4, resulting in a total of 10,800 samples. We
+then conduct experiments under three different cold start
+data scales: 3,600, 7,200, and 10,800 samples, to examine
+whether more cold start data leads to improved performance.
+On WTQ, both the Cold Start and corresponding RL per-
+formance improve as the number of cold start samples in-
+creases, possibly because the questions in WTQ rely more
+heavily on the reasoning process. On HiTab and TabFact,
+TabAF-CoT does not benefit from additional CoT data.
+This may be because the data in these two datasets are rel-
+atively homogeneous and easy to handle by Formula or DP
+mode, making the performance differences after RL training
+more attributable to differences in training trajectories.
+Conclusion
+In this paper, we construct FormulaQA, a Formula-
+annotated dataset to enhance the Spreadsheet Formula gen-
+eration capabilities of LLMs for TableQA. We propose
+TabAF, an answer-Formula joint reasoning framework
+that leverages the complementarity of Formula and Direct
+Prompt (DP) in solving lookup questions and complex rea-
+soning questions, respectively. The extensive experimental
+results on the WTQ, HiTab, and TabFact datasets demon-
+strate that both variants of TabAF consistently outper-
+form existing fine-tuning-based baselines. TabAF-Fast
+achieves a favorable balance between reasoning efficiency
+and accuracy, while TabAF-CoT further achieves higher
+performance by explicit CoT reasoning. Additionally, em-
+pirical studies on the out-of-domain datasets like AIT-QA
+and FinQA demonstrate the generalizability of TabAF in
+new domains and the HybridQA task. These facts confirm
+the effectiveness and versatility of TabAF in enhancing the
+table reasoning capabilities of LLMs.
+References
+Cao, Y.; Chen, S.; Liu, R.; Wang, Z.; and Fried, D. 2023.
+API-Assisted Code Generation for Question Answering on
+Varied Table Structures. In Proceedings of the 2023 Confer-
+ence on Empirical Methods in Natural Language Process-
+ing, 14536–14548.
+Chen, S.; He, Y.; Cui, W.; Fan, J.; Ge, S.; Zhang, H.; Zhang,
+D.; and Chaudhuri, S. 2024. Auto-Formula: Recommend
+Formulas in Spreadsheets using Contrastive Learning for Ta-
+ble Representations. Proceedings of the ACM on Manage-
+ment of Data, 2(3): 1–27.
+Chen, W.; Wang, H.; Chen, J.; Zhang, Y.; Wang, H.; Li, S.;
+Zhou, X.; and Wang, W. Y. 2020. TabFact: A Large-scale
+Dataset for Table-based Fact Verification. In International
+Conference on Learning Representations.
+Chen, X.; Maniatis, P.; Singh, R.; Sutton, C.; Dai, H.; Lin,
+M.; and Zhou, D. 2021a. Spreadsheetcoder: Formula pre-
+diction from semi-structured context. In International Con-
+ference on Machine Learning, 1661–1672. PMLR.
+Chen, Z.; Chen, W.; Smiley, C.; Shah, S.; Borova, I.; Lang-
+don, D.; Moussa, R.; Beane, M.; Huang, T.-H.; Routledge,
+B. R.; et al. 2021b. FinQA: A Dataset of Numerical Reason-
+ing over Financial Data. In Proceedings of the 2021 Confer-
+ence on Empirical Methods in Natural Language Process-
+ing, 3697–3711.
+Cheng, Z.; Dong, H.; Jia, R.; Wu, P.; Han, S.; Cheng, F.; and
+Zhang, D. 2022a. FORTAP: Using Formulas for Numerical-
+Reasoning-Aware Table Pretraining. In Muresan, S.; Nakov,
+P.; and Villavicencio, A., eds., Proceedings of the 60th An-
+nual Meeting of the Association for Computational Linguis-
+tics (Volume 1: Long Papers), 1150–1166. Dublin, Ireland:
+Association for Computational Linguistics.
+Cheng, Z.; Dong, H.; Wang, Z.; Jia, R.; Guo, J.; Gao, Y.;
+Han, S.; Lou, J.-G.; and Zhang, D. 2022b. HiTab: A Hier-
+archical Table Dataset for Question Answering and Natural
+Language Generation. In Proceedings of the 60th Annual
+Meeting of the Association for Computational Linguistics
+(Volume 1: Long Papers), 1094–1110.
+Cheng, Z.; Xie, T.; Shi, P.; Li, C.; Nadkarni, R.; Hu,
+Y.; Xiong, C.; Radev, D.; Ostendorf, M.; Zettlemoyer, L.;
+Smith, N. A.; and Yu, T. 2023. Binding Language Models
+in Symbolic Languages. In The Eleventh International Con-
+ference on Learning Representations.
+Dubey, A.; Jauhri, A.; Pandey, A.; Kadian, A.; Al-Dahle, A.;
+Letman, A.; Mathur, A.; Schelten, A.; Yang, A.; Fan, A.;
+et al. 2024. The llama 3 herd of models. arXiv preprint
+arXiv:2407.21783.
+Herzig, J.; Nowak, P. K.; Mueller, T.; Piccinno, F.; and
+Eisenschlos, J. 2020. TaPas: Weakly Supervised Table Pars-
+ing via Pre-training.
+In Proceedings of the 58th Annual
+Meeting of the Association for Computational Linguistics,
+4320–4333.
+Hu, E. J.; yelong shen; Wallis, P.; Allen-Zhu, Z.; Li, Y.;
+Wang, S.; Wang, L.; and Chen, W. 2022. LoRA: Low-Rank
+Adaptation of Large Language Models.
+In International
+Conference on Learning Representations.
+Hui, B.; Yang, J.; Cui, Z.; Yang, J.; Liu, D.; Zhang, L.; Liu,
+T.; Zhang, J.; Yu, B.; Lu, K.; et al. 2024. Qwen2. 5-coder
+technical report. arXiv preprint arXiv:2409.12186.
+Jiang, R.; Wang, C.; and Deng, W. 2024. Seek and Solve
+Reasoning for Table Question Answering. arXiv preprint
+arXiv:2409.05286.
+Katsis, Y.; Chemmengath, S.; Kumar, V.; Bharadwaj, S.;
+Canim, M.; Glass, M.; Gliozzo, A.; Pan, F.; Sen, J.; Sankara-
+narayanan, K.; et al. 2022.
+AIT-QA: Question Answer-
+ing Dataset over Complex Tables in the Airline Industry.
+NAACL-HLT 2022, 305.
+Kwon, W.; Li, Z.; Zhuang, S.; Sheng, Y.; Zheng, L.; Yu,
+C. H.; Gonzalez, J. E.; Zhang, H.; and Stoica, I. 2023. Ef-
+ficient Memory Management for Large Language Model
+Serving with PagedAttention. In Proceedings of the ACM
+SIGOPS 29th Symposium on Operating Systems Principles.
+Liu, Q.; Chen, B.; Guo, J.; Ziyadi, M.; Lin, Z.; Chen, W.;
+and Lou, J.-G. 2022. TAPEX: Table Pre-training via Learn-
+ing a Neural SQL Executor. In International Conference on
+Learning Representations.
+Liu, T.; Wang, F.; and Chen, M. 2024. Rethinking Tabular
+Data Understanding with Large Language Models. In Duh,
+K.; Gomez, H.; and Bethard, S., eds., Proceedings of the
+2024 Conference of the North American Chapter of the As-
+sociation for Computational Linguistics: Human Language
+Technologies (Volume 1: Long Papers), 450–482. Mexico
+City, Mexico: Association for Computational Linguistics.
+Mouravieff, R.; Piwowarski, B.; and Lamprier, S. 2024.
+Learning Relational Decomposition of Queries for Question
+Answering from Tables.
+In Proceedings of the 62nd An-
+nual Meeting of the Association for Computational Linguis-
+tics (Volume 1: Long Papers), 10471–10485.
+Ni, A.; Iyer, S.; Radev, D.; Stoyanov, V.; Yih, W.-t.; Wang,
+S. I.; and Lin, X. V. 2023.
+LEVER: learning to verify
+language-to-code generation with execution. In Proceedings
+of the 40th International Conference on Machine Learning,
+ICML’23. JMLR.org.
+Pasupat, P.; and Liang, P. 2015.
+Compositional Seman-
+tic Parsing on Semi-Structured Tables. In Proceedings of
+the 53rd Annual Meeting of the Association for Computa-
+tional Linguistics and the 7th International Joint Conference
+on Natural Language Processing (Volume 1: Long Papers),
+1470–1480.
+Shao, Z.; Wang, P.; Zhu, Q.; Xu, R.; Song, J.; Bi, X.; Zhang,
+H.; Zhang, M.; Li, Y.; Wu, Y.; et al. 2024. Deepseekmath:
+Pushing the limits of mathematical reasoning in open lan-
+guage models. arXiv preprint arXiv:2402.03300.
+Sheng, G.; Zhang, C.; Ye, Z.; Wu, X.; Zhang, W.; Zhang,
+R.; Peng, Y.; Lin, H.; and Wu, C. 2025.
+Hybridflow: A
+flexible and efficient rlhf framework.
+In Proceedings of
+the Twentieth European Conference on Computer Systems,
+1279–1297.
+Shi, T.; Zhao, C.; Boyd-Graber, J.; Daum´e III, H.; and Lee,
+L. 2020. On the Potential of Lexico-logical Alignments for
+Semantic Parsing to SQL Queries. In Findings of the Asso-
+ciation for Computational Linguistics: EMNLP 2020, 1849–
+1864.
+Su, A.; Wang, A.; Ye, C.; Zhou, C.; Zhang, G.; Zhu, G.;
+Wang, H.; Xu, H.; Chen, H.; Li, H.; et al. 2024. Tablegpt2: A
+large multimodal model with tabular data integration. arXiv
+preprint arXiv:2411.02059.
+Wang, Z.; Zhang, H.; Li, C.-L.; Eisenschlos, J. M.; Perot,
+V.; Wang, Z.; Miculicich, L.; Fujii, Y.; Shang, J.; Lee, C.-Y.;
+and Pfister, T. 2024. Chain-of-Table: Evolving Tables in the
+Reasoning Chain for Table Understanding. In The Twelfth
+International Conference on Learning Representations.
+Wu, X.; Yang, J.; Chai, L.; Zhang, G.; Liu, J.; Du, X.; Liang,
+D.; Shu, D.; Cheng, X.; Sun, T.; et al. 2024. TableBench: A
+Comprehensive and Complex Benchmark for Table Ques-
+tion Answering. arXiv preprint arXiv:2408.09174.
+Yang, Z.; Du, Z.; Zhang, M.; Du, W.; Chen, J.; Duan,
+Z.; and Zhao, S. 2025.
+Triples as the Key: Structur-
+ing Makes Decomposition and Verification Easier in LLM-
+based TableQA. In The Thirteenth International Conference
+on Learning Representations.
+Ye, Y.; Hui, B.; Yang, M.; Li, B.; Huang, F.; and Li, Y.
+2023. Large Language Models are Versatile Decomposers:
+Decomposing Evidence and Questions for Table-based Rea-
+soning. In Proceedings of the 46th International ACM SIGIR
+Conference on Research and Development in Information
+Retrieval, SIGIR ’23, 174–184. New York, NY, USA: Asso-
+ciation for Computing Machinery. ISBN 9781450394086.
+Yin, P.; Neubig, G.; Yih, W.-t.; and Riedel, S. 2020.
+TaBERT: Pretraining for Joint Understanding of Textual and
+Tabular Data. In Proceedings of the 58th Annual Meeting of
+the Association for Computational Linguistics, 8413–8426.
+Zhang, T.; Yue, X.; Li, Y.; and Sun, H. 2024a.
+TableL-
+lama: Towards Open Large Generalist Models for Tables. In
+Proceedings of the 2024 Conference of the North American
+Chapter of the Association for Computational Linguistics:
+Human Language Technologies (Volume 1: Long Papers),
+6024–6044.
+Zhang, X.; Zhang, J.; Ma, Z.; Li, Y.; Zhang, B.; Li, G.; Yao,
+Z.; Xu, K.; Zhou, J.; Zhang-Li, D.; et al. 2024b. TableLLM:
+Enabling Tabular Data Manipulation by LLMs in Real Of-
+fice Usage Scenarios. arXiv preprint arXiv:2403.19318.
+Zhang, Y.; Henkel, J.; Floratou, A.; Cahoon, J.; Deep, S.;
+and Patel, J. M. 2024c. ReAcTable: Enhancing ReAct for
+Table Question Answering.
+Proc. VLDB Endow., 17(8):
+1981–1994.
+Zhang, Z.; Gao, Y.; and Lou, J.-G. 2024. E5: Zero-shot Hi-
+erarchical Table Analysis using Augmented LLMs via Ex-
+plain, Extract, Execute, Exhibit and Extrapolate. In Duh,
+K.; Gomez, H.; and Bethard, S., eds., Proceedings of the
+2024 Conference of the North American Chapter of the As-
+sociation for Computational Linguistics: Human Language
+Technologies (Volume 1: Long Papers), 1244–1258. Mexico
+City, Mexico: Association for Computational Linguistics.
+Zhao, W.; Hou, Z.; Wu, S.; Gao, Y.; Dong, H.; Wan, Y.;
+Zhang, H.; Sui, Y.; and Zhang, H. 2024.
+NL2Formula:
+Generating Spreadsheet Formulas from Natural Language
+Queries. In Findings of the Association for Computational
+Linguistics: EACL 2024, 2377–2388.
+Zheng, Y.; Zhang, R.; Zhang, J.; Ye, Y.; and Luo, Z. 2024.
+LlamaFactory: Unified Efficient Fine-Tuning of 100+ Lan-
+guage Models. In Cao, Y.; Feng, Y.; and Xiong, D., eds.,
+Proceedings of the 62nd Annual Meeting of the Association
+for Computational Linguistics (Volume 3: System Demon-
+strations), 400–410. Bangkok, Thailand: Association for
+Computational Linguistics.
+A Details for converting SQL queries into Formulas
+We developed the Formula conversion program based on the SQL queries and templates annotated by Squall. To handle a
+broader range of questions, Squall standardizes the WTQ tables and introduces two special columns: “id” and “agg”. The “id”
+column indicates the row index, while the “agg” column indicates whether a row is a “Total” summary row. By applying special
+conversion rules to the “id” and “agg” columns, we can further simplify formula expressions. For entities that can be looked
+up from the table, we directly use their coordinates (e.g. “A5”) instead of using operations like “FILTER” to make
+the Formulas more concise. For example, for the SQL “SELECT c1 FROM w ORDER BY id ASC LIMIT 1”, the complex
+reasoning formula “INDEX(A2:A13, MATCH(MIN(D2:D13), D2:D13, 0))” can be simplified to the lookup formula “=A1” by
+interpreting the “id” column semantics.
+B Criteria for Dividing the Complex Subset
+To demonstrate the ability of our method in performing complex reasoning, we divide the complex subsets from WTQ and
+HiTab for evaluation. Since the WTQ dataset only contains annotations for answers, we used GPT-4o to divide the complex
+reasoning subset. We prompt the LLM to determine whether answering the questions requires arithmetic operations, date cal-
+culations, value aggregation, or other operations that may involve numbers. As a result, we divide the WTQ complex reasoning
+subset containing 2,421 samples. Since HiTab annotates Formulas, we classify Formulas other than the assignment Formulas as
+the complex reasoning subset of HiTab, as these answers cannot be directly obtained from tables. The HiTab complex reasoning
+subset consists of 217 samples.
+C Experimental Hyperparameters
+We mainly apply TabAF to two widely used LLMs: Qwen2.5-Coder-7B (Hui et al. 2024), and Llama3.1-8B (Dubey et al. 2024).
+During supervised fine-tuning (SFT) for TabAF-Fast, we adopt LoRA (Hu et al. 2022) with a cosine annealing scheduler,
+using an initial learning rate of 2 × 10−4, batch size of 8, and a maximum sequence length of 16,384. Models are trained for
+3 epochs on FormulaQA(Direct). During cold-start SFT for TabAF-CoT, we switch to full-parameter fine-tuning, set
+the learning rate to 7 × 10−6, and continue training 3 epochs using FormulaQA(CoT) based on TabAF-Fast. During RL
+training for TabAF-CoT, we employ the GRPO algorithm with a prompt length of 16,384, response length capped at 2,048,
+mini-batch size of 256, a rollout size of 10, and a learning rate of 1×10−6. The KL divergence coefficient is set to 0 to enhance
+training stability. This stage uses the original WTQ, HiTab, and TabFact datasets over 3 training epochs.
+D The Prompts for LLMs
+In this section, we provide the prompts used to annotate Formulas for FormulaQA construction and the prompts to instruct
+LLMs to generate Formulas or direct answers.
+D.1 Prompt for Annotating FormulaQA(Direct)
+We utilize the prompt to annotate pure Formulas for the complex questions in WTQ and the randomly sampled questions in
+TabFact. For each example, we sample 10 responses to check whether any of the generated Formulas produce an execution
+result that matches the gold answer. If none match, we perform additional rounds of sampling, up to a maximum of three
+rounds in total. If a match is found, one of the matching responses is selected and added to FormulaQA(Direct).
+First Annotation Round
+System:
+Given an Excel table, a question, and the answer to the question. Write an Excel formula (=???) to obtain the answer.
+You should only output the formula.
+User:
+[Table Title]{table title}
+[Table]{table str}
+[Question] {question}
+[Gold Answer] {gold answer}
+[The Formula You think to answer the question]
+Assistant:
+# Generated Formulas
+Subsequent Annotation Rounds
+System:
+Given an Excel table, a question, and the answer to the question. Write an Excel formula (=???) to obtain the answer.
+You should only output the formula.
+User:
+[Table Title]{table title}
+[Table]{table str}
+[Question] {question}
+[Gold Answer] {gold answer}
+In the previous rounds, you attempted to generate the following formulas, but none of them is correct. Please try to
+generate the correct formula. You should only output the Formula.
+[The wrong formula you generate in previous rounds]
+1. Formula is: {formula} ; Execution Results is: {result}
+2. Formula is: {formula} ; Execution Results is: {result}
+...
+[The Formula You think to answer the question]
+Assistant:
+# Generated Formulas
+D.2 Prompt for Annotating FormulaQA(CoT)
+We utilize the prompt to annotate Formulas or Answers with CoT reasoning responses for randomly sampled questions in WTQ,
+TabFact, and HiTab. For each dataset and each generation mode, we annotate 1,800 CoT examples and verify their correctness
+using the gold answers. All the data collectively form TabAF-CoT, totaling 10,800 examples.
+Annotating Formulas with CoT
+System:
+You are an advanced Table-question solving assistant with access to the Excel Formula Engine Tool. Given a question
+and the corresponding table, your task is to generate a formula to solve this question. I’ll execute the generated formula
+to obtain the final answer.
+## Response Structure Your response must follow this specific format: 1. <think> ...think with less than
+300 words ... </think>\n\n<formula>=...</formula> 2. If there are multiple formulas, join them
+with ”|” (e.g. ”=MAX(A1:A10);=MIN(B2:B5)” ).
+User:
+[Table Title]{table title}
+[Table]{table str}
+[Question] {question}
+[The Formula You think to answer the question]
+Assistant:
+# <think>...<think>\n\n <formula>=...</formula>
+Annotating Answers with CoT
+System:
+You are an advanced Table-question solving assistant. Given a question and the corresponding table, your task is to
+analyze the question and generate the final answer.
+## Response Structure Your response must follow this specific format: 1. <think> ...think with less than
+300 words ... </think>
+n
+n<answer>The most concise answer</answer>
+2.
+Ensure
+that
+the
+content
+inside
+‘<answer>...</answer>‘ is as concise as possible (e.g. ”21 years” should be ”21”). Additionally, If there
+are multiple answers, join them with ”|” (e.g. ”Tom—Carl—Lisa”).
+User:
+[Table Title]{table title}
+[Table]{table str}
+[Question] {question}
+[The Formula You think to answer the question]
+Assistant:
+# <think>...<think>\n\n <answer>...</answer>
+D.3 Prompt for TabAF-Fast
+We utilize the prompt to guide the LLMs to directly generate Formulas or Answers. We provide the example of tabular data to
+show the difference between generating Formulas and generating answers.
+Generating Direct Formulas
+System:
+You are an Excel Expert. Based on the Excel table, generate excel formula to answer the user question.
+User:
+[Table Title] agri-food industry sub-groups for workers aged 15 years and over, 2011
+[Table]
+|0|A|B|C|D|E|
+|1|sub −groupsofagri −food|easternontario|easternontario|northernontario|northernontario|
+|2|sub −groupsofagri −food|frenchworkers|otherworkers|frenchworkers|otherworkers|
+|3|sub −groupsofagri −food|percent|percent|percent|percent|
+|4|inputandservicesupply|2.9|2.1|2.9|1.3|
+|5|food, beverage, andtobaccoprocessing|9.7|6.0|3.0|3.3|
+|6|foodretailandwholesale|35.3|31.3|39.1|37.3|
+|7|foodservice|52.1|60.6|55.0|58.1|
+[Question]
+{question}
+[Formula]
+Assistant:
+# Ouptut Formula
+Generating Direct Answers
+System:
+This is table question answering task, based on the given table, answer the given question. Only output the answer.
+User:
+[Table Title] agri-food industry sub-groups for workers aged 15 years and over, 2011
+[Table]
+|sub −groupsofagri −food|easternontario|easternontario|northernontario|northernontario|
+|sub −groupsofagri −food|frenchworkers|otherworkers|frenchworkers|otherworkers|
+|sub −groupsofagri −food|percent|percent|percent|percent|
+|inputandservicesupply|2.9|2.1|2.9|1.3|
+|food, beverage, andtobaccoprocessing|9.7|6.0|3.0|3.3|
+|foodretailandwholesale|35.3|31.3|39.1|37.3|
+|foodservice|52.1|60.6|55.0|58.1|
+[Question]
+{question}
+[Answer]
+Assistant:
+# Ouptut Direct Answer
+D.4 Prompt for TabAF-CoT
+We utilize the prompt to guide the LLMs to generate Formulas or Answers output. We provide the example of tabular data to
+show the difference between generating Formulas and generating answers.
+Generating Formulas with Cot Thinking
+System:
+You are an advanced Table-question solving assistant with access to the Excel Formula Engine Tool. Given a question
+and the corresponding table, your task is to generate a formula to solve this question. I’ll execute the generated formula
+to obtain the final answer.
+## Response Structure Your response must follow this specific format: 1. <think> ...think with less than
+300 words ... </think>\n\n<formula>=...</formula> 2. If there are multiple formulas, join them
+with ”|” (e.g. ”=MAX(A1:A10);=MIN(B2:B5)” ).
+User:
+[Table Title] agri-food industry sub-groups for workers aged 15 years and over, 2011
+[Table]
+|0|A|B|C|D|E|
+|1|sub −groupsofagri −food|easternontario|easternontario|northernontario|northernontario|
+|2|sub −groupsofagri −food|frenchworkers|otherworkers|frenchworkers|otherworkers|
+|3|sub −groupsofagri −food|percent|percent|percent|percent|
+|4|inputandservicesupply|2.9|2.1|2.9|1.3|
+|5|food, beverage, andtobaccoprocessing|9.7|6.0|3.0|3.3|
+|6|foodretailandwholesale|35.3|31.3|39.1|37.3|
+|7|foodservice|52.1|60.6|55.0|58.1|
+[Question]
+{question}
+[Formula]
+Assistant:
+# <think>...<think>\n\n <formula>=...</formula>
+Generating Answers with Cot Thinking
+System:
+You are an advanced Table-question solving assistant. Given a question and the corresponding table, your task is to
+analyze the question and generate the final answer.
+## Response Structure Your response must follow this specific format: 1. <think> ...think with less than
+300 words ... </think>
+n
+n<answer>The most concise answer</answer>
+2.
+Ensure
+that
+the
+content
+inside
+‘<answer>...</answer>‘ is as concise as possible (e.g. ”21 years” should be ”21”). Additionally, If there
+are multiple answers, join them with ”|” (e.g. ”Tom—Carl—Lisa”).
+User:
+[Table Title] agri-food industry sub-groups for workers aged 15 years and over, 2011
+[Table]
+|sub −groupsofagri −food|easternontario|easternontario|northernontario|northernontario|
+|sub −groupsofagri −food|frenchworkers|otherworkers|frenchworkers|otherworkers|
+|sub −groupsofagri −food|percent|percent|percent|percent|
+|inputandservicesupply|2.9|2.1|2.9|1.3|
+|food, beverage, andtobaccoprocessing|9.7|6.0|3.0|3.3|
+|foodretailandwholesale|35.3|31.3|39.1|37.3|
+|foodservice|52.1|60.6|55.0|58.1|
+[Question]
+{question}
+[Answer]
+Assistant:
+# <think>...<think>\n\n <answer>...</answer>

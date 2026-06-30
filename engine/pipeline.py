@@ -88,10 +88,10 @@ class Pipeline:
         output = {"pipeline_version": "2.0", "input_mode": mode, "stages": {}}
 
         # Apply random seed for reproducibility
-        seed = _sim_cfg().get("random_seed", 42)
-        if seed:
-            random.seed(seed)
-            output["random_seed"] = seed
+        rng_seed = _sim_cfg().get("random_seed", 42)
+        if rng_seed:
+            random.seed(rng_seed)
+            output["random_seed"] = rng_seed
 
         # Load seed data
         seed = _load_seed_data(seed_data)
