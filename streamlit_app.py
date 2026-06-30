@@ -229,7 +229,7 @@ st.divider()
 
 run_col1, run_col2 = st.columns([1, 4])
 with run_col1:
-    run_btn = st.button(t("pipeline.btn"), type="primary", use_container_width=True, key=f"run_btn_{get_lang()}")
+    run_btn = st.button(t("pipeline.run_btn"), type="primary", use_container_width=True, key=f"run_btn_{get_lang()}")
 
 # Load last result for display when idle
 _last_result = None

@@ -114,7 +114,8 @@
     "hybrid_label": "C: 混合",
     "pipeline_fail": "❌ 管道失败: {err}",
     "failed_stage": "失败阶段: {s}",
-    "completed_stages": "已完成: {s}"
+    "completed_stages": "已完成: {s}",
+    "load_hint2": "👆 点击「🚀 运行市场预测」启动全管道。"
   },
   "tabs": {
     "products": "📊 产品预测",
@@ -265,7 +266,9 @@
     "type_info": "类型: {t} | 预算: ¥{b} | 决策: {d}",
     "thinking": "{name} 正在思考...",
     "select_label": "选择 Agent",
-    "msg_placeholder": "你为什么会买这个产品？"
+    "msg_placeholder": "你为什么会买这个产品？",
+    "filter_all": "全部",
+    "total": "共 {total} 个 agent，{active} 个有模拟记录"
   },
   "network_tab": {
     "title": "🌐 网络拓扑 — Watts-Strogatz 小世界",
@@ -350,7 +353,8 @@
     "price_input": "价格点 (逗号分隔)",
     "no_buyers": "所有价格点均无买家。产品可能需要重新定位或功能调整。",
     "optimal_single": "最优价格 ¥{price} — 营收 ¥{revenue} · {buyers} 买家",
-    "optimal_multi": "营收最优: ¥{rev_price} (¥{rev_revenue} · {rev_buyers}人)。得分最优: ¥{score_price} (score={score_val})"
+    "optimal_multi": "营收最优: ¥{rev_price} (¥{rev_revenue} · {rev_buyers}人)。得分最优: ¥{score_price} (score={score_val})",
+    "price_help": "例如: 1,3,6,9,12,18,30"
   },
   "market": {
     "sentiment_label": "最终情绪",

@@ -114,7 +114,8 @@
     "hybrid_label": "C: Hybrid",
     "pipeline_fail": "Pipeline failed: {err}",
     "failed_stage": "Failed at stage: {s}",
-    "completed_stages": "Completed: {s}"
+    "completed_stages": "Completed: {s}",
+    "load_hint2": "Click Run to start pipeline."
   },
   "tabs": {
     "products": "Products",
@@ -265,7 +266,9 @@
     "type_info": "Type: {t} | Budget: ¥{b} | Decision: {d}",
     "thinking": "{name} is thinking...",
     "select_label": "Select Agent",
-    "msg_placeholder": "Why would you buy this product?"
+    "msg_placeholder": "Why would you buy this product?",
+    "filter_all": "All",
+    "total": "{total} agents, {active} with history"
   },
   "network_tab": {
     "title": "Network Topology — Watts-Strogatz Small-World",
@@ -350,7 +353,8 @@
     "price_input": "Price Points (comma-separated)",
     "no_buyers": "No buyers at any price point. Product may need repositioning.",
     "optimal_single": "Optimal price ¥{price} — Revenue ¥{revenue} · {buyers} buyers",
-    "optimal_multi": "Revenue optimal: ¥{rev_price} (¥{rev_revenue} · {rev_buyers} buyers). Score optimal: ¥{score_price} (score={score_val})"
+    "optimal_multi": "Revenue optimal: ¥{rev_price} (¥{rev_revenue} · {rev_buyers} buyers). Score optimal: ¥{score_price} (score={score_val})",
+    "price_help": "e.g. 1,3,6,9,12,18,30"
   },
   "market": {
     "sentiment_label": "Final Sentiment",
