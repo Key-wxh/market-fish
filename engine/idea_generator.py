@@ -61,7 +61,7 @@ Consumer apps going viral with controversial names (死了么). Solo devs gettin
 
 Generate product directions that could succeed in THIS environment. Not generic ideas — specific, novel directions that leverage current technology and market conditions."""
 
-    result = llm.chat_json(system=IDEA_SYSTEM_PROMPT, user=user_prompt)
+    result = llm.chat_json(system=IDEA_SYSTEM_PROMPT, user=user_prompt, agent_type="idea")
 
     if "product_directions" not in result:
         raise ValueError("Missing product_directions in output")

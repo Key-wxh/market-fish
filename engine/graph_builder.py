@@ -70,7 +70,7 @@ MARKET SIGNALS:
 
 Create concrete entity instances and relationships. Focus especially on PAIN POINT SPACES — where is demand strong but supply weak?"""
 
-    result = llm.chat_json(system=GRAPH_SYSTEM_PROMPT, user=user_prompt)
+    result = llm.chat_json(system=GRAPH_SYSTEM_PROMPT, user=user_prompt, agent_type="graph")
 
     if "entities" not in result or "pain_point_spaces" not in result:
         raise ValueError("Graph missing required fields (entities/pain_point_spaces)")

@@ -64,7 +64,7 @@ PRODUCT DIRECTIONS TO EVALUATE:
 Generate agents that can realistically evaluate these product directions.
 Remember: heterogeneous agents (Machine Spirits 2026 principle), BDI cognitive model, small-world network topology."""
 
-    result = llm.chat_json(system=AGENT_SYSTEM_PROMPT, user=user_prompt)
+    result = llm.chat_json(system=AGENT_SYSTEM_PROMPT, user=user_prompt, agent_type="smb")
 
     if "agents" not in result:
         raise ValueError("Agent generation missing 'agents' field")

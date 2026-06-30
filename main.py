@@ -26,6 +26,8 @@ def run_pipeline():
         "freelancer": "data/seed_freelancer.json",
         "economy": "data/seed_economy.json",
         "tech": "data/seed_tech.json",
+        "consumer": "data/seed_consumer.json",
+        "b2b": "data/seed_b2b.json",
     }
     for key, path in seed_files.items():
         try:

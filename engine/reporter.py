@@ -68,6 +68,7 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
             report = llm.chat_json(
                 system=STUDENT_PROMPT,
                 user=f"YOUR ROLE: {p['role']}. FOCUS: {p['focus']}\n\nSIMULATION DATA:\n{sim_data[:5000]}",
+                agent_type="reporter_student",  # Doubao: analytical
             )
             report["perspective"] = p["role"]
             student_reports.append(report)
@@ -81,6 +82,7 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
             critique = llm.chat_json(
                 system=TEACHER_PROMPT,
                 user=f"STUDENT REPORT:\n{json.dumps(report, indent=2, ensure_ascii=False)}\n\nSIMULATION DATA:\n{sim_data[:3000]}",
+                agent_type="reporter_teacher",  # Zhipu: skeptical/critical
             )
             # Merge critique into report
             report["teacher_critique"] = critique
@@ -93,6 +95,7 @@ def generate_report(simulation_results: list[dict], knowledge_graph: dict) -> di
         synthesis = llm.chat_json(
             system=SYNTHESIS_PROMPT,
             user=f"""Synthesize these {len(improved_reports)} analyst reports into one final verdict.
+            agent_type="reporter_student",  # Use analytical model for final synthesis
 
 ANALYST REPORTS:
 {json.dumps(improved_reports, indent=2, ensure_ascii=False)[:5000]}

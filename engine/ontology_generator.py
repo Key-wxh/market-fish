@@ -66,7 +66,7 @@ TECHNOLOGY TRENDS:
 Based on these signals, what are the REAL market participant types, relationships, and decision factors?
 Remember: concrete, quantified, specific. Not generic labels."""
 
-    result = llm.chat_json(system=ONTOLOGY_SYSTEM_PROMPT, user=user_prompt)
+    result = llm.chat_json(system=ONTOLOGY_SYSTEM_PROMPT, user=user_prompt, agent_type="ontology")
 
     # Validate required fields
     if "participant_types" not in result:

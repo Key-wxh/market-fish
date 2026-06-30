@@ -123,10 +123,11 @@ def simulate(
                     ],
                 }
 
-                # LLM decision
+                # LLM decision — heterogeneous: each agent type uses its assigned model
                 decision = llm.chat_json(
                     system=DECISION_SYSTEM_PROMPT,
                     user=f"Round {round_num}/{rounds}. Agent type: {agent_type}. Make ONE economic decision.\n\n{json.dumps(context, indent=2, ensure_ascii=False)}",
+                    agent_type=agent_type,  # Machine Spirits principle: different LLM per agent type
                 )
 
                 # Update agent state based on decision
