@@ -275,20 +275,22 @@ if run_btn or _last_result:
                             f"Buyers: {r['purchasers']} | Rev: ¥{r['total_revenue_cny']}",
                         )
 
-                # Survival chart
+                # Plotly charts
                 if sim_results:
-                    df = pd.DataFrame([
-                        {"产品": r["product_name"][:20], "存活分数": r["survival_score"],
-                         "买家数": r["purchasers"], "收入": r["total_revenue_cny"],
-                         "流失率": r["churn_rate"]}
-                        for r in sim_results
-                    ])
-                    st.subheader("📈 产品表现对比")
-                    chart_col1, chart_col2 = st.columns(2)
-                    with chart_col1:
-                        st.bar_chart(df.set_index("产品")[["存活分数"]], height=300)
-                    with chart_col2:
-                        st.bar_chart(df.set_index("产品")[["收入"]], height=300)
+                    from engine.dashboard_viz import survival_score_chart, adoption_curve, emotion_timeline
+                    st.plotly_chart(survival_score_chart(sim_results), use_container_width=True)
+
+                    # Adoption curve + Emotion timeline side by side
+                    sim_stage2 = result.get("stages", {}).get("simulation", {})
+                    sim_log_viz = sim_stage2.get("sim_log", [])
+                    timeline_data = sim_stage2.get("timeline", [])
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if sim_log_viz:
+                            st.plotly_chart(adoption_curve(sim_log_viz), use_container_width=True)
+                    with c2:
+                        if timeline_data:
+                            st.plotly_chart(emotion_timeline(timeline_data), use_container_width=True)
 
                 # Backtest filter results
                 st.subheader("🔍 回测因子过滤")
@@ -344,6 +346,7 @@ if run_btn or _last_result:
                             try:
                                 agents_list = result.get("stages", {}).get("agents_v2", {}).get("agents", [])
                                 from engine.evidence_report import build_buyer_profile, compare_with_competitors, generate_risk_signals, extract_purchase_reasons
+                                from engine.dashboard_viz import buyer_segments_donut, rl_strategy_radar
 
                                 buyer = build_buyer_profile(p.get('product_id',''), agent_states, agents_list)
                                 comps = compare_with_competitors(p.get('product_id',''), sim_results)
@@ -353,9 +356,7 @@ if run_btn or _last_result:
                                 with c1:
                                     st.write("**买家画像**")
                                     if buyer["total_buyers"] > 0:
-                                        for seg in buyer["segments"]:
-                                            st.write(f"- {seg['name']}: {seg['pct']}%")
-                                        st.write(f"平均月预算: ¥{buyer['avg_budget']}")
+                                        st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True)
                                     else:
                                         st.write("买家细节需模拟日志（新管道运行后可用）")
                                         st.write(f"买家总数: {p.get('purchasers', 0)}")
@@ -367,6 +368,11 @@ if run_btn or _last_result:
                                         st.markdown(f":{level_color.get(r['level'],'gray')}[{r['signal']}] — {r['detail']}")
 
                                 with c2:
+                                    # RL strategy radar
+                                    rl_data = result.get("stages", {}).get("simulation", {}).get("economic_alignment_rl", {})
+                                    if rl_data:
+                                        st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
+
                                     st.write("**竞品对比**")
                                     for c in comps:
                                         icon = "🟢" if c["status"] == "alive" else "🔴"
@@ -377,8 +383,8 @@ if run_btn or _last_result:
                                     if sim_log:
                                         reasons = extract_purchase_reasons(p.get('product_id',''), agent_states)
                                         if reasons:
-                                            st.write("**购买动机 (示例)**")
-                                            for r in reasons[:3]:
+                                            st.write(f"**购买动机** ({len(reasons)} 条)")
+                                            for r in reasons[:5]:
                                                 st.caption(f"\"{r['reasoning'][:80]}\"")
 
                             except Exception as e:
@@ -391,19 +397,22 @@ if run_btn or _last_result:
                 st.subheader("🤖 异质 Agent 群体")
 
                 stages = result.get("stages", {})
-                agent_count = stages.get("agents_v2", {}).get("count", stages.get("agents", {}).get("count", 0))
+                agents_list3 = stages.get("agents_v2", {}).get("agents", [])
+                agent_count = stages.get("agents_v2", {}).get("count", len(agents_list3))
                 st.metric("Agent 总数", agent_count)
 
-                # Agent type distribution
-                # Extract from simulation timeline
-                sim_stage = stages.get("simulation", {})
-                tl = sim_stage.get("timeline", []) if isinstance(sim_stage, dict) else []
-                if hasattr(sim_stage, 'get'):
-                    pass
+                # Agent type distribution (Plotly)
+                if agents_list3:
+                    from engine.dashboard_viz import agent_type_distribution, rl_strategy_radar
+                    st.plotly_chart(agent_type_distribution(agents_list3), use_container_width=True)
 
                 # Show coupling & RL stats per market
                 coupling_data = stages.get("simulation", {}).get("cross_domain_coupling", {})
                 rl_data = stages.get("simulation", {}).get("economic_alignment_rl", {})
+
+                if rl_data:
+                    from engine.dashboard_viz import rl_strategy_radar
+                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
 
                 if coupling_data:
                     st.subheader("📊 市场对比")
@@ -418,12 +427,7 @@ if run_btn or _last_result:
                             with col_b:
                                 st.write("**RL 统计**")
                                 st.write(f"活跃轮数: {rl_market.get('rounds_with_updates', '?')}/30")
-                                strategies = rl_market.get('avg_final_strategies', {})
-                                if strategies:
-                                    strat_df = pd.DataFrame([
-                                        {"策略维度": k, "值": v} for k, v in strategies.items()
-                                    ])
-                                    st.bar_chart(strat_df.set_index("策略维度"), height=200)
+                                st.write(f"最终策略: {rl_market.get('avg_final_strategies', {})}")
 
             # ── Tab 4: Agent Graph ──
             with tab4:
@@ -583,17 +587,15 @@ if run_btn or _last_result:
                 - `risk_tolerance` — 风险承受力
                 """)
 
+                if rl_data:
+                    from engine.dashboard_viz import rl_strategy_radar
+                    st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True)
+
                 for market, data in rl_data.items():
                     strategies = data.get('avg_final_strategies', {})
                     if strategies:
-                        st.subheader(f"{market.upper()} 市场 — 平均策略演化 ({data['rounds_with_updates']}/30 轮活跃)")
-                        strat_df = pd.DataFrame({
-                            "维度": list(strategies.keys()),
-                            "终值": list(strategies.values()),
-                        })
-                        st.bar_chart(strat_df.set_index("维度"), height=250)
-
-                        # B2C vs SMB comparison
+                        st.subheader(f"{market.upper()} 市场 ({data['rounds_with_updates']}/30 轮活跃)")
+                        # B2C vs SMB comparison text
                         st.caption("B2C 消费者 vs SMB 商家策略差异:")
                         if "b2c" in rl_data and "smb" in rl_data:
                             b2c_strat = rl_data["b2c"].get("avg_final_strategies", {})
@@ -604,7 +606,7 @@ if run_btn or _last_result:
                                     "B2C 消费者": list(b2c_strat.values()),
                                     "SMB 商家": list(smb_strat.values()),
                                 })
-                                st.bar_chart(compare_df.set_index("维度"), height=300)
+                                st.dataframe(compare_df.set_index("维度"), use_container_width=True)
 
             # ── Tab 8: Raw Data ──
             with tab8:
