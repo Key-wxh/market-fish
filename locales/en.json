@@ -190,14 +190,14 @@
     "price_sensitive_desc": "Highly price-sensitive, prefers low-cost or high-value products",
     "impulsive_desc": "Quick decisions, easily influenced by emotion and FOMO",
     "rational_desc": "Resists social influence, makes independent decisions",
-    "fomo_round": "Round {r} FOMO trigger: adoption {a:.1%}, sentiment {s:.3f}",
+    "fomo_round": "Round {r} FOMO trigger: adoption {a}, sentiment {s}",
     "death_no_buyers": "Zero buyers — product does not match market demand",
     "death_high_churn": "High churn — users abandon after trial",
     "death_low_score": "Survival score too low",
     "risk_price_sensitive": "Buyers too price-sensitive",
     "risk_price_detail": "{pct}% buyers are price-sensitive, limited room for price increase",
     "risk_smb_sentiment": "SMB market sentiment negative",
-    "risk_smb_detail": "SMB sentiment {s:.2f}, enterprise expansion requires caution",
+    "risk_smb_detail": "SMB sentiment {s}, enterprise expansion requires caution",
     "risk_low_buyers": "Buyer base too small",
     "risk_low_detail": "Only {n} buyers, low statistical confidence",
     "risk_none": "No significant risk signals detected",
@@ -357,7 +357,7 @@
     "rounds_label": "Rounds",
     "active_rounds_label": "Active Rounds",
     "final_strategies_label": "Final Strategies",
-    "market_header": "{m} Market — Sentiment: {s:.3f} | {n} RL agents"
+    "market_header": "{m} Market — Sentiment: {s} | {n} RL agents"
   },
   "page": {
     "title": "MarketFish v5 — Market Prediction Engine"

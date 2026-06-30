@@ -31,10 +31,10 @@ def get_lang() -> str:
     """Get current language. Returns 'en' by default (GitHub/PH-friendly)."""
     try:
         if "lang" not in st.session_state:
-            st.session_state.lang = "en"
+            st.session_state.lang = "zh"
         return st.session_state.lang
     except Exception:
-        return "en"
+        return "zh"  # fallback: Chinese for pipeline execution context
 
 
 def set_lang(lang: str):

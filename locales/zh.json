@@ -190,14 +190,14 @@
     "price_sensitive_desc": "对价格高度敏感，倾向于低价或高性价比产品",
     "impulsive_desc": "决策快，容易受情绪和 FOMO 影响",
     "rational_desc": "不易受社交影响，独立做决策",
-    "fomo_round": "第 {r} 轮 FOMO 触发：采纳率 {a:.1%}，市场情绪 {s:.3f}",
+    "fomo_round": "第 {r} 轮 FOMO 触发：采纳率 {a}，市场情绪 {s}",
     "death_no_buyers": "零买家 — 产品与市场需求不匹配",
     "death_high_churn": "高流失 — 用户试用后放弃",
     "death_low_score": "存活分数过低",
     "risk_price_sensitive": "买家价格敏感度过高",
     "risk_price_detail": "{pct}% 买家为价格敏感型，提价空间有限",
     "risk_smb_sentiment": "SMB 市场情绪负值",
-    "risk_smb_detail": "SMB 商家情绪 {s:.2f}，企业端扩展需谨慎",
+    "risk_smb_detail": "SMB 商家情绪 {s}，企业端扩展需谨慎",
     "risk_low_buyers": "买家基数过小",
     "risk_low_detail": "仅 {n} 个买家，统计可信度低",
     "risk_none": "无明显风险信号",
@@ -357,7 +357,7 @@
     "rounds_label": "轮数",
     "active_rounds_label": "活跃轮数",
     "final_strategies_label": "最终策略",
-    "market_header": "{m} 市场 — 情绪: {s:.3f} | {n} RL agents"
+    "market_header": "{m} 市场 — 情绪: {s} | {n} RL agents"
   },
   "page": {
     "title": "MarketFish v5 — 市场预测引擎"

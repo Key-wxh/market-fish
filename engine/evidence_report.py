@@ -154,7 +154,7 @@ def generate_risk_signals(product_id: str, buyer_profile: dict, coupling_stats: 
     smb_sentiment = coupling_stats.get("smb", {}).get("final_sentiment", 0) if isinstance(coupling_stats, dict) else 0
     if smb_sentiment < 0:
         risks.append({"level": "medium", "signal": _t("evidence_tab.risk_smb_sentiment"),
-                       "detail": _t("evidence_tab.risk_smb_detail", s=smb_sentiment)})
+                       "detail": _t("evidence_tab.risk_smb_detail", s=f"{smb_sentiment:.2f}")})
 
     # Low buyer count risk
     if buyer_profile.get("total_buyers", 0) < 5:
