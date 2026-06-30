@@ -459,7 +459,7 @@ if run_btn or _last_result:
                         # ── Price Elasticity Scanner ──
                         with st.expander(t("price_scanner.title"), expanded=False):
                             st.caption(t("price_scanner.desc"))
-                            price_input = st.text_input("价格点 (逗号分隔)", "1,3,6,9,12,18,30",
+                            price_input = st.text_input(t("price_scanner.price_input"), "1,3,6,9,12,18,30",
                                 help=t("price_scanner.price_help"), key=f"price_input_{pname}")
                             scan_rounds = st.slider(t("price_scanner.rounds_label"), 10, 30, 15,
                                 help=t("price_scanner.rounds_help"), key=f"scan_rounds_{pname}")
