@@ -68,7 +68,8 @@ class Pipeline:
         self.errors = []
 
     def run(self, seed_data: dict = None, mode: str = "explore",
-            user_product: dict = None) -> dict:
+            user_product: dict = None, sim_rounds: int = None,
+            agent_cap: int = None) -> dict:
         """
         Run the MarketFish pipeline.
 
@@ -79,6 +80,8 @@ class Pipeline:
                   "hybrid" (user product + LLM-generated competitors)
             user_product: Product dict for validate/hybrid modes.
                 Schema: {name, description, target_market, pricing, [pain_point, differentiation]}
+            sim_rounds: Override simulation rounds (default: from config).
+            agent_cap: Override consumer agent cap (default: from config).
 
         Returns:
             Pipeline result dict with stages, product_directions, and final_report.
@@ -177,9 +180,11 @@ class Pipeline:
 
             _market_config = _cfg()["market_types"]
             market_types = []
+            # Apply agent cap override if specified
+            consumer_cap = agent_cap or _pcfg()["agent_consumer_cap"]
             for m in _market_config:
                 if m == "b2c":
-                    market_types.append((m, [a for a in agents if a.get("type") == "consumer"]))
+                    market_types.append((m, [a for a in agents if a.get("type") == "consumer"][:consumer_cap]))
                 elif m == "smb":
                     market_types.append((m, [a for a in agents if a.get("type") == "smb"]))
                 else:
@@ -198,7 +203,7 @@ class Pipeline:
                 sim_result = simulate(
                     agents=market_agents + [a for a in agents if a.get("type") in ("competitor", "environment")],
                     product_directions=relevant_products,
-                    rounds=_cfg()["simulation_rounds"],
+                    rounds=sim_rounds or _cfg()["simulation_rounds"],
                     market_type=market_type,
                 )
                 all_results.extend(sim_result.get("results", []))

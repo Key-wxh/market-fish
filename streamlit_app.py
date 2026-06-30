@@ -69,6 +69,14 @@ with st.sidebar:
                 user_product = {"name": product_name, "description": product_desc,
                                 "target_market": product_target, "pricing": product_price}
 
+    st.subheader("🧪 模拟参数")
+    sim_rounds = st.slider("模拟轮数", 10, 50, 30, 5,
+                           help="轮数越多越精确，但耗时更长。30轮为标准配置。")
+    agent_count = st.select_slider("Agent 数量", options=[30, 50, 75, 100, 128],
+                                    value=50,
+                                    help="模拟中的消费者数量。越多越真实，但耗时更长。")
+    agent_cap = min(agent_count, 128)  # Ensure cap doesn't exceed max
+
     st.subheader("模型配置")
     from engine.model_registry import get_registry
     registry = get_registry()
@@ -77,7 +85,25 @@ with st.sidebar:
         st.markdown(f"{'🟢' if s['key_configured'] else '⚫'} {name}")
 
     st.divider()
+
+    st.subheader("📂 加载结果")
+    uploaded_result = st.file_uploader("上传管道结果 JSON", type=["json"], key="result_uploader",
+                                        help="上传之前运行保存的 JSON 结果文件")
+    if uploaded_result is not None:
+        try:
+            st.session_state.uploaded_result = json.loads(uploaded_result.read())
+            st.success(f"已加载: {uploaded_result.name}")
+        except Exception as e:
+            st.error(f"加载失败: {e}")
+    elif st.button("🔄 重置", use_container_width=True, help="清除上传的结果，恢复自动加载"):
+        st.session_state.pop("uploaded_result", None)
+        st.session_state.pop("agent_states", None)
+        st.session_state.pop("dialogue_history", None)
+        st.rerun()
+
+    st.divider()
     st.caption(f"v5.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.caption("[GitHub](https://github.com/key-night-day/market-fish) · Keystart AI")
 
 # ── Load seed data ──
 @st.cache_data
@@ -105,7 +131,7 @@ total_agent_target = sum(b['count'] for b in AGENT_BATCHES)
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Mode", {"explore": "探索", "validate": "验证", "hybrid": "混合"}[input_mode])
 col2.metric("Target Agents", str(total_agent_target), f"{len(AGENT_BATCHES)} batches")
-col3.metric("Sim Rounds", "30")
+col3.metric("Sim Rounds", str(sim_rounds))
 col4.metric("Seed Sources", str(len(seed)))
 col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
 
@@ -195,14 +221,18 @@ with run_col1:
 # Load last result for display when idle
 _last_result = None
 if not run_btn:
-    try:
-        result_files = [f for f in os.listdir("uploads") if f.endswith(".json") and "validate" in f]
-        if result_files:
-            latest = max(result_files, key=lambda f: os.path.getmtime(f"uploads/{f}"))
-            with open(f"uploads/{latest}", encoding='utf-8') as lf:
-                _last_result = json.load(lf)
-    except Exception:
-        pass
+    # Check for manually uploaded result first
+    if "uploaded_result" in st.session_state:
+        _last_result = st.session_state.uploaded_result
+    else:
+        try:
+            result_files = [f for f in os.listdir("uploads") if f.endswith(".json") and "validate" in f]
+            if result_files:
+                latest = max(result_files, key=lambda f: os.path.getmtime(f"uploads/{f}"))
+                with open(f"uploads/{latest}", encoding='utf-8') as lf:
+                    _last_result = json.load(lf)
+        except Exception:
+            pass
 
 status_container = st.container()
 
@@ -239,7 +269,8 @@ if run_btn or _last_result:
     try:
         if run_btn:
             # Stage 1 — run full pipeline
-            result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product)
+            result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product,
+                                  sim_rounds=sim_rounds, agent_cap=agent_cap)
             elapsed = time.time() - t0
             builtins.print = original_print
         else:
