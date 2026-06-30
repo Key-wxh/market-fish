@@ -1,0 +1,13 @@
+services:
+  marketfish:
+    build: .
+    ports:
+      - "8000:8000"
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+      - ./config:/app/config
+    restart: unless-stopped
