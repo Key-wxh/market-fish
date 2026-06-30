@@ -479,7 +479,7 @@ if run_btn or _last_result:
                                             status_text = st.empty()
                                             progress = st.progress(0, t("price_scanner.progress"))
                                             def update_prog(i, total):
-                                                progress.progress(i / total, f"扫描 ¥{prices[i-1]} ({i}/{total})...")
+                                                progress.progress(i / total, t("price_scanner.progress", price=f"¥{prices[i-1]}", i=i, total=total))
                                                 status_text.caption(t("price_scanner.done", done=i, total=total))
 
                                             with st.spinner(t("price_scanner.scanning", n=len(prices), r=scan_rounds)):

@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 from collections import defaultdict, Counter
+from engine.i18n import t as _t
 
 # ── Color palette ──
 COLORS = {
@@ -72,12 +73,12 @@ def survival_score_chart(sim_results: list, height: int = 280) -> go.Figure:
         text=[f"{s:.2f} | {b} buyers | ¥{rv:.0f}" for s, b, rv in zip(scores, buyers, revenues)],
         textposition="auto", textfont=dict(size=11, color="#ffffff"),
         hovertext=hover_text, hoverinfo="text",
-        name="Survival Score",
+        name=_t("status.alive") + " Score",
     ))
 
     fig.update_layout(
-        title=dict(text="🎯 产品存活预测", font=dict(size=14)),
-        xaxis=dict(title="Survival Score", range=[0, 1.1], showgrid=True),
+        title=dict(text=_t("products_tab.survival_chart"), font=dict(size=14)),
+        xaxis=dict(title=_t("status.alive") + " Score", range=[0, 1.1], showgrid=True),
         yaxis=dict(title="", autorange="reversed"),
         showlegend=False, height=height,
     )
@@ -111,7 +112,7 @@ def buyer_segments_donut(buyer_profile: dict, height: int = 260) -> go.Figure:
     ))
 
     fig.update_layout(
-        title=dict(text=f"👥 买家画像 ({buyer_profile.get('total_buyers', 0)} buyers · avg ¥{buyer_profile.get('avg_budget', 0):.0f})", font=dict(size=13)),
+        title=dict(text=f_t("evidence_tab.buyer_segments") + " ({buyer_profile.get('total_buyers', 0)} buyers · avg ¥{buyer_profile.get('avg_budget', 0):.0f})", font=dict(size=13)),
         height=height,
         showlegend=False,
     )
@@ -167,8 +168,8 @@ def adoption_curve(sim_log: list, height: int = 260) -> go.Figure:
                             annotation_font=dict(size=10, color=COLORS["competitor"]))
 
     fig.update_layout(
-        title=dict(text="📈 采纳曲线 (S-Curve)", font=dict(size=13)),
-        xaxis=dict(title="Round", dtick=5),
+        title=dict(text=_t("products_tab.adoption_curve"), font=dict(size=13)),
+        xaxis=dict(title=_t("agents_tab.rounds"), dtick=5),
         yaxis=dict(title="Cumulative Buyers"),
         showlegend=False, height=height,
     )
@@ -182,7 +183,7 @@ def adoption_curve(sim_log: list, height: int = 260) -> go.Figure:
 def rl_strategy_radar(rl_stats: dict, height: int = 300) -> go.Figure:
     """Radar chart: 5-dimension RL strategy vector per market type."""
     dimensions = ["price_sensitivity", "early_adopter", "social_susceptibility", "loyalty", "risk_tolerance"]
-    labels = ["价格敏感", "早期采用", "社交易感", "忠诚度", "风险承受"]
+    labels = [_t("rl_tab.price_sensitivity"), _t("rl_tab.early_adopter"), _t("rl_tab.social_susceptibility"), _t("rl_tab.loyalty"), _t("rl_tab.risk_tolerance")]
 
     fig = go.Figure()
     for mkt, stats in rl_stats.items():
@@ -203,7 +204,7 @@ def rl_strategy_radar(rl_stats: dict, height: int = 300) -> go.Figure:
         ))
 
     fig.update_layout(
-        title=dict(text="🎯 RL 策略演化 (5维)", font=dict(size=13)),
+        title=dict(text=_t("rl_tab.title"), font=dict(size=13)),
         polar=dict(
             radialaxis=dict(range=[0, 1], gridcolor=GRID_COLOR, tickfont=dict(size=10)),
             angularaxis=dict(gridcolor=GRID_COLOR, tickfont=dict(size=10)),
@@ -236,7 +237,7 @@ def emotion_timeline(timeline: list, height: int = 250) -> go.Figure:
         mode="lines+markers",
         line=dict(color=COLORS["alive"], width=2),
         marker=dict(size=5),
-        name="Sentiment",
+        name=_t("agents_tab.sentiment"),
     ), secondary_y=False)
 
     fig.add_trace(go.Bar(
@@ -246,15 +247,15 @@ def emotion_timeline(timeline: list, height: int = 250) -> go.Figure:
     ), secondary_y=True)
 
     fig.update_layout(
-        title=dict(text="💭 市场情绪 × 采纳率", font=dict(size=13)),
+        title=dict(text=_t("products_tab.emotion_timeline"), font=dict(size=13)),
         height=height,
         hovermode="x unified",
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
     )
-    fig.update_yaxes(title_text="Sentiment", secondary_y=False, range=[-1, 1], gridcolor=GRID_COLOR)
-    fig.update_yaxes(title_text="Adoption %", secondary_y=True, range=[0, 1], showgrid=False)
-    fig.update_xaxes(title_text="Round", dtick=5)
+    fig.update_yaxes(title_text=_t("agents_tab.sentiment"), secondary_y=False, range=[-1, 1], gridcolor=GRID_COLOR)
+    fig.update_yaxes(title_text=_t("evidence_tab.revenue") + " %", secondary_y=True, range=[0, 1], showgrid=False)
+    fig.update_xaxes(title_text=_t("agents_tab.rounds"), dtick=5)
     return _dark_template(fig)
 
 
@@ -280,9 +281,9 @@ def agent_type_distribution(agents: list, height: int = 220) -> go.Figure:
     ))
 
     fig.update_layout(
-        title=dict(text="🤖 Agent 类型分布", font=dict(size=13)),
+        title=dict(text=_t("agents_tab.type_distribution"), font=dict(size=13)),
         xaxis=dict(title=""),
-        yaxis=dict(title="Count", showgrid=True),
+        yaxis=dict(title=_t("sidebar.agent_count"), showgrid=True),
         showlegend=False, height=height,
     )
     return _dark_template(fig)
