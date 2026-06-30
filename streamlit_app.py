@@ -389,6 +389,69 @@ if run_btn or _last_result:
 
                             except Exception as e:
                                 st.caption(f"证据提取受限: {e}")
+
+                        # ── Price Elasticity Scanner ──
+                        with st.expander("💰 价格弹性扫描 — 找到最优定价", expanded=False):
+                            st.caption("同一产品注入不同价格点，对比买家数/营收曲线，定位最优定价。")
+                            price_input = st.text_input("价格点 (逗号分隔)", "1,3,6,9,12,18,30",
+                                help="例如: 1,3,6,9,12,18,30", key=f"price_input_{pname}")
+                            scan_rounds = st.slider("每价格点模拟轮数", 10, 30, 15,
+                                help="轮数越少越快，但精度降低", key=f"scan_rounds_{pname}")
+
+                            if st.button("🔍 开始价格扫描", key=f"scan_btn_{pname}", type="primary"):
+                                try:
+                                    prices = [float(x.strip()) for x in price_input.replace("¥","").split(",") if x.strip()]
+                                    if len(prices) < 2:
+                                        st.error("至少需要 2 个价格点")
+                                    else:
+                                        from engine.price_scanner import scan_price_elasticity, build_elasticity_chart
+                                        scan_agents = result.get("stages", {}).get("agents", {}).get("agents",
+                                                        result.get("stages", {}).get("agents_v2", {}).get("agents", []))
+                                        if not scan_agents:
+                                            st.error("无 Agent 数据。请先运行管道。")
+                                        else:
+                                            status_text = st.empty()
+                                            progress = st.progress(0, "价格扫描中...")
+                                            def update_prog(i, total):
+                                                progress.progress(i / total, f"扫描 ¥{prices[i-1]} ({i}/{total})...")
+                                                status_text.caption(f"已完成 {i}/{total} 个价格点")
+
+                                            with st.spinner(f"扫描 {len(prices)} 个价格点，每点 {scan_rounds} 轮..."):
+                                                for pname2, pdata in seen.items():
+                                                    # Find original product from product_directions
+                                                    prod_template = None
+                                                    for pd_item in result.get("product_directions", []):
+                                                        if (pd_item.get("name") == pname2 or
+                                                            pd_item.get("product_name") == pname2):
+                                                            prod_template = pd_item
+                                                            break
+                                                    if not prod_template:
+                                                        prod_template = {"id": pdata.get("product_id", ""), "name": pname2}
+
+                                                    scan_result = scan_price_elasticity(
+                                                        product=prod_template,
+                                                        agents=scan_agents,
+                                                        price_points=prices,
+                                                        rounds=scan_rounds,
+                                                        progress_callback=update_prog,
+                                                    )
+                                                    status_text.empty()
+                                                    progress.empty()
+
+                                                    # Show chart
+                                                    fig = build_elasticity_chart(scan_result)
+                                                    st.plotly_chart(fig, use_container_width=True, key=f"elasticity_{pname2}")
+
+                                                    # Summary table
+                                                    cols = st.columns(3)
+                                                    cols[0].metric("营收最优", f"¥{scan_result['optimal_price_by_revenue']}")
+                                                    cols[1].metric("得分最优", f"¥{scan_result['optimal_price_by_score']}")
+                                                    cols[2].metric("耗时", f"{scan_result['elapsed_seconds']}s")
+                                                    st.success(scan_result["recommendation"])
+                                                    break  # Only scan first product
+                                except ValueError:
+                                    st.error("价格格式错误。请用逗号分隔数字，例如: 1,3,6,9")
+
                 else:
                     st.info("无模拟结果数据")
 
