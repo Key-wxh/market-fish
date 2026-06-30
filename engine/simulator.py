@@ -13,6 +13,9 @@ import json, time, os, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from engine.config import simulation_cfg as _cfg, pipeline_cfg as _pcfg
 from engine.llm_client import get_llm
+from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
+from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
+
 
 def _safe_float(v, default=0.0):
     """Convert LLM output to float, handling strings and None."""
@@ -22,8 +25,6 @@ def _safe_float(v, default=0.0):
         return float(v)
     except (ValueError, TypeError):
         return default
-from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
-from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
 
 DECISION_SYSTEM_PROMPT = """You are a market agent making a real economic decision. You have a specific identity, budget, pain points.
 

@@ -7,24 +7,7 @@ Factors with 75% success rate (solves_real_fear, social_sharing) are soft signal
 import json
 from engine.config import backtest_cfg as _cfg
 
-# Hard filters — 100% success vs 0% failure in backtest
-HARD_PASS = [
-    "dead_simple_ux",    # One action, no learning curve
-    "consumer_b2c",      # Consumer market (not B2B)
-]
-
-# Soft signals — 75%+ correlation with success
-SOFT_SIGNAL = [
-    "solves_real_fear",   # Solves an emotional/safety fear
-    "social_sharing",     # Built-in sharing mechanic
-]
-
-# Kill signals — 100% failure rate in backtest
-HARD_FAIL = [
-    "b2b_subscription",   # B2B SaaS subscription model
-    "high_price_monthly",  # > ¥100/month
-    "requires_onboarding", # Needs explanation or training
-]
+# Factor definitions referenced by score_direction() — weights from config
 
 
 def score_direction(direction: dict) -> dict:
@@ -56,7 +39,7 @@ def score_direction(direction: dict) -> dict:
         score += _cfg()["hard_pass_simple_ux"]
         flags.append("consumer_target")
     elif target == "smb" and "one-time" in pricing.lower():
-        score += 10  # Partial — SMB with one-time pricing is better than subscription
+        score += _cfg()["smb_onetime_partial"]
         flags.append("smb_onetime")
 
     # Soft signals
@@ -65,28 +48,28 @@ def score_direction(direction: dict) -> dict:
                     "embarrass", "shame", "lose", "lost", "forget", "miss", "scared",
                     "emotional", "feel", "stress", "pressure", "anxious"]
     if any(s in desc for s in fear_signals):
-        score += 15
+        score += _cfg()["soft_signal_solves_fear"]
         flags.append("solves_fear")
 
     # 4. Social sharing?
     share_signals = ["share", "viral", "social", "friend", "wechat moment", "朋友圈",
                      "recommend", "invite", "challenge", "leaderboard", "group"]
     if any(s in desc for s in share_signals):
-        score += 15
+        score += _cfg()["soft_signal_social_sharing"]
         flags.append("social_sharing")
 
     # Kill signals
     kill_flags = []
     if target == "smb" and ("/month" in pricing or "subscription" in desc):
         kill_flags.append("b2b_subscription")
-        score -= 40
+        score += _cfg()["kill_b2b_subscription"]
     if "¥" in pricing:
         try:
             price_str = pricing.replace("¥", "").replace(",", "").split("-")[0].strip()
             price = int(price_str)
             if price > 100 and "month" in pricing.lower():
                 kill_flags.append("high_price_monthly")
-                score -= 20
+                score += _cfg()["kill_high_price_monthly"]
         except (ValueError, IndexError):
             pass
 

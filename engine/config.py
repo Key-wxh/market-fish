@@ -6,10 +6,12 @@ Usage: from engine.config import get_config; cfg = get_config()
 
 import os
 import yaml
+import threading
 from pathlib import Path
 from copy import deepcopy
 
 _CONFIG = None
+_CONFIG_LOCK = threading.Lock()
 _CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
@@ -87,10 +89,12 @@ def _apply_env_overrides(config: dict):
 
 
 def get_config() -> dict:
-    """Get the loaded configuration (singleton)."""
+    """Get the loaded configuration (thread-safe singleton)."""
     global _CONFIG
     if _CONFIG is None:
-        load_config()
+        with _CONFIG_LOCK:
+            if _CONFIG is None:
+                load_config()
     return _CONFIG
 
 

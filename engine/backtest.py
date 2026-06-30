@@ -1,6 +1,6 @@
 """
-Backtest: validate MarketFish against known success/failure cases.
-Reference: SMIF 0.893 correlation benchmark.
+[DEPRECATED] Backtest module — functionality merged into engine/calibrate.py.
+Kept for reference. Use calibrate.py for pattern analysis and calibration.
 """
 
 import json

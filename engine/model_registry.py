@@ -7,6 +7,7 @@ Supports OpenAI-compatible, Anthropic Messages, and Google Gemini APIs.
 
 import json
 import os
+import threading
 from pathlib import Path
 from openai import OpenAI
 
@@ -219,12 +220,15 @@ class ModelRegistry:
         return report
 
 
-# Singleton
+# Thread-safe singleton
 _registry = None
+_registry_lock = threading.Lock()
 
 
 def get_registry(registry_path: str = None) -> ModelRegistry:
     global _registry
     if _registry is None:
-        _registry = ModelRegistry(registry_path)
+        with _registry_lock:
+            if _registry is None:
+                _registry = ModelRegistry(registry_path)
     return _registry

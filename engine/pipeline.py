@@ -165,6 +165,7 @@ class Pipeline:
             all_results = []
             coupling_stats = {}
             rl_stats = {}
+            output["stages"]["simulation"] = {"sim_log": []}
 
             _market_config = _cfg()["market_types"]
             market_types = []
@@ -205,14 +206,13 @@ class Pipeline:
                 if sim_result.get("rl_summary"):
                     rl_stats[market_type] = sim_result["rl_summary"]
 
-            output["stages"]["simulation"] = {
+            output["stages"]["simulation"].update({
                 "status": "ok",
                 "markets_simulated": len(market_types),
                 "total_results": len(all_results),
                 "cross_domain_coupling": coupling_stats,
                 "economic_alignment_rl": rl_stats,
-                "sim_log": [],  # populated per-market below
-            }
+            })
             self.stages_completed.append("simulation")
 
             # Stage 5: Report Generation

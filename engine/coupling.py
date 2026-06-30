@@ -21,9 +21,6 @@ import random
 import math
 from engine.config import coupling_cfg as _cfg
 
-def _C(key, default=None):
-    return _cfg().get(key, default)
-
 
 def _emotion_valence(emotion: str) -> float:
     """Map emotion to valence score (-1.0 to +1.0)."""
