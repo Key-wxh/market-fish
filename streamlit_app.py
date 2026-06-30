@@ -72,10 +72,13 @@ with st.sidebar:
     st.subheader("🧪 模拟参数")
     sim_rounds = st.slider("模拟轮数", 10, 50, 30, 5,
                            help="轮数越多越精确，但耗时更长。30轮为标准配置。")
-    agent_count = st.select_slider("Agent 数量", options=[30, 50, 75, 100, 128],
+    agent_count = st.select_slider("Agent 数量",
+                                    options=[30, 50, 100, 200, 500, 1000, 5000, 10000],
                                     value=50,
-                                    help="模拟中的消费者数量。越多越真实，但耗时更长。")
-    agent_cap = min(agent_count, 128)  # Ensure cap doesn't exceed max
+                                    help="消费者数量。100+用并行批量生成, 1000+需OASIS架构(时间引擎+RecSys)。当前v5上限: 128(8批次×16), v6目标: 10000")
+    agent_cap = min(agent_count, 128)  # v5 max: 128 agents (8 batches × 16)
+    if agent_count > 128:
+        st.warning(f"v5 当前上限 128 agent。{agent_count} 需 v6 OASIS架构 (RecSys+时间引擎)。已自动截断。")
 
     st.subheader("模型配置")
     from engine.model_registry import get_registry
