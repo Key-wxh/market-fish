@@ -6,8 +6,8 @@ Merges engine/backtest.py (was orphaned).
 Follows directional validation framework (not statistical significance — only 6 cases).
 """
 
-import json, time, random
-from engine.config import calibration_cases, simulation_cfg, backtest_cfg
+import time, random
+from engine.config import calibration_cases, simulation_cfg
 
 
 # ── Calibration product conversion ──
@@ -222,6 +222,9 @@ def run_full_calibration(agents: list = None, rounds: int = 20,
     Returns accuracy metrics and per-case results.
     """
     cases = calibration_cases()
+    seed_val = simulation_cfg().get("random_seed", 42)
+    if seed_val:
+        random.seed(seed_val)
     tested_cases = [c for c in cases if c.get("outcome") != "untested"]
     untested_cases = [c for c in cases if c.get("outcome") == "untested"]
 

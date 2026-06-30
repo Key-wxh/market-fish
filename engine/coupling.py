@@ -18,7 +18,6 @@ Implementation:
 """
 
 import random
-import math
 from engine.config import coupling_cfg as _cfg
 
 

@@ -5,7 +5,9 @@ Supports three input modes: explore / validate / hybrid.
 
 import json
 import time
-from engine.config import pipeline_cfg as _cfg
+import random
+import hashlib
+from engine.config import pipeline_cfg as _cfg, simulation_cfg as _sim_cfg
 from engine.ontology_generator import generate_ontology
 from engine.graph_builder import build_knowledge_graph
 from engine.agent_factory import generate_agents
@@ -22,7 +24,7 @@ def _convert_user_product(user_product: dict) -> dict:
     category = user_product.get("category", category_map.get(target, "consumer_app"))
 
     return {
-        "id": user_product.get("id", f"user-prod-{hash(user_product.get('name', '')) % 10000:04d}"),
+        "id": user_product.get("id", f"user-prod-{hashlib.md5(user_product.get('name', 'product').encode()).hexdigest()[:4]}"),
         "name": user_product.get("name", "Untitled Product"),
         "category": category,
         "target_market": target,
@@ -84,6 +86,12 @@ class Pipeline:
         start_time = time.time()
         mode_label = {"explore": "A: 探索", "validate": "B: 验证", "hybrid": "C: 混合"}.get(mode, mode)
         output = {"pipeline_version": "2.0", "input_mode": mode, "stages": {}}
+
+        # Apply random seed for reproducibility
+        seed = _sim_cfg().get("random_seed", 42)
+        if seed:
+            random.seed(seed)
+            output["random_seed"] = seed
 
         # Load seed data
         seed = _load_seed_data(seed_data)
@@ -157,7 +165,7 @@ class Pipeline:
             self.status = "stage3b_agents_v2"
             agents_data = generate_agents(knowledge_graph, product_directions)
             agents = agents_data.get("agents", [])
-            output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents)}
+            output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents), "agents": agents}
 
             # Stage 4: Market Simulation
             self.status = "stage4_simulation"

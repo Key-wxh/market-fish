@@ -319,15 +319,23 @@ def _rebuild_agent_states_from_log(pipeline_result: dict) -> dict:
     """Rebuild agent_states from the simulation log (for post-hoc evidence extraction)."""
     states = {}
     sim_stage = pipeline_result.get("stages", {}).get("simulation", {})
-    # Try both key names (sim_log is the new name, log is legacy)
     log = sim_stage.get("sim_log", sim_stage.get("log", []))
+
+    # Build agent lookup from saved agents list
+    agent_profiles = {}
+    agents_data = pipeline_result.get("stages", {}).get("agents_v2", {})
+    if isinstance(agents_data, dict) and "agents" in agents_data:
+        for a in agents_data["agents"]:
+            agent_profiles[a["id"]] = a
 
     for entry in log:
         if not isinstance(entry, dict):
             continue
         aid = entry.get("agent_id", "")
         if aid not in states:
-            states[aid] = {"profile": {}, "history": [], "purchased_products": {}, "emotional_state": "neutral", "rl_strategy": {}}
+            profile = agent_profiles.get(aid, {})
+            states[aid] = {"profile": profile, "history": [], "purchased_products": {},
+                           "emotional_state": "neutral", "rl_strategy": {}}
         states[aid]["history"].append(entry)
         states[aid]["emotional_state"] = entry.get("emotional_state", "neutral")
 

@@ -1,6 +1,5 @@
 fastapi==0.115.*
 uvicorn[standard]==0.34.*
-neo4j==5.27.*
 openai==1.68.*
 python-dotenv==1.0.*
 json-repair==0.39.*
