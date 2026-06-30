@@ -2,19 +2,163 @@
   "source": "freelancer.com + Upwork aggregated 2026",
   "description": "Real paid project demand signals — who pays for what, budget range, competition level",
   "projects": [
-    {"category": "Web Scraping", "avg_budget_usd": 350, "bid_count": 54, "top_skills": ["Python", "BS4", "Scrapy"], "demand_trend": "stable"},
-    {"category": "Website Build", "avg_budget_usd": 1500, "bid_count": 60, "top_skills": ["React", "WordPress", "HTML/CSS"], "demand_trend": "stable"},
-    {"category": "Chatbot Development", "avg_budget_usd": 800, "bid_count": 40, "top_skills": ["NLP", "LLM API", "Flask"], "demand_trend": "rising"},
-    {"category": "Mobile App MVP", "avg_budget_usd": 7500, "bid_count": 35, "top_skills": ["Flutter", "React Native", "Firebase"], "demand_trend": "stable"},
-    {"category": "AI Agent Development", "avg_budget_usd": 2000, "bid_count": 25, "top_skills": ["LangChain", "n8n", "LLM"], "demand_trend": "rising_fast"},
-    {"category": "Automation Scripts", "avg_budget_usd": 300, "bid_count": 48, "top_skills": ["Python", "Node.js", "Zapier"], "demand_trend": "rising"},
-    {"category": "SEO Content Writing", "avg_budget_usd": 200, "bid_count": 65, "top_skills": ["SEO", "Blog Writing"], "demand_trend": "declining"},
-    {"category": "API Integration", "avg_budget_usd": 600, "bid_count": 40, "top_skills": ["REST", "Node.js", "Python"], "demand_trend": "stable"},
-    {"category": "Data Entry", "avg_budget_usd": 100, "bid_count": 80, "top_skills": ["Excel", "Typing"], "demand_trend": "declining"},
-    {"category": "E-commerce Store Setup", "avg_budget_usd": 1500, "bid_count": 50, "top_skills": ["Shopify", "WooCommerce"], "demand_trend": "stable"},
-    {"category": "AI Video Generation", "avg_budget_usd": 500, "bid_count": 30, "top_skills": ["Runway", "AI Video Tools"], "demand_trend": "rising_fast"},
-    {"category": "Logo Design", "avg_budget_usd": 350, "bid_count": 85, "top_skills": ["Illustrator", "Photoshop"], "demand_trend": "declining"},
-    {"category": "Translation", "avg_budget_usd": 200, "bid_count": 60, "top_skills": ["Bilingual", "CAT tools"], "demand_trend": "declining"},
-    {"category": "PDF Processing Tools", "avg_budget_usd": 250, "bid_count": 45, "top_skills": ["Python", "JavaScript"], "demand_trend": "stable"}
-  ]
+    {
+      "category": "Web Scraping",
+      "avg_budget_usd": 350,
+      "bid_count": 54,
+      "top_skills": [
+        "Python",
+        "BS4",
+        "Scrapy"
+      ],
+      "demand_trend": "stable"
+    },
+    {
+      "category": "Website Build",
+      "avg_budget_usd": 1500,
+      "bid_count": 60,
+      "top_skills": [
+        "React",
+        "WordPress",
+        "HTML/CSS"
+      ],
+      "demand_trend": "stable"
+    },
+    {
+      "category": "Chatbot Development",
+      "avg_budget_usd": 800,
+      "bid_count": 40,
+      "top_skills": [
+        "NLP",
+        "LLM API",
+        "Flask"
+      ],
+      "demand_trend": "rising"
+    },
+    {
+      "category": "Mobile App MVP",
+      "avg_budget_usd": 7500,
+      "bid_count": 35,
+      "top_skills": [
+        "Flutter",
+        "React Native",
+        "Firebase"
+      ],
+      "demand_trend": "stable"
+    },
+    {
+      "category": "AI Agent Development",
+      "avg_budget_usd": 2000,
+      "bid_count": 25,
+      "top_skills": [
+        "LangChain",
+        "n8n",
+        "LLM"
+      ],
+      "demand_trend": "rising_fast"
+    },
+    {
+      "category": "Automation Scripts",
+      "avg_budget_usd": 300,
+      "bid_count": 48,
+      "top_skills": [
+        "Python",
+        "Node.js",
+        "Zapier"
+      ],
+      "demand_trend": "rising"
+    },
+    {
+      "category": "SEO Content Writing",
+      "avg_budget_usd": 200,
+      "bid_count": 65,
+      "top_skills": [
+        "SEO",
+        "Blog Writing"
+      ],
+      "demand_trend": "declining"
+    },
+    {
+      "category": "API Integration",
+      "avg_budget_usd": 600,
+      "bid_count": 40,
+      "top_skills": [
+        "REST",
+        "Node.js",
+        "Python"
+      ],
+      "demand_trend": "stable"
+    },
+    {
+      "category": "Data Entry",
+      "avg_budget_usd": 100,
+      "bid_count": 80,
+      "top_skills": [
+        "Excel",
+        "Typing"
+      ],
+      "demand_trend": "declining"
+    },
+    {
+      "category": "E-commerce Store Setup",
+      "avg_budget_usd": 1500,
+      "bid_count": 50,
+      "top_skills": [
+        "Shopify",
+        "WooCommerce"
+      ],
+      "demand_trend": "stable"
+    },
+    {
+      "category": "AI Video Generation",
+      "avg_budget_usd": 500,
+      "bid_count": 30,
+      "top_skills": [
+        "Runway",
+        "AI Video Tools"
+      ],
+      "demand_trend": "rising_fast"
+    },
+    {
+      "category": "Logo Design",
+      "avg_budget_usd": 350,
+      "bid_count": 85,
+      "top_skills": [
+        "Illustrator",
+        "Photoshop"
+      ],
+      "demand_trend": "declining"
+    },
+    {
+      "category": "Translation",
+      "avg_budget_usd": 200,
+      "bid_count": 60,
+      "top_skills": [
+        "Bilingual",
+        "CAT tools"
+      ],
+      "demand_trend": "declining"
+    },
+    {
+      "category": "PDF Processing Tools",
+      "avg_budget_usd": 250,
+      "bid_count": 45,
+      "top_skills": [
+        "Python",
+        "JavaScript"
+      ],
+      "demand_trend": "stable"
+    }
+  ],
+  "_meta": {
+    "collection_method": "LLM聚合 freenlancer.com + Upwork 公开项目数据，2026年6月",
+    "bias_declaration": "偏向自由职业/远程工作市场，不覆盖传统行业线下需求。项目预算以美元计，乘以7换算CNY。",
+    "limitations": [
+      "非实时数据",
+      "仅英文平台，缺少国内猪八戒/一品威客数据",
+      "样本量未知"
+    ],
+    "last_updated": "2026-06-30",
+    "owner": "MarketFish core team (Keystart AI)"
+  }
 }

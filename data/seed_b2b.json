@@ -2,38 +2,125 @@
   "source": "Multi-source B2B market signals mid-2026",
   "description": "Cross-validated from freelancer.com, Upwork, SMB procurement reports, enterprise AI trends",
   "validation": "Multiple data sources: freelancer platforms + Upwork skills report + China SMB procurement data + banking AI agent deployments",
-
   "freelance_demand_across_platforms": {
     "freelancer_com": [
-      {"category": "Website Build", "avg_budget_usd": 1500, "bid_count": 60, "trend": "stable"},
-      {"category": "Mobile App MVP", "avg_budget_usd": 7500, "bid_count": 35, "trend": "stable"},
-      {"category": "Chatbot Development", "avg_budget_usd": 800, "bid_count": 40, "trend": "rising"},
-      {"category": "AI Agent Development", "avg_budget_usd": 2000, "bid_count": 25, "trend": "rising_fast"},
-      {"category": "Automation Scripts", "avg_budget_usd": 300, "bid_count": 48, "trend": "rising"},
-      {"category": "Web Scraping", "avg_budget_usd": 350, "bid_count": 54, "trend": "stable"},
-      {"category": "E-commerce Setup", "avg_budget_usd": 1500, "bid_count": 50, "trend": "stable"},
-      {"category": "PDF Processing", "avg_budget_usd": 250, "bid_count": 45, "trend": "stable"},
-      {"category": "API Integration", "avg_budget_usd": 600, "bid_count": 40, "trend": "stable"}
+      {
+        "category": "Website Build",
+        "avg_budget_usd": 1500,
+        "bid_count": 60,
+        "trend": "stable"
+      },
+      {
+        "category": "Mobile App MVP",
+        "avg_budget_usd": 7500,
+        "bid_count": 35,
+        "trend": "stable"
+      },
+      {
+        "category": "Chatbot Development",
+        "avg_budget_usd": 800,
+        "bid_count": 40,
+        "trend": "rising"
+      },
+      {
+        "category": "AI Agent Development",
+        "avg_budget_usd": 2000,
+        "bid_count": 25,
+        "trend": "rising_fast"
+      },
+      {
+        "category": "Automation Scripts",
+        "avg_budget_usd": 300,
+        "bid_count": 48,
+        "trend": "rising"
+      },
+      {
+        "category": "Web Scraping",
+        "avg_budget_usd": 350,
+        "bid_count": 54,
+        "trend": "stable"
+      },
+      {
+        "category": "E-commerce Setup",
+        "avg_budget_usd": 1500,
+        "bid_count": 50,
+        "trend": "stable"
+      },
+      {
+        "category": "PDF Processing",
+        "avg_budget_usd": 250,
+        "bid_count": 45,
+        "trend": "stable"
+      },
+      {
+        "category": "API Integration",
+        "avg_budget_usd": 600,
+        "bid_count": 40,
+        "trend": "stable"
+      }
     ],
     "upwork_fastest_growing": [
-      {"skill": "AI Video Generation & Editing", "growth": "+329% YoY", "avg_rate": "$50-150/hr"},
-      {"skill": "AI Integration (APIs into apps)", "growth": "+178% YoY", "avg_rate": "$80-200/hr"},
-      {"skill": "AI Data Annotation & Labeling", "growth": "+154% YoY", "avg_rate": "$20-50/hr"},
-      {"skill": "AI Image Generation & Editing", "growth": "+95% YoY", "avg_rate": "$40-120/hr"},
-      {"skill": "AI Chatbot Development", "growth": "+71% YoY", "avg_rate": "$60-150/hr"},
-      {"skill": "Ecommerce Management", "growth": "+130% YoY", "avg_rate": "$30-80/hr"},
-      {"skill": "Social Media Strategy", "growth": "+36% YoY", "avg_rate": "$40-100/hr"}
+      {
+        "skill": "AI Video Generation & Editing",
+        "growth": "+329% YoY",
+        "avg_rate": "$50-150/hr"
+      },
+      {
+        "skill": "AI Integration (APIs into apps)",
+        "growth": "+178% YoY",
+        "avg_rate": "$80-200/hr"
+      },
+      {
+        "skill": "AI Data Annotation & Labeling",
+        "growth": "+154% YoY",
+        "avg_rate": "$20-50/hr"
+      },
+      {
+        "skill": "AI Image Generation & Editing",
+        "growth": "+95% YoY",
+        "avg_rate": "$40-120/hr"
+      },
+      {
+        "skill": "AI Chatbot Development",
+        "growth": "+71% YoY",
+        "avg_rate": "$60-150/hr"
+      },
+      {
+        "skill": "Ecommerce Management",
+        "growth": "+130% YoY",
+        "avg_rate": "$30-80/hr"
+      },
+      {
+        "skill": "Social Media Strategy",
+        "growth": "+36% YoY",
+        "avg_rate": "$40-100/hr"
+      }
     ],
     "key_insight": "Applied AI (not building AI) is where the money is. Buyers want plumbing, not intelligence. Connect-this-to-that, replace-the-spreadsheet."
   },
-
   "china_smb_procurement_2026": {
     "summary": "62.8% have basic digital. Only 21.3% deep AI. 41.5% gap.",
     "what_smbs_buy": [
-      {"category": "轻量级SaaS (财务/进销存)", "budget_cny": "<1万/年", "penetration": "high"},
-      {"category": "行业解决方案 (MES/ERP)", "budget_cny": "15-40万", "penetration": "medium"},
-      {"category": "AI Agent/智能体", "budget_cny": "几万-百万", "penetration": "rising_fast"},
-      {"category": "企业微信SCRM/运营工具", "budget_cny": "5千-5万/年", "penetration": "medium"}
+      {
+        "category": "轻量级SaaS (财务/进销存)",
+        "budget_cny": "<1万/年",
+        "penetration": "high"
+      },
+      {
+        "category": "行业解决方案 (MES/ERP)",
+        "budget_cny": "15-40万",
+        "penetration": "medium"
+      },
+      {
+        "category": "AI Agent/智能体",
+        "budget_cny": "几万-百万",
+        "penetration": "rising_fast"
+      },
+      {
+        "category": "企业微信SCRM/运营工具",
+        "budget_cny": "5千-5万/年",
+        "penetration": "medium"
+      }
     ],
     "what_smbs_reject": [
       "大而全的通用ERP (闲置率47.2%)",
@@ -44,11 +131,21 @@
     "price_sensitivity": "58.5% abandoned AI tools due to cost. Net margin avg 4.4%",
     "banking_ai_agent_explosion": "苏州银行 6 AI agent projects. 宁波银行 9. 常熟银行 46 agents deployed. Efficiency +20%."
   },
-
   "upwork_key_shift": {
     "core_finding": "AI isn't replacing humans — it's redistributing work. 77% of business leaders say AI increases their need for freelance talent.",
     "meta_skill_1": "Adaptability & learning agility (ranked #1 by leaders)",
     "meta_skill_2": "Workflow design with state/retries/audit trails (outlasts individual tools)",
     "automation_buyer_reality": "1,000+ jobs analyzed. Buyers want tools, not digital coworkers. 'Plumbing, not intelligence.'"
+  },
+  "_meta": {
+    "collection_method": "LLM聚合 freelancer/Upwork/SMB采购报告/企业AI部署 公开信息，2026年6月",
+    "bias_declaration": "偏向SaaS/软件采购，缺少硬件/工业/原材料B2B维度。关注AI采购信号。",
+    "limitations": [
+      "非实时数据",
+      "企业对AI的实际预算难以验证",
+      "缺少大型企业IT采购数据"
+    ],
+    "last_updated": "2026-06-30",
+    "owner": "MarketFish core team (Keystart AI)"
   }
 }

@@ -23,5 +23,16 @@
     "Marketing tools that require learning",
     "'Nice to have' platforms",
     "Luxury/premium anything"
-  ]
+  ],
+  "_meta": {
+    "collection_method": "LLM聚合中国国家统计局+央行公开数据，2026年6月",
+    "bias_declaration": "偏向消费端视角，缺少制造业/出口/基建等宏观维度。假设消费降级持续但未量化。",
+    "limitations": [
+      "非实时数据",
+      "宏观指标为LLM合成，非官方精确值",
+      "未包含政策变化预测"
+    ],
+    "last_updated": "2026-06-30",
+    "owner": "MarketFish core team (Keystart AI)"
+  }
 }

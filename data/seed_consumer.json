@@ -2,29 +2,76 @@
   "source": "Multi-source consumer market signals mid-2026",
   "description": "Cross-validated from App Store rankings, WeChat mini-program data, viral case studies, Sensor Tower reports",
   "validation": "Multiple data sources cross-checked: QuestMobile + App Store rankings + viral case studies + consumer surveys",
-
   "app_store_top_grossing": [
-    {"rank": 1, "name": "TikTok/Douyin", "category": "Entertainment", "revenue_model": "ads+in-app"},
-    {"rank": 2, "name": "Tencent Video", "category": "Entertainment", "revenue_model": "subscription"},
-    {"rank": 3, "name": "iQIYI", "category": "Entertainment", "revenue_model": "subscription"},
-    {"rank": 4, "name": "Kuaishou", "category": "Entertainment", "revenue_model": "ads+in-app"},
-    {"rank": 5, "name": "NetEase Music", "category": "Music", "revenue_model": "subscription"}
+    {
+      "rank": 1,
+      "name": "TikTok/Douyin",
+      "category": "Entertainment",
+      "revenue_model": "ads+in-app"
+    },
+    {
+      "rank": 2,
+      "name": "Tencent Video",
+      "category": "Entertainment",
+      "revenue_model": "subscription"
+    },
+    {
+      "rank": 3,
+      "name": "iQIYI",
+      "category": "Entertainment",
+      "revenue_model": "subscription"
+    },
+    {
+      "rank": 4,
+      "name": "Kuaishou",
+      "category": "Entertainment",
+      "revenue_model": "ads+in-app"
+    },
+    {
+      "rank": 5,
+      "name": "NetEase Music",
+      "category": "Music",
+      "revenue_model": "subscription"
+    }
   ],
-
   "wechat_mini_program_trends": {
     "mau": "1.02 billion (March 2026)",
     "fastest_growing_categories": [
-      {"category": "AI工具", "growth": "+340% YoY", "new_apps": "27,000+ in 100 days"},
-      {"category": "生活服务", "growth": "+187% transaction value", "subcategories": {"社区团购":"+203%","家政":"+156%"}},
-      {"category": "AR试穿/虚拟体验", "growth": "conversion +27-35%, returns -15-22%"}
+      {
+        "category": "AI工具",
+        "growth": "+340% YoY",
+        "new_apps": "27,000+ in 100 days"
+      },
+      {
+        "category": "生活服务",
+        "growth": "+187% transaction value",
+        "subcategories": {
+          "社区团购": "+203%",
+          "家政": "+156%"
+        }
+      },
+      {
+        "category": "AR试穿/虚拟体验",
+        "growth": "conversion +27-35%, returns -15-22%"
+      }
     ],
     "top_mini_programs": [
-      {"name": "美团优选", "daily_orders": "8M+", "mini_program_share": "60%+"},
-      {"name": "Notion AI 小程序", "dau_30days": "500K+"},
-      {"name": "海尔智家", "mau": "6.4M", "growth": "+140%"}
+      {
+        "name": "美团优选",
+        "daily_orders": "8M+",
+        "mini_program_share": "60%+"
+      },
+      {
+        "name": "Notion AI 小程序",
+        "dau_30days": "500K+"
+      },
+      {
+        "name": "海尔智家",
+        "mau": "6.4M",
+        "growth": "+140%"
+      }
     ]
   },
-
   "viral_consumer_success_cases": [
     {
       "name": "死了么 (Demumu)",
@@ -58,7 +105,6 @@
       "key_insight": "solves real fear (speaking foreign language). has personality. zero ad spend. all organic."
     }
   ],
-
   "consumer_spending_patterns_2026": {
     "what_sells": [
       "One-time purchase < ¥10 (冲动消费友好)",
@@ -80,15 +126,33 @@
       "annual_subscription": "¥29-88"
     }
   },
-
   "consumer_discovery_channels": {
-    "primary": ["抖音/TikTok (short video)", "微信朋友圈/群", "小红书种草"],
-    "secondary": ["应用商店榜单", "朋友推荐", "公众号文章"],
+    "primary": [
+      "抖音/TikTok (short video)",
+      "微信朋友圈/群",
+      "小红书种草"
+    ],
+    "secondary": [
+      "应用商店榜单",
+      "朋友推荐",
+      "公众号文章"
+    ],
     "viral_triggers": [
       "争议性名字 (如'死了么')",
       "情感共鸣 (如'被Pingo怼哭')",
       "实用价值展示 (如'1小时做出了这个')",
       "社交货币 (如'我也测了，结果...')"
     ]
+  },
+  "_meta": {
+    "collection_method": "LLM聚合 App Store/微信/小红书/Sensor Tower 公开信息，2026年6月",
+    "bias_declaration": "偏向移动互联网/App消费，不覆盖线下零售/餐饮/旅游。偏一线城市视角。",
+    "limitations": [
+      "非实时数据",
+      "排行榜数据为快照",
+      "缺少下沉市场深度数据"
+    ],
+    "last_updated": "2026-06-30",
+    "owner": "MarketFish core team (Keystart AI)"
   }
 }

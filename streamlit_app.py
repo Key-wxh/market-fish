@@ -109,6 +109,30 @@ col3.metric("Sim Rounds", "30")
 col4.metric("Seed Sources", str(len(seed)))
 col5.metric("Providers", str(sum(1 for s in status.values() if s['key_configured'])), f"/{len(status)} active")
 
+# ── Seed Data Transparency ──
+with st.expander("📊 种子数据来源 & 偏差声明", expanded=False):
+    st.caption("种子数据影响本体生成和知识图谱。当前为 LLM 聚合的公开信息快照，非实时数据。")
+    for key in seed_sources:
+        meta = seed.get(key, {}).get("_meta", {})
+        if meta:
+            with st.expander(f"{key} — {meta.get('source','?')[:60]}...", expanded=False):
+                st.write(f"**采集方式**: {meta.get('collection_method','?')}")
+                st.write(f"**偏差声明**: {meta.get('bias_declaration','?')}")
+                st.write(f"**局限**: {', '.join(meta.get('limitations',['?']))}")
+
+    # File upload for custom seed data
+    st.divider()
+    st.caption("💡 上传你自己的种子 JSON 文件替换默认数据（可选）")
+    uploaded_seed = st.file_uploader("上传种子 JSON (格式: {\"freelancer\": {...}, \"economy\": {...}, ...})",
+                                      type=["json"], key="seed_uploader")
+    if uploaded_seed is not None:
+        try:
+            custom = json.loads(uploaded_seed.read())
+            seed.update(custom)
+            st.success(f"已合并 {len(custom)} 个自定义种子数据源")
+        except Exception as e:
+            st.error(f"JSON 解析失败: {e}")
+
 # ── Calibration Section ──
 with st.expander("🧪 校准验证 — 20个已知产品验证准确率", expanded=False):
     st.caption("用已知成败的外部产品独立验证管道预测能力。方向性验证（非统计显著性）。")

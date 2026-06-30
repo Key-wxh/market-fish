@@ -17,5 +17,16 @@
     "Personal AI 'employee' cloning (learn your style, handle tier-1)",
     "Screenshot → action pipelines (AI reads your screen, does the work)",
     "Multi-agent economic simulation (academic frontier, not yet productized)"
-  ]
+  ],
+  "_meta": {
+    "collection_method": "LLM聚合 GitHub/arXiv/技术媒体 公开信息，2026年6月",
+    "bias_declaration": "偏向AI/LLM技术栈，缺少硬件/生物/材料等硬科技维度。乐观估计技术成熟度。",
+    "limitations": [
+      "非实时数据",
+      "技术成熟度为定性判断",
+      "新兴技术可能被遗漏"
+    ],
+    "last_updated": "2026-06-30",
+    "owner": "MarketFish core team (Keystart AI)"
+  }
 }
