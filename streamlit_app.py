@@ -190,9 +190,7 @@ with st.sidebar:
         else:
             st.caption("暂无运行日志")
 
-    st.caption(f"v6.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    st.caption("[GitHub](https://github.com/Key-wxh/market-fish) · Keystart AI")
-    st.caption(t("sidebar.lang_status"))
+    st.caption(f"MarketFish v6 · 6 papers · 6 LLMs · Keystart AI")
 
 # ── Load seed data ──
 @st.cache_data
