@@ -34,7 +34,7 @@ Open `http://localhost:8501` → pick a mode → run.
 ## How It Works
 
 ```
-Seed Data (8 live sources) → 5-Stage Pipeline
+Seed Data (static JSON) → 5-Stage Pipeline
   1. Ontology — extract market structure
   2. Knowledge Graph — entities, relationships, pain points
   3. Agent Factory — 128 heterogeneous AI consumers (6 LLMs)
@@ -85,7 +85,6 @@ market-fish/
 │   ├── agent_store.py, memory.py         # V6: persistence + memory
 │   ├── temporal.py, recsys.py            # V6: time + recommendations
 │   ├── bdi_v2.py, stress.py, grounding.py # V6: cognition + stress + validation
-│   └── ingestion/                        # 8-source live data pipeline
 ├── config/         # Model registry + parameters
 ├── locales/        # EN/ZH i18n (300+ keys)
 ├── tests/          # 26/26 tests

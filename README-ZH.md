@@ -34,7 +34,7 @@ streamlit run streamlit_app.py
 ## 原理
 
 ```
-种子数据（8 源实时抓取，每 6h 刷新）
+种子数据（静态 JSON）
     │
     ▼
 五阶段管道：
@@ -88,7 +88,6 @@ market-fish/
 │   ├── agent_store.py, memory.py         # V6: 持久化 + 记忆
 │   ├── temporal.py, recsys.py            # V6: 时间引擎 + 推荐
 │   ├── bdi_v2.py, stress.py, grounding.py # V6: 认知 + 压力 + 校验
-│   └── ingestion/                        # 8 源实时数据管线
 ├── config/         # 模型注册表 + 全部参数
 ├── locales/        # 中英双语（300+ 翻译键）
 ├── tests/          # 26/26 测试
