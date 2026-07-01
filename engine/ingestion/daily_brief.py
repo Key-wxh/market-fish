@@ -113,6 +113,18 @@ def generate_daily_brief(data_lake_root: str = None) -> str:
                 lines.append(f"- **平均 PE**: {pe}")
         lines.append("")
 
+    # ── Consumer Behavior (Google Trends) ──
+    cb = dims.get("consumer_behavior", {}).get("google_trends", {})
+    if cb:
+        lines.append("## 消费趋势 (Google Trends)")
+        lines.append("")
+        lines.append(f"| 指标 | 值 |")
+        lines.append(f"|------|------|")
+        lines.append(f"| 综合兴趣指数 | {cb.get('overall_interest_index', '?')} |")
+        lines.append(f"| AI 兴趣指数 | {cb.get('ai_interest_index', '?')} |")
+        lines.append(f"| 跟踪类别 | {cb.get('categories_tracked', '?')}/5 |")
+        lines.append("")
+
     # ── Active Signals ──
     if signals:
         lines.append("## 活跃市场信号")
@@ -132,6 +144,10 @@ def generate_daily_brief(data_lake_root: str = None) -> str:
             "signal_global_synchronized_slowdown": ("🔴 全球同步放缓", "美中欧同时示弱 — 全球衰退风险", "Multi-country factor models"),
             "signal_b2b_saas_growing": ("🟢 B2B SaaS 增长", "G2 AI 品类评论增速 > 15%", "SMIF (r=0.893 calibration)"),
             "signal_china_consumption_downgrade": ("🟡 中国消费降级", "零售增速 < 2% 且 CPI < 0.5%", "993 Chinese predictors"),
+            "signal_ai_consumer_interest_surge": ("🔥 AI 消费兴趣激增", "Google Trends AI 兴趣指数 > 15", "Google Trends search data"),
+            "signal_consumer_attention_low": ("🟡 消费者关注度低迷", "综合兴趣指数 < 5 — 消费者注意分散", "Google Trends search data"),
+            "signal_startup_funding_heated": ("💰 创业融资活跃", "36Kr 融资文章占比 > 30%", "News-based sentiment analysis"),
+            "signal_ai_media_frenzy": ("📰 AI 媒体狂热", "36Kr AI 文章占比 > 40%", "News-based sentiment analysis"),
         }
 
         for sig_name in sorted(signals.keys()):

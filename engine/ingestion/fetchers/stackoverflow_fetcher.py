@@ -42,12 +42,9 @@ class StackOverflowFetcher(BaseFetcher):
             return {"status": "error", "error": str(e)}
 
     def fetch(self) -> dict:
-        """Fetch top 30 tags with question counts for the week."""
-        result = self._get("/tags?order=desc&sort=popular&pagesize=30&fromdate={from_date}&todate={to_date}"
-                          .format(
-                              from_date=int(datetime.now(timezone.utc).timestamp()) - 7 * 86400,
-                              to_date=int(datetime.now(timezone.utc).timestamp()),
-                          ))
+        """Fetch top 30 tags — all time, no date filter (SO tags endpoint is not time-based)."""
+        # Use /tags without date filter then ask for weekly counts from /info
+        result = self._get("/tags?order=desc&sort=popular&pagesize=30")
 
         if result["status"] != "ok":
             return result

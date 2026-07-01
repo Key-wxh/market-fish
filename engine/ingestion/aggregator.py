@@ -190,16 +190,51 @@ def regenerate_gold(data_lake_root: str = None) -> dict:
         else:
             dimensions["price_volume"]["eastmoney"] = {
                 "source": "EastMoney direct",
-                "total_sectors": latest.get("total_sectors"),
-                "up_ratio": latest.get("up_ratio"),
-                "total_turnover_yi": latest.get("total_turnover_yi"),
-                "avg_pe": latest.get("avg_pe"),
+                "total_industries": latest.get("total_industries"),
+                "active_industries": latest.get("active_industries"),
+                "up_ratio": latest.get("recent_20d_up_ratio"),
+                "benchmark_close": latest.get("benchmark_latest_close"),
+                "benchmark_change_pct": latest.get("benchmark_latest_change_pct"),
+                "cpi_yoy_pct": latest.get("cpi_yoy_pct"),
             }
-            if latest.get("up_ratio", 0) > 0.7:
+            if latest.get("recent_20d_up_ratio", 0) > 0.7:
                 signals["signal_market_bullish"] = True
-            if latest.get("up_ratio", 0) < 0.3:
+            if latest.get("recent_20d_up_ratio", 0) < 0.3:
                 signals["signal_market_bearish"] = True
         provenance["data_sources"].append("EastMoney/ChainGold (东方财富)")
+
+    # ── Google Trends → Consumer Behavior ──
+    gt_rows = silver_data.get("google_trends", [])
+    if gt_rows:
+        latest = gt_rows[-1]
+        dimensions.setdefault("consumer_behavior", {})
+        dimensions["consumer_behavior"]["google_trends"] = {
+            "categories_tracked": latest.get("categories_tracked"),
+            "overall_interest_index": latest.get("overall_interest_index"),
+            "ai_interest_index": latest.get("ai_interest_index"),
+        }
+        provenance["data_sources"].append("Google Trends (HK server)")
+        # Consumer signals
+        if latest.get("ai_interest_index", 0) > 15:
+            signals["signal_ai_consumer_interest_surge"] = True
+        if latest.get("overall_interest_index", 0) < 5:
+            signals["signal_consumer_attention_low"] = True
+
+    # ── 36Kr → News Sentiment ──
+    kr_rows = silver_data.get("_36kr", [])
+    if kr_rows:
+        latest = kr_rows[-1]
+        dimensions.setdefault("news_sentiment", {})
+        dimensions["news_sentiment"]["36kr"] = {
+            "total_articles": latest.get("total_articles"),
+            "ai_ratio": latest.get("ai_ratio"),
+            "funding_ratio": latest.get("funding_ratio"),
+        }
+        provenance["data_sources"].append("36Kr RSS")
+        if latest.get("funding_ratio", 0) > 0.3:
+            signals["signal_startup_funding_heated"] = True
+        if latest.get("ai_ratio", 0) > 0.4:
+            signals["signal_ai_media_frenzy"] = True
 
     # ── Compute Tech + Market Signals ──
     tech = dimensions.get("technology_adoption", {})
