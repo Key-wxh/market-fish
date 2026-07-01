@@ -1,5 +1,6 @@
 <p align="center">
   <a href="https://github.com/Key-wxh/market-fish/stargazers"><img src="https://img.shields.io/github/stars/Key-wxh/market-fish?style=social" alt="stars"></a>
+  <a href="https://www.producthunt.com/posts/marketfish"><img src="https://img.shields.io/badge/Product_Hunt-Featured-ff6154?logo=producthunt" alt="PH"></a>
   <img src="https://img.shields.io/badge/version-v6.0-blue" alt="v6.0">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
   <img src="https://img.shields.io/badge/python-3.12+-blue" alt="Python 3.12+">

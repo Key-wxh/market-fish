@@ -1,4 +1,5 @@
 <p align="center">
+  <a href="https://www.producthunt.com/posts/marketfish"><img src="https://img.shields.io/badge/Product_Hunt-Featured-ff6154?logo=producthunt" alt="PH"></a>
   <img src="https://img.shields.io/badge/版本-v6.0-blue" alt="v6.0">
   <img src="https://img.shields.io/badge/许可-MIT-green" alt="MIT">
   <img src="https://img.shields.io/badge/Python-3.12+-blue" alt="Python 3.12+">
