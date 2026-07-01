@@ -1,9 +1,10 @@
 <p align="center">
+  <a href="https://github.com/Key-wxh/market-fish/stargazers"><img src="https://img.shields.io/github/stars/Key-wxh/market-fish?style=social" alt="stars"></a>
   <img src="https://img.shields.io/badge/version-v6.0-blue" alt="v6.0">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
   <img src="https://img.shields.io/badge/python-3.12+-blue" alt="Python 3.12+">
-  <img src="https://img.shields.io/badge/tests-26%2F26-brightgreen" alt="26/26 tests">
-  <img src="https://img.shields.io/badge/LLMs-11%20providers-purple" alt="11 providers">
+  <img src="https://img.shields.io/badge/tests-26%2F26-brightgreen" alt="tests">
+  <img src="https://img.shields.io/badge/LLMs-11_providers-purple" alt="11 providers">
 </p>
 
 <h1 align="center">🐟 MarketFish</h1>
