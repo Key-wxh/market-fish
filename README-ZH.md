@@ -31,6 +31,18 @@ streamlit run streamlit_app.py
 
 浏览器打开 `http://localhost:8501` → 选模式 → 点运行。
 
+## 截图展示
+
+<p align="center">
+  <img src="screenshots/1.png" width="32%" alt="产品预测">
+  <img src="screenshots/2.png" width="32%" alt="证据报告">
+  <img src="screenshots/3.png" width="32%" alt="Agent总览">
+  <br>
+  <img src="screenshots/4.png" width="32%" alt="社交网络">
+  <img src="screenshots/5.png" width="32%" alt="RL策略">
+  <img src="screenshots/6.png" width="32%" alt="跨域耦合">
+</p>
+
 ## 原理
 
 ```
