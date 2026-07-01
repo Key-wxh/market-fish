@@ -2,8 +2,12 @@ __pycache__/
 .env
 .env.local
 uploads/
+data_lake/
+screenshots/
 ipc_commands/
 ipc_results/
+outputs/
 *.db
 *.pyc
-.env
+*.log
+.DS_Store

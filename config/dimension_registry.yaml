@@ -1,0 +1,565 @@
+# MarketFish Dimension Registry v1
+# Single source of truth: what data to collect, from where, how often, how to validate.
+# Every dimension cites the academic paper(s) that validate its predictive power.
+
+dimensions:
+  macroeconomic:
+    label: "Macroeconomic Indicators"
+    description: "GDP, employment, inflation, housing, banking, yields — the most validated market predictors"
+    validating_papers:
+      - "Estrella & Mishkin (1996) — probit framework for recession prediction"
+      - "McCracken & Ng (2016) — FRED-MD: 128 monthly macro series"
+      - "993 Chinese predictors study (Dai, Jiang, Kang & Xue, 2025)"
+    sources:
+      - name: fred
+        label: "Federal Reserve Economic Data (St. Louis Fed)"
+        region: US
+        frequency: monthly
+        fetcher: fred_fetcher
+        enabled: true
+        api_base: "https://api.stlouisfed.org/fred/series/observations"
+        env_key: FRED_API_KEY
+        series:
+          - id: UNRATE          # Unemployment Rate
+            name: "Unemployment Rate"
+            unit: "percent"
+            transform: level
+            valid_range: [1.0, 25.0]
+            group: labor_market
+          - id: PAYEMS          # Total Nonfarm Payrolls
+            name: "Nonfarm Payrolls"
+            unit: "thousands"
+            transform: yoy
+            valid_range: [100000, 200000]
+            group: labor_market
+          - id: ICSA            # Initial Jobless Claims
+            name: "Initial Jobless Claims"
+            unit: "thousands"
+            transform: level
+            valid_range: [100, 10000]
+            group: labor_market
+          - id: JTSJOL          # Job Openings
+            name: "Job Openings (JOLTS)"
+            unit: "thousands"
+            transform: level
+            valid_range: [1000, 20000]
+            group: labor_market
+          - id: GDPC1           # Real GDP
+            name: "Real GDP"
+            unit: "billions_chained_2017"
+            transform: yoy
+            valid_range: [10000, 30000]
+            group: national_activity
+          - id: INDPRO          # Industrial Production Index
+            name: "Industrial Production Index"
+            unit: "index_2017=100"
+            transform: yoy
+            valid_range: [50, 150]
+            group: industrial
+          - id: TCU             # Capacity Utilization
+            name: "Capacity Utilization"
+            unit: "percent"
+            transform: level
+            valid_range: [50, 100]
+            group: industrial
+          - id: CPIAUCSL        # CPI All Urban Consumers
+            name: "CPI All Urban Consumers"
+            unit: "index_1984=100"
+            transform: yoy
+            valid_range: [0, 500]
+            group: inflation
+          - id: PCEPILFE        # Core PCE
+            name: "Core PCE (ex Food & Energy)"
+            unit: "index_2017=100"
+            transform: yoy
+            valid_range: [0, 200]
+            group: inflation
+          - id: PCEPI           # PCE Price Index
+            name: "PCE Price Index"
+            unit: "index_2017=100"
+            transform: yoy
+            valid_range: [0, 200]
+            group: inflation
+          - id: PPIACO          # PPI All Commodities
+            name: "PPI All Commodities"
+            unit: "index_1982=100"
+            transform: yoy
+            valid_range: [0, 500]
+            group: inflation
+          - id: HOUST           # Housing Starts
+            name: "Housing Starts"
+            unit: "thousands_annual_rate"
+            transform: level
+            valid_range: [200, 3000]
+            group: housing
+          - id: PERMIT          # Building Permits
+            name: "Building Permits"
+            unit: "thousands_annual_rate"
+            transform: level
+            valid_range: [200, 3000]
+            group: housing
+          - id: CSUSHPISA       # Case-Shiller Home Price Index
+            name: "Case-Shiller Home Price Index"
+            unit: "index_2000=100"
+            transform: yoy
+            valid_range: [50, 500]
+            group: housing
+          - id: UMCSENT         # U Michigan Consumer Sentiment
+            name: "Consumer Sentiment"
+            unit: "index_1966=100"
+            transform: level
+            valid_range: [30, 130]
+            group: consumer
+          - id: PCECC96         # Real Personal Consumption
+            name: "Real Personal Consumption"
+            unit: "billions_chained_2017"
+            transform: yoy
+            valid_range: [5000, 20000]
+            group: consumer
+          - id: DSPIC96         # Real Disposable Income
+            name: "Real Disposable Personal Income"
+            unit: "billions_chained_2017"
+            transform: yoy
+            valid_range: [5000, 25000]
+            group: consumer
+          - id: RSAFS           # Real Retail Sales
+            name: "Real Retail & Food Services Sales"
+            unit: "millions_chained_2017"
+            transform: yoy
+            valid_range: [100000, 300000]
+            group: consumer
+          - id: T10Y3M          # 10Y-3M Treasury Spread
+            name: "10Y-3M Treasury Spread"
+            unit: "percent"
+            transform: level
+            valid_range: [-5.0, 5.0]
+            group: yields
+          - id: T10Y2Y          # 10Y-2Y Treasury Spread
+            name: "10Y-2Y Treasury Spread"
+            unit: "percent"
+            transform: level
+            valid_range: [-5.0, 5.0]
+            group: yields
+          - id: GS10            # 10Y Treasury Rate
+            name: "10Y Treasury Rate"
+            unit: "percent"
+            transform: level
+            valid_range: [0, 20.0]
+            group: yields
+          - id: TB3MS           # 3M Treasury Bill
+            name: "3M Treasury Bill Rate"
+            unit: "percent"
+            transform: level
+            valid_range: [0, 20.0]
+            group: yields
+          - id: FEDFUNDS        # Federal Funds Rate
+            name: "Federal Funds Effective Rate"
+            unit: "percent"
+            transform: level
+            valid_range: [0, 25.0]
+            group: yields
+          - id: BAA10YM         # BAA-10Y Spread
+            name: "Moody's BAA - 10Y Treasury Spread"
+            unit: "percent"
+            transform: level
+            valid_range: [0, 10.0]
+            group: banking_credit
+          - id: BUSLOANS        # Commercial & Industrial Loans
+            name: "Commercial & Industrial Loans"
+            unit: "billions"
+            transform: yoy
+            valid_range: [500, 5000]
+            group: banking_credit
+          - id: DRTSCILM        # Delinquency Rate
+            name: "Consumer Loan Delinquency Rate"
+            unit: "percent"
+            transform: level
+            valid_range: [0, 20.0]
+            group: banking_credit
+          - id: CFNAI           # Chicago Fed National Activity Index
+            name: "Chicago Fed National Activity Index"
+            unit: "index"
+            transform: level
+            valid_range: [-5.0, 5.0]
+            group: national_activity
+          - id: USSLIND         # Leading Index
+            name: "Leading Index for US"
+            unit: "percent"
+            transform: level
+            valid_range: [-20.0, 20.0]
+            group: national_activity
+
+      - name: eurostat
+        label: "Eurostat"
+        region: EU
+        frequency: monthly
+        fetcher: eurostat_fetcher
+        enabled: false  # Phase 3
+        api_base: "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
+        env_key: null  # No key needed
+        series:
+          - id: une_rt_m           # Unemployment rate monthly
+            name: "EU Unemployment Rate"
+            unit: "percent"
+            transform: level
+          - id: prc_hicp_manr      # HICP inflation
+            name: "EU Inflation Rate (HICP)"
+            unit: "percent_yoy"
+            transform: level
+          - id: namq_10_gdp        # GDP quarterly
+            name: "EU GDP Growth"
+            unit: "percent_qoq"
+            transform: level
+          - id: sts_inpr_m         # Industrial production
+            name: "EU Industrial Production"
+            unit: "index_2015=100"
+            transform: yoy
+
+      - name: nbs_china
+        label: "National Bureau of Statistics (China)"
+        region: CN
+        frequency: monthly
+        fetcher: nbs_fetcher
+        enabled: false  # Phase 3
+        api_base: "https://data.stats.gov.cn/easyquery/api"
+        env_key: NBS_API_KEY
+        series:
+          - id: A010101      # GDP
+            name: "China GDP Growth"
+            unit: "percent_yoy"
+          - id: A010201      # CPI
+            name: "China CPI"
+            unit: "percent_yoy"
+          - id: A0B01        # PMI Manufacturing
+            name: "China PMI Manufacturing"
+            unit: "index"
+          - id: A0701        # Retail Sales
+            name: "China Retail Sales Growth"
+            unit: "percent_yoy"
+
+  price_volume:
+    label: "Price & Volume (Market Data)"
+    description: "Sector indices, volatility, volume, PE ratios — only calibratable distribution parameters per AMA"
+    validating_papers:
+      - "TwinMarket (NeurIPS 2025) — price distribution parameters are the only reliably calibratable ABM parameters"
+      - "AMA (Agent Market Arena, 2024) — behavioral parameters suffer from parameter degeneracy"
+    sources:
+      - name: eastmoney
+        label: "EastMoney (东方财富)"
+        region: CN
+        frequency: daily
+        fetcher: eastmoney_fetcher
+        enabled: true  # Public API — zero auth, zero cost
+        api_base: "internal"  # Uses ChainGold infra
+        env_key: null
+        series:
+          - id: sectors        # 60+ industry sectors
+            name: "Industry Sector Indices"
+            fields: [code, name, price, change_pct, turnover, pe_ratio, volume]
+          - id: market_breadth # Up/down statistics
+            name: "Market Breadth"
+            fields: [up_count, down_count, flat_count, limit_up, limit_down]
+
+  news_sentiment:
+    label: "News & Sentiment Analysis"
+    description: "Financial news sentiment, social media mood, policy announcements — leading indicators for market movement"
+    validating_papers:
+      - "TwinMarket (NeurIPS 2025) — Sina Finance daily sentiment predicts SSE Composite"
+      - "News-based macroeconomic forecasts (semantic path models)"
+    sources:
+      - name: sina_finance
+        label: "Sina Finance (新浪财经)"
+        region: CN
+        frequency: daily
+        fetcher: sina_fetcher
+        enabled: false  # Phase 3
+        api_base: "https://finance.sina.com.cn"
+        env_key: null
+        endpoints:
+          - url: "/roll/"
+            parser: headline_list
+            fields: [title, url, time, category]
+
+      - name: _36kr
+        label: "36Kr (36氪)"
+        region: CN
+        frequency: daily
+        fetcher: _36kr_fetcher
+        enabled: true  # Free RSS, no auth
+        env_key: null
+        endpoints:
+          - url: "/feed"
+            parser: rss
+            fields: [title, link, pub_date, category, description]
+
+  technology_adoption:
+    label: "Technology Adoption Signals"
+    description: "GitHub activity, Stack Overflow trends, Hacker News sentiment — developer ecosystem as leading indicator"
+    validating_papers:
+      - "Frequency-domain prediction (Dai et al., 2025) — wavelet decomposition of tech trends"
+      - "OASIS (2411.11581) — search interest as demand proxy"
+    sources:
+      - name: github
+        label: "GitHub Trending & Search"
+        region: global
+        frequency: daily
+        fetcher: github_fetcher
+        enabled: true
+        api_base: "https://api.github.com"
+        env_key: GITHUB_TOKEN  # Optional: raises rate limit from 60→5000/hr
+        endpoints:
+          - url: "/search/repositories?q=created:>{date}&sort=stars&order=desc&per_page=30"
+            parser: repo_search
+          - url: "/trending"  # Unofficial, via scraping
+            parser: trending_page
+            note: "GitHub trending page — may need fallback to search API"
+
+      - name: stackoverflow
+        label: "Stack Overflow Tag Trends"
+        region: global
+        frequency: weekly
+        fetcher: stackoverflow_fetcher
+        enabled: true
+        api_base: "https://api.stackexchange.com/2.3"
+        env_key: STACKEXCHANGE_KEY  # Optional
+        endpoints:
+          - url: "/tags?order=desc&sort=popular&site=stackoverflow&pagesize=30"
+            parser: tag_list
+          - url: "/tags/{tag}/info?site=stackoverflow"
+            parser: tag_detail
+
+      - name: hackernews
+        label: "Hacker News"
+        region: global
+        frequency: daily
+        fetcher: hackernews_fetcher
+        enabled: true
+        api_base: "https://hacker-news.firebaseio.com/v0"
+        env_key: null
+        endpoints:
+          - url: "/topstories.json"
+            parser: story_ids
+          - url: "/item/{id}.json"
+            parser: story_detail
+
+      - name: producthunt
+        label: "Product Hunt"
+        region: global
+        frequency: daily
+        fetcher: producthunt_fetcher
+        enabled: true  # Dev token acquired 2026-07-01
+        api_base: "https://api.producthunt.com/v2/api/graphql"
+        env_key: PRODUCTHUNT_TOKEN
+        endpoints:
+          - graphql: "posts { edges { node { name tagline votesCount topics { name } createdAt } } }"
+
+  consumer_behavior:
+    label: "Consumer Behavior & Demand"
+    description: "Search trends, consumption patterns — demand-side signals"
+    validating_papers:
+      - "OASIS (2411.11581) — Google Trends as demand proxy"
+      - "TwinMarket (NeurIPS 2025) — Xueqiu user behavior profiles"
+    sources:
+      - name: google_trends
+        label: "Google Trends"
+        region: global
+        frequency: weekly
+        fetcher: google_trends_fetcher
+        enabled: true  # pytrends, free, no auth
+        api_base: "pytrends"  # Python library, not REST API
+        env_key: null
+        keywords:
+          - "AI tools"
+          - "SaaS"
+          - "freelance platform"
+          - "nocode"
+          - "chatgpt alternative"
+
+  b2b_software:
+    label: "B2B Software Market"
+    description: "G2/Capterra review velocity, category growth, pricing trends — B2B demand signals"
+    validating_papers:
+      - "SMIF (ETASR 2026, DOI 10.48084/etasr.16536) — r=0.893 calibration across 150 B2B cases"
+    sources:
+      - name: g2
+        label: "G2 Reviews"
+        region: global
+        frequency: weekly
+        fetcher: g2_fetcher
+        enabled: false  # Phase 3 — requires API key
+        api_base: "https://data.g2.com/api/v1"
+        env_key: G2_API_KEY
+        endpoints:
+          - url: "/categories"
+            parser: category_list
+          - url: "/products"
+            parser: product_list
+
+      - name: crunchbase
+        label: "Crunchbase"
+        region: global
+        frequency: monthly
+        fetcher: crunchbase_fetcher
+        enabled: false  # Phase 3 — requires API key (trial available)
+        api_base: "https://api.crunchbase.com/v4"
+        env_key: CRUNCHBASE_API_KEY
+        endpoints:
+          - url: "/searches/organizations"
+            parser: funding_events
+
+  freelance_demand:
+    label: "Freelance & Gig Economy Demand"
+    description: "Freelance project categories, budgets, bid velocity — labor market demand signals"
+    validating_papers:
+      - "OASIS (2411.11581) — real-world task markets as simulation grounding"
+    sources:
+      - name: upwork_rss
+        label: "Upwork Job Feed"
+        region: global
+        frequency: daily
+        fetcher: upwork_fetcher
+        enabled: false  # Phase 3 — requires RSS scraping
+        api_base: "https://www.upwork.com/ab/feed/jobs/rss"
+        env_key: null
+
+  social_network:
+    label: "Social Network & Information Cascades"
+    description: "Information propagation velocity, echo chamber strength, opinion leader influence"
+    validating_papers:
+      - "TwinMarket (NeurIPS 2025) — cascade model, echo chamber detection"
+    sources:
+      - name: hackernews_social
+        label: "Hacker News Social (comment network)"
+        region: global
+        frequency: daily
+        fetcher: hackernews_social_fetcher
+        enabled: false  # Phase 3 — builds on hackernews_fetcher data
+        api_base: "https://hacker-news.firebaseio.com/v0"
+        env_key: null
+
+# ── Signal Rules (how raw data → actionable signals) ──
+
+signal_rules:
+  signal_yield_curve_inversion:
+    condition: "macro_us.T10Y3M < 0"
+    severity: high
+    direction: negative
+    description: "10Y-3M treasury spread inverted — recession warning (8-13 month lead)"
+    validated_by: "Estrella & Mishkin (1996); SF Fed Recession Clock (2022)"
+
+  signal_unemployment_rising:
+    condition: "macro_us.UNRATE.pct_change(3) > 0.3"
+    severity: medium
+    direction: negative
+    description: "Unemployment rising over 3 months — labor market cooling"
+    validated_by: "SF Fed Recession Clock — jobless unemployment turning point"
+
+  signal_inflation_accelerating:
+    condition: "macro_us.CPIAUCSL.yoy > 4.0"
+    severity: high
+    direction: negative
+    description: "CPI YoY above 4% — inflation pressure"
+    validated_by: "FRED-MD (McCracken & Ng, 2016)"
+
+  signal_consumer_weak:
+    condition: "macro_us.UMCSENT < 60 AND macro_us.RSAFS.yoy < 1.0"
+    severity: medium
+    direction: negative
+    description: "Low consumer sentiment + weak retail sales — demand contraction"
+    validated_by: "FRED-MD consumer indicators"
+
+  signal_china_economy_weak:
+    condition: "macro_cn.pmi_manufacturing < 50"
+    severity: medium
+    direction: negative
+    description: "China PMI below 50 — manufacturing contraction"
+    validated_by: "993 Chinese predictors (Dai et al., 2025)"
+
+  signal_credit_stress:
+    condition: "macro_us.BAA10YM > 3.0 OR macro_us.DRTSCILM > 5.0"
+    severity: medium
+    direction: negative
+    description: "Credit spreads widening or delinquencies rising"
+    validated_by: "FRED banking/credit indicators"
+
+  signal_ai_tools_demand_surge:
+    condition: "tech_github.ai_ml_weekly_new_repos.pct_change(4) > 0.20"
+    severity: low
+    direction: positive
+    description: "AI/ML developer activity surging — demand signal for AI tools"
+    validated_by: "Frequency-domain adoption detection (Dai et al., 2025)"
+
+  signal_tech_sentiment_bullish:
+    condition: "tech_hackernews.ai_stories_per_day > 20 AND tech_hackernews.sentiment_score > 0.1"
+    severity: low
+    direction: positive
+    description: "HN heavily discussing AI with positive sentiment — tech optimism"
+    validated_by: "News-based macro forecasts"
+
+  signal_b2b_saas_growing:
+    condition: "b2b_g2.ai_category_review_growth > 0.15"
+    severity: low
+    direction: positive
+    description: "G2 AI category review velocity growing — enterprise AI procurement accelerating"
+    validated_by: "SMIF (r=0.893 calibration)"
+
+  signal_tech_adoption_accelerating:
+    condition: "tech_github.total_trending_velocity > 0.1 AND tech_stackoverflow.ai_tag_velocity > 0.1"
+    severity: low
+    direction: positive
+    description: "Developer activity + Q&A velocity both rising — broad tech adoption wave"
+    validated_by: "Frequency-domain prediction"
+
+  signal_china_consumption_downgrade:
+    condition: "macro_cn.retail_sales_growth < 2.0 AND macro_cn.cpi < 0.5"
+    severity: medium
+    direction: negative
+    description: "Low retail growth + near-zero CPI — consumption downgrade in China"
+    validated_by: "993 Chinese predictors"
+
+  signal_labor_market_cooling:
+    condition: "macro_us.UNRATE.diff(6) > 0.5 AND macro_us.JTSJOL.yoy < -5"
+    severity: medium
+    direction: negative
+    description: "Unemployment rising + job openings falling — labor market softening"
+    validated_by: "FRED-MD labor indicators"
+
+  signal_eu_stagnation:
+    condition: "macro_eu.gdp_growth < 0.5 AND macro_eu.unemployment > 8.0"
+    severity: medium
+    direction: negative
+    description: "Low EU growth + high unemployment — European stagnation risk"
+    validated_by: "Stock & Watson (2012)"
+
+  signal_global_synchronized_slowdown:
+    condition: "signal_yield_curve_inversion AND signal_china_economy_weak AND signal_eu_stagnation"
+    severity: critical
+    direction: negative
+    description: "US + China + EU all showing weakness simultaneously — global recession risk"
+    validated_by: "Multi-country factor models"
+
+# ── Ingestion Configuration ──
+
+ingestion:
+  # How long to keep raw Bronze files before compressing
+  bronze_compress_after_days: 30
+  bronze_purge_after_days: 365
+
+  # Silver validation
+  silver_validation_strict: false  # If true, validation failures block Silver write
+  silver_max_gap_days: 7  # Stale data threshold: if latest point > N days old, warn
+
+  # Gold generation
+  gold_regenerate_on_fetch: true  # Rebuild gold snapshot after every fetch cycle
+  gold_min_freshness_hours: 24  # Pipeline refuses to run if gold snapshot older than this
+
+  # Daily brief
+  daily_brief_enabled: true
+  daily_brief_path: "data_lake/gold/daily_brief.md"
+
+  # Server mode (for 24/7 HK server deployment)
+  server_mode:
+    enabled: false  # True when deployed to HK server
+    pm2_name: "marketfish-ingestion"
+    log_path: "data_lake/ingestion.log"
+    port: null  # No web server needed — pure cron worker

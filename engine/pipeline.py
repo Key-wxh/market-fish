@@ -7,7 +7,7 @@ import json
 import time
 import random
 import hashlib
-from engine.config import pipeline_cfg as _cfg, simulation_cfg as _sim_cfg
+from engine.config import pipeline_cfg as _cfg, pipeline_cfg as _pcfg, simulation_cfg as _sim_cfg
 from engine.i18n import t as _t
 from engine.ontology_generator import generate_ontology
 from engine.graph_builder import build_knowledge_graph
@@ -15,6 +15,22 @@ from engine.agent_factory import generate_agents
 from engine.idea_generator import generate_product_directions
 from engine.simulator import simulate
 from engine.reporter import generate_report
+
+
+def _extract_sim_agent(record: dict) -> dict:
+    """Extract an agent profile dict from a stored AgentRecord for simulation."""
+    profile = record.get("profile", {})
+    # Ensure required fields exist for the simulator
+    if "type" not in profile:
+        profile["type"] = "consumer"
+    if "id" not in profile:
+        profile["id"] = record.get("agent_id", "unknown")
+    if "name" not in profile:
+        profile["name"] = profile.get("id", "unknown")
+    # Merge persistence metadata into profile
+    profile["_from_store"] = True
+    profile["_task_count"] = record.get("task_count", 0)
+    return profile
 
 
 def _convert_user_product(user_product: dict) -> dict:
@@ -40,11 +56,35 @@ def _convert_user_product(user_product: dict) -> dict:
     }
 
 
-def _load_seed_data(seed_data: dict = None) -> dict:
-    """Load seed data from user-provided dict or default JSON files."""
+def _load_seed_data(seed_data: dict = None, seed_source: str = None) -> dict:
+    """Load seed data from user-provided dict, gold snapshot, or default JSON files.
+
+    Priority: seed_data param > seed_source path > default static JSON files.
+    """
     if seed_data:
+        # If seed_data has 'dimensions' key (gold snapshot format), unwrap it
+        if "dimensions" in seed_data:
+            return seed_data
         return seed_data
 
+    # Try loading from gold snapshot
+    if seed_source:
+        try:
+            with open(seed_source, encoding="utf-8") as f:
+                snapshot = json.load(f)
+            # If snapshot has dimensions, use full snapshot (pipeline will unwrap)
+            if "dimensions" in snapshot:
+                print(f"  [SEED] Loaded gold snapshot: {seed_source} "
+                      f"({len(snapshot.get('dimensions', {}))} dimensions)", flush=True)
+                return snapshot
+            # Otherwise treat as raw seed dict
+            return snapshot
+        except FileNotFoundError:
+            print(f"  [WARN] Gold snapshot not found: {seed_source}, falling back to static JSON", flush=True)
+        except Exception as e:
+            print(f"  [WARN] Failed to load seed source: {e}", flush=True)
+
+    # Fallback: load legacy static JSON files
     seed = {}
     seed_files = {
         "freelancer": "data/seed_freelancer.json",
@@ -70,19 +110,22 @@ class Pipeline:
 
     def run(self, seed_data: dict = None, mode: str = "explore",
             user_product: dict = None, sim_rounds: int = None,
-            agent_cap: int = None) -> dict:
+            agent_cap: int = None, seed_source: str = None,
+            reuse_agents: bool = False, sample_strategy: str = "stratified") -> dict:
         """
         Run the MarketFish pipeline.
 
         Args:
-            seed_data: Market seed data dict. If None, loads from default JSON files.
+            seed_data: Market seed data dict. If None, loads from seed_source or default JSON files.
             mode: "explore" (LLM generates directions),
                   "validate" (user injects product, skips idea_generator),
                   "hybrid" (user product + LLM-generated competitors)
+            reuse_agents: If True, load agents from store instead of regenerating.
             user_product: Product dict for validate/hybrid modes.
                 Schema: {name, description, target_market, pricing, [pain_point, differentiation]}
             sim_rounds: Override simulation rounds (default: from config).
             agent_cap: Override consumer agent cap (default: from config).
+            seed_source: Path to gold seed_snapshot.json (new ingestion pipeline).
 
         Returns:
             Pipeline result dict with stages, product_directions, and final_report.
@@ -97,8 +140,15 @@ class Pipeline:
             random.seed(rng_seed)
             output["random_seed"] = rng_seed
 
-        # Load seed data
-        seed = _load_seed_data(seed_data)
+        # Load seed data — supports gold snapshot or legacy static JSON
+        seed = _load_seed_data(seed_data, seed_source)
+
+        # If seed is a gold snapshot (has 'dimensions' key), extract dimensions
+        if "dimensions" in seed and "snapshot_id" in seed:
+            output["seed_source"] = "gold_snapshot"
+            output["seed_snapshot_id"] = seed.get("snapshot_id", "unknown")
+            # Pass the full snapshot through — ontology will use dimensions
+            print(f"  [SEED] Using gold snapshot: {seed.get('snapshot_id', '?')}", flush=True)
 
         try:
             # Stage 1: Ontology
@@ -119,10 +169,34 @@ class Pipeline:
 
             # Stage 3a: Agent Generation (first pass with placeholder)
             self.status = "stage3a_agents"
-            print("  [STAGE 3/5] Agent Generation...", flush=True)
-            placeholder_dirs = [{"id": "placeholder", "name": "Placeholder — real directions generated in 3b"}]
-            agents_data = generate_agents(knowledge_graph, placeholder_dirs)
-            output["stages"]["agents"] = {"status": "ok", "count": len(agents_data.get("agents", []))}
+            agents_from_store = 0
+            agents = []
+
+            if reuse_agents:
+                # v6: Load agents from persistent store instead of regenerating
+                try:
+                    from engine.agent_store import AgentStore
+                    store = AgentStore()
+                    pool_size = store.count()
+                    target = agent_cap or _pcfg()["agent_consumer_cap"]
+                    if pool_size > 0:
+                        agents = store.sample(target_count=target, strategy=sample_strategy)
+                        # Extract profile from stored records for the simulator
+                        agents = [_extract_sim_agent(r) for r in agents]
+                        agents_from_store = len(agents)
+                        print(f"  [STAGE 3/5] Agents loaded from store: {agents_from_store}/{target} (pool: {pool_size})", flush=True)
+                except Exception as e:
+                    print(f"  [STAGE 3/5] Agent store load failed: {e}, falling back to generation", flush=True)
+
+            if agents_from_store == 0:
+                print("  [STAGE 3/5] Agent Generation...", flush=True)
+                placeholder_dirs = [{"id": "placeholder", "name": "Placeholder — real directions generated in 3b"}]
+                agents_data = generate_agents(knowledge_graph, placeholder_dirs)
+                agents = agents_data.get("agents", [])
+                output["stages"]["agents"] = {"status": "ok", "count": len(agents), "source": "llm"}
+            else:
+                output["stages"]["agents"] = {"status": "ok", "count": len(agents), "source": "store", "pool_size": store.count()}
+
             self.stages_completed.append("agents")
 
             # ── Stage 3b: Product Directions (mode-dependent) ──
@@ -166,10 +240,14 @@ class Pipeline:
             self.stages_completed.append("ideas")
 
             # Stage 3b-bis: Re-generate agents with real product directions
-            self.status = "stage3b_agents_v2"
-            agents_data = generate_agents(knowledge_graph, product_directions)
-            agents = agents_data.get("agents", [])
-            output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents), "agents": agents}
+            # Skip if agents loaded from store (they're direction-agnostic)
+            if not reuse_agents or agents_from_store == 0:
+                self.status = "stage3b_agents_v2"
+                agents_data = generate_agents(knowledge_graph, product_directions)
+                agents = agents_data.get("agents", [])
+                output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents), "source": "llm"}
+            else:
+                output["stages"]["agents_v2"] = {"status": "ok", "count": len(agents), "source": "store"}
 
             # Stage 4: Market Simulation
             self.status = "stage4_simulation"
@@ -177,6 +255,7 @@ class Pipeline:
             all_results = []
             coupling_stats = {}
             rl_stats = {}
+            all_sim_results = []  # v6: collect all sim_results for agent persistence
             output["stages"]["simulation"] = {"sim_log": []}
 
             _market_config = _cfg()["market_types"]
@@ -208,6 +287,7 @@ class Pipeline:
                     market_type=market_type,
                 )
                 all_results.extend(sim_result.get("results", []))
+                all_sim_results.append(sim_result)  # v6: collect for agent persistence
 
                 # Save simulation log for post-hoc evidence extraction
                 output["stages"]["simulation"]["sim_log"].extend(sim_result.get("log", []))
@@ -226,8 +306,31 @@ class Pipeline:
                 "total_results": len(all_results),
                 "cross_domain_coupling": coupling_stats,
                 "economic_alignment_rl": rl_stats,
+                "_sim_results": all_sim_results,  # v6: for agent persistence merge
             })
             self.stages_completed.append("simulation")
+
+            # v6: Persist agents after simulation — merge all market agent_states
+            self.status = "stage4b_persist"
+            task_id = user_product.get("name", mode) if user_product else mode
+            try:
+                from engine.agent_store import AgentStore
+                store = AgentStore()
+                # Collect agent_states from all sim_results (one per market type)
+                all_sim_results = output["stages"]["simulation"].get("_sim_results", [])
+                merged_states = {}
+                for sr in all_sim_results:
+                    merged_states.update(sr.get("agent_states", {}))
+                # Fallback: if _sim_results not collected, use last sim_result
+                if not merged_states and "agent_states" in sim_result:
+                    merged_states = sim_result["agent_states"]
+                saved = store.save_batch(merged_states, task_id=task_id)
+                pool = store.count()
+                print(f"  [STORE] {saved} agents persisted (pool: {pool} total)", flush=True)
+                output["stages"]["agent_store"] = {"status": "ok", "saved": saved, "pool_size": pool}
+            except Exception as e:
+                print(f"  [STORE] Persist skipped: {e}", flush=True)
+                output["stages"]["agent_store"] = {"status": "skipped", "reason": str(e)}
 
             # Stage 5: Report Generation
             self.status = "stage5_report"

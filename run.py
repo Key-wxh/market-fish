@@ -1,4 +1,4 @@
-"""Run v5 pipeline — supports explore/validate/hybrid modes."""
+"""Run v6 pipeline — supports explore/validate/hybrid modes."""
 import json, sys, traceback, time, os, argparse
 from dotenv import load_dotenv
 load_dotenv()
@@ -22,7 +22,11 @@ def main():
     parser.add_argument("--pricing", default="", help="Pricing")
     parser.add_argument("--pain-point", help="Pain point addressed")
     parser.add_argument("--differentiation", help="What makes it different")
-    parser.add_argument("--seed-dir", help="Custom seed data directory")
+    parser.add_argument("--seed-dir", help="Custom seed data directory (legacy static JSON)")
+    parser.add_argument("--seed-source", help="Path to gold seed_snapshot.json (new ingestion pipeline)")
+    parser.add_argument("--reuse-agents", action="store_true", help="Load agents from store instead of regenerating")
+    parser.add_argument("--sample-strategy", choices=["random", "stratified", "experienced"], default="stratified",
+                        help="Agent sampling strategy when reusing (default: stratified)")
     parser.add_argument("--output", default="uploads/latest_result.json", help="Output JSON path")
     args = parser.parse_args()
 
@@ -49,19 +53,33 @@ def main():
         }
         print(f'Mode: {args.mode} | Product: {args.name} | Target: {args.target} | Price: {args.pricing}')
 
-    # Load seed data
-    seed = {}
-    seed_dir = args.seed_dir or "data"
-    for key in ['freelancer', 'economy', 'tech', 'consumer', 'b2b']:
-        path = f'{seed_dir}/seed_{key}.json'
-        try:
-            with open(path, encoding='utf-8') as f:
-                seed[key] = json.load(f)
-        except FileNotFoundError:
-            pass  # Non-critical
+    # Load seed data — prefer gold snapshot, fall back to static JSON
+    seed = None  # Let pipeline handle loading
+    seed_source = args.seed_source
 
-    if seed:
-        print(f'Seed: {list(seed.keys())}')
+    if seed_source:
+        print(f'Seed source: {seed_source} (gold snapshot)')
+    elif args.seed_dir:
+        # Legacy mode: load static JSON files
+        seed_dir = args.seed_dir or "data"
+        seed = {}
+        for key in ['freelancer', 'economy', 'tech', 'consumer', 'b2b']:
+            path = f'{seed_dir}/seed_{key}.json'
+            try:
+                with open(path, encoding='utf-8') as f:
+                    seed[key] = json.load(f)
+            except FileNotFoundError:
+                pass
+        print(f'Seed: {list(seed.keys())} (legacy static JSON)')
+    else:
+        # Try gold snapshot first, fall back to static JSON
+        gold_path = "data_lake/gold/seed_snapshot.json"
+        if os.path.exists(gold_path):
+            seed_source = gold_path
+            print(f'Seed source: {gold_path} (auto-detected gold snapshot)')
+        else:
+            print('Seed: legacy static JSON (no gold snapshot found)')
+
     print(f'Starting pipeline ({args.mode} mode)...')
     sys.stdout.flush()
 
@@ -69,12 +87,21 @@ def main():
     t0 = time.time()
 
     try:
-        result = pipeline.run(seed_data=seed or None, mode=args.mode, user_product=user_product)
+        result = pipeline.run(seed_data=seed or None, mode=args.mode,
+                             user_product=user_product, seed_source=seed_source,
+                             reuse_agents=args.reuse_agents,
+                             sample_strategy=args.sample_strategy)
         elapsed = time.time() - t0
 
         os.makedirs(os.path.dirname(args.output) if os.path.dirname(args.output) else '.', exist_ok=True)
+        # Sanitize: convert sets in agent_states to lists for JSON
+        def _sanitize(obj):
+            if isinstance(obj, set): return list(obj)
+            if isinstance(obj, dict): return {k: _sanitize(v) for k, v in obj.items()}
+            if isinstance(obj, list): return [_sanitize(v) for v in obj]
+            return obj
         with open(args.output, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
+            json.dump(_sanitize(result), f, indent=2, ensure_ascii=False)
 
         status = result.get("pipeline_status", "unknown")
         if status == "error":

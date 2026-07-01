@@ -6,7 +6,7 @@ Feeds raw market signals → LLM extracts market participant types and decision 
 import json
 from engine.llm_client import get_llm
 
-ONTOLOGY_SYSTEM_PROMPT = """You are a market structure analyst. Given raw market signals (freelancer demand data, economic indicators, technology trends), identify the MARKET PARTICIPANT TYPES and DECISION FACTORS that define the market structure.
+ONTOLOGY_SYSTEM_PROMPT = """You are a market structure analyst. Given market signals across multiple validated dimensions (macroeconomic indicators, technology adoption trends, freelance demand data, B2B software market signals, consumer behavior, market sentiment, and more), identify the MARKET PARTICIPANT TYPES and DECISION FACTORS that define the market structure.
 
 Output EXACTLY this JSON schema:
 {
@@ -42,29 +42,41 @@ RULES:
 - Generate 8-10 relationship types.
 - Generate 5-8 decision factors.
 - Every participant type must have specific, quantified attributes — not generic labels.
-- Budget ranges must be realistic CNY amounts aligned with China 2026 economic conditions.
+- Budget ranges must be realistic CNY amounts aligned with current economic conditions.
 - pain_points must be concrete, not abstract.
+- Use ALL provided data dimensions — don't focus on just one or two.
 """
 
 
 def generate_ontology(seed_data: dict) -> dict:
-    """Stage 1: Generate market ontology from seed signals."""
+    """Stage 1: Generate market ontology from seed signals.
+
+    Source-agnostic: iterates over ALL keys in seed_data, whether they come
+    from the old static JSON files or the new gold snapshot dimensions.
+    """
     llm = get_llm()
 
-    # Format seed data for LLM consumption
-    user_prompt = f"""Analyze these market signals and generate the ontology:
+    # Skip metadata keys (_dimensions, _signals, _provenance, _meta, _snapshot_id)
+    skip_keys = {"_dimensions", "_signals", "_provenance", "_meta", "_snapshot_id"}
 
-FREELANCER DEMAND DATA:
-{json.dumps(seed_data.get('freelancer', {}), indent=2, ensure_ascii=False)}
+    # Build prompt from all available data keys
+    prompt_parts = []
+    for key in sorted(seed_data.keys()):
+        if key.startswith("_") or key in skip_keys:
+            continue
+        value = seed_data[key]
+        if value:  # Skip empty dimensions
+            label = key.replace("_", " ").title()
+            prompt_parts.append(
+                f"{label}:\n{json.dumps(value, indent=2, ensure_ascii=False)}"
+            )
 
-ECONOMIC INDICATORS:
-{json.dumps(seed_data.get('economy', {}), indent=2, ensure_ascii=False)}
+    if not prompt_parts:
+        raise ValueError("No valid seed data dimensions found. Check seed_data input.")
 
-TECHNOLOGY TRENDS:
-{json.dumps(seed_data.get('tech', {}), indent=2, ensure_ascii=False)}
-
-Based on these signals, what are the REAL market participant types, relationships, and decision factors?
-Remember: concrete, quantified, specific. Not generic labels."""
+    user_prompt = "Analyze these market signals and generate the ontology:\n\n"
+    user_prompt += "\n\n".join(prompt_parts)
+    user_prompt += "\n\nBased on ALL these signals across multiple dimensions, what are the REAL market participant types, relationships, and decision factors?\nRemember: concrete, quantified, specific. Not generic labels. Use ALL available data dimensions."
 
     result = llm.chat_json(system=ONTOLOGY_SYSTEM_PROMPT, user=user_prompt, agent_type="ontology")
 

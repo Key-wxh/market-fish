@@ -1,574 +1,679 @@
-# MarketFish v5 — Default Configuration
-# Override: create config/user_settings.yaml (gitignored)
-# Secrets: .env file (never in YAML)
-
-pipeline:
-  simulation_rounds: 30
-  market_types: [b2c, smb]          # which markets to simulate
-  agent_consumer_cap: 50            # max consumers in simulation
-  product_fallback_count: 3         # products to use when no market match
-  target_market_fallback: consumer  # fallback target_market
-
-simulation:
-  rounds: 30
-  batch_size: 15                    # ThreadPool workers per round
-  agent_timeout: 30                 # seconds per agent LLM call
-  competitor_activate_round: 8      # competitors enter at this round
-  environment_period: 5             # environment agents act every N rounds
-  products_shown: 3                 # products shown to each agent
-  context_max_chars: 3000           # max chars in agent decision context
-  recommend_connections: 5          # peers an agent can recommend to
-  log_interval: 5                   # progress log every N rounds
-
-  # Survival score formula
-  score_adoption_weight: 0.4
-  score_retention_weight: 0.3
-  score_revenue_weight: 0.3
-  score_adoption_denominator: 0.1
-  score_revenue_per_user_baseline: 50
-
-  # Status thresholds
-  alive_threshold: 0.3
-  struggling_threshold: 0.1
-
-  # Random seed (0 = random each run)
-  random_seed: 42
-
-coupling:
-  # Emotion → WTP multiplier
-  emotion_wtp_multiplier:
-    excited: 1.30
-    satisfied: 1.10
-    curious: 1.05
-    neutral: 1.00
-    indifferent: 0.85
-    skeptical: 0.70
-    frustrated: 0.50
-
-  # Emotion → valence (-1.0 to 1.0)
-  emotion_valence:
-    excited: 1.0
-    satisfied: 0.7
-    curious: 0.4
-    neutral: 0.0
-    indifferent: -0.1
-    skeptical: -0.4
-    frustrated: -0.8
-
-  # Valence → emotion thresholds (checked in order)
-  valence_thresholds:
-    - [0.8, excited]
-    - [0.5, satisfied]
-    - [0.2, curious]
-    - [-0.1, neutral]
-    - [-0.3, indifferent]
-    - [-0.6, skeptical]
-    - [-1.0, frustrated]
-
-  negativity_spread_multiplier: 2.0
-  fomo_peer_threshold: 3
-  fomo_purchase_boost: 0.25
-  fomo_partial_2_peers: 0.5
-  fomo_partial_1_peer: 0.2
-  contagion_strength: 0.15
-  market_sentiment_weight: 0.10
-  influence_susceptibility_factor: 0.2
-  min_susceptibility: 0.05
-  trending_lookback_rounds: 3
-  trending_top_n: 3
-  trending_min_count: 2
-  fomo_activation_adoption_rate: 0.3
-
-rl:
-  alpha: 0.08
-
-  reward_satisfied_purchase: 0.15
-  reward_recommendation_match: 0.12
-  penalty_churn: -0.20
-  penalty_missed_trend: -0.08
-  penalty_overpaid: -0.10
-
-  risk_reward_ratio: 0.5
-  churn_risk_penalty_ratio: 0.5
-  overpaid_price_sensitivity_boost: 0.05
-  overpaid_threshold_multiplier: 1.5
-  sentiment_optimistic_threshold: 0.3
-  sentiment_pessimistic_threshold: -0.3
-  sentiment_risk_adjustment: 0.03
-
-  recommend_check_rounds: 5
-  peer_purchase_check_rounds: 3
-  strategy_shift_epsilon: 0.001
-
-  # Init from profile
-  init_noise_range: 0.08
-  budget_price_sens_divisor: 2000
-  budget_price_sens_cap: 0.8
-  tech_early_adopter_factor: 0.6
-  impulse_early_adopter_bonus: 0.3
-  influence_susceptibility_factor: 0.3
-  high_influence_susceptibility_min: 0.2
-  slow_decision_loyalty_bonus: 0.2
-  base_loyalty: 0.3
-  tech_risk_tolerance_factor: 0.5
-  desires_risk_tolerance_factor: 0.05
-
-  # Behavior description thresholds
-  behavior_thresholds:
-    price_sensitive_high: 0.7
-    price_sensitive_low: 0.3
-    early_adopter_high: 0.6
-    early_adopter_low: 0.2
-    social_susceptible_high: 0.6
-    social_susceptible_low: 0.2
-    loyal_high: 0.6
-    loyal_low: 0.2
-    risk_tolerant_high: 0.6
-    risk_tolerant_low: 0.2
-
-  # Strategy bounds per agent type
-  agent_type_bounds:
-    consumer:
-      price_sensitivity: [0.3, 0.9]
-      early_adopter: [0.1, 0.8]
-      social_susceptibility: [0.2, 0.9]
-      loyalty: [0.1, 0.7]
-      risk_tolerance: [0.1, 0.7]
-    smb:
-      price_sensitivity: [0.5, 1.0]
-      early_adopter: [0.05, 0.4]
-      social_susceptibility: [0.1, 0.6]
-      loyalty: [0.3, 0.9]
-      risk_tolerance: [0.05, 0.4]
-    enterprise:
-      price_sensitivity: [0.4, 0.8]
-      early_adopter: [0.0, 0.2]
-      social_susceptibility: [0.0, 0.3]
-      loyalty: [0.5, 1.0]
-      risk_tolerance: [0.0, 0.2]
-    competitor:
-      price_sensitivity: [0.6, 1.0]
-      early_adopter: [0.3, 0.9]
-      social_susceptibility: [0.0, 0.3]
-      loyalty: [0.0, 0.3]
-      risk_tolerance: [0.5, 1.0]
-    environment:
-      price_sensitivity: [0.3, 0.7]
-      early_adopter: [0.2, 0.6]
-      social_susceptibility: [0.2, 0.6]
-      loyalty: [0.3, 0.7]
-      risk_tolerance: [0.2, 0.6]
-    default:
-      price_sensitivity: [0.2, 0.8]
-      early_adopter: [0.1, 0.7]
-      social_susceptibility: [0.1, 0.7]
-      loyalty: [0.1, 0.7]
-      risk_tolerance: [0.1, 0.7]
-
-backtest:
-  hard_pass_simple_ux: 30
-  hard_pass_consumer_b2c: 30
-  soft_signal_solves_fear: 15
-  soft_signal_social_sharing: 15
-  smb_onetime_partial: 10
-  kill_b2b_subscription: -40
-  kill_high_price_monthly: -20
-
-  high_price_threshold_cny: 100
-  promising_threshold: 50
-  risky_threshold: 30
-
-  ux_simple_keywords: [one-click, single action, auto, instant, no login, no signup, one tap, voice, photo, screenshot, scan]
-  ux_simple_categories: [consumer_app, mini_program, browser_extension]
-  fear_keywords: [fear, anxiety, lonely, die, death, safety, security, embarrass, shame, lose, lost, forget, miss, scared, emotional, feel, stress, pressure, anxious]
-  share_keywords: [share, viral, social, friend, wechat moment, 朋友圈, recommend, invite, challenge, leaderboard, group]
-  subscription_indicators: [/month, subscription]
-
-network:
-  beta: 0.1
-  k_min: 4
-  k_max: 12
-  k_divisor: 8
-
+agent_batches:
+- agent_type: consumer
+  count: 25
+  diversity: Age 20-35, tier 1-2 cities, income 5000-20000 CNY. Mix of impulse buyers
+    and researchers. Include students, freelancers, young professionals.
+  label: Young urbanites
+- agent_type: consumer
+  count: 25
+  diversity: Age 30-50, tier 2-3 cities, income 8000-30000 CNY. Parents, homeowners.
+    Value-conscious, comparison shoppers.
+  label: Family budgeters
+- agent_type: consumer
+  count: 25
+  diversity: 'Age 18-55, tier 3-5 cities and rural, income 2000-10000 CNY. Less tech-savvy.
+    Pain: limited services, information gap, price sensitivity.'
+  label: Small town & rural
+- agent_type: smb
+  count: 15
+  diversity: Restaurant owners, beauty salon, convenience store, repair shop. Income
+    5000-50000 CNY monthly.
+  label: Local service SMBs
+- agent_type: smb
+  count: 15
+  diversity: WeChat store, Douyin live seller, Xiaohongshu KOL, freelancer agent.
+    Income 3000-100000 CNY monthly.
+  label: Online micro-businesses
+- agent_type: enterprise
+  count: 10
+  diversity: Procurement managers, IT directors at 50-500 employee companies. Budget
+    5000-100000 CNY monthly.
+  label: SME decision makers
+- agent_type: competitor
+  count: 8
+  diversity: Existing SaaS/tool providers. Include AI-native startups and traditional
+    software vendors.
+  label: Market incumbents
+- agent_type: environment
+  count: 5
+  diversity: Economic trends, policy signals, technology shifts, platform rule changes.
+  label: Macro factors
 agent_generation:
-  batch_timeout: 300
   batch_retries: 3
+  batch_timeout: 300
+  context_ideas_chars: 2000
+  context_kg_chars: 3000
   max_workers: 6
   min_consumers_warn: 30
   min_smb_warn: 10
-  context_kg_chars: 3000
-  context_ideas_chars: 2000
   temperature: 0.8
-
-report:
-  student_input_chars: 5000
-  teacher_input_chars: 3000
-  synthesis_report_chars: 5000
-  perspectives:
-    - role: 消费者视角
-      focus: "Which products actually solved consumer pain points?"
-    - role: 投资人视角
-      focus: "Which products have the highest ceiling and lowest risk?"
-    - role: 竞品视角
-      focus: "Which products threaten existing players and how would they respond?"
-    - role: 宏观视角
-      focus: "How do economic conditions affect which products survive?"
-
-domain:
-  language: zh
-  currency: CNY
-  context: "2026 China, consumption downgrade, OPC boom, AI cost collapse, WeChat ecosystem dominance"
-
-# Calibration cases — known products for validation
-calibration_cases:
-  # ═══════════════════════════════════════════
-  # SUCCESS cases (consumer B2C — 8 cases)
-  # ═══════════════════════════════════════════
-  - id: demumu
-    name: 死了么 (Demumu)
-    description: "每日签到打卡→连续2天未签就通知紧急联系人。极简：打开app点一下。恐惧驱动：独居怕出事没人知道。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "¥8 一次性"
-    outcome: success
-    evidence: "2026.1 中国App Store付费榜#1, 60+投资人主动联系, 开发成本仅¥1500, 估值数千万"
-    factors: [dead_simple_ux, solves_real_fear, social_sharing, consumer_b2c]
-
-  - id: kitten_light
-    name: 小猫补光灯
-    description: "拍照补光工具。打开就是补光灯，没别的功能。1小时开发完成。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "¥1 一次性"
-    outcome: success
-    evidence: "当天冲上付费榜#1, 1小时开发时间, 零营销成本"
-    factors: [dead_simple_ux, consumer_b2c]
-
-  - id: pingo
-    name: Pingo
-    description: "AI语言学习App，带吐槽模式。Freemium: 免费病毒传播→$9.99/月付费。TikTok有机增长。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "freemium → $9.99/月"
-    outcome: success
-    evidence: "300万用户, $500K/月收入, 零广告费, 全靠TikTok自然传播"
-    factors: [social_sharing, consumer_b2c, solves_real_fear]
-
-  - id: calorie_snap
-    name: 卡路里拍照计算 (Cal AI)
-    description: "拍照识别食物→计算卡路里。AI视觉+营养数据库。青少年独立开发。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "freemium"
-    outcome: success
-    evidence: "17岁开发者, 年收入$30M, 2年做到"
-    factors: [dead_simple_ux, solves_real_fear, consumer_b2c]
-
-  - id: loom
-    name: Loom
-    description: "一键录屏+语音解说，即时生成分享链接。替代长邮件和会议。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "freemium → $12.5/月"
-    outcome: success
-    evidence: "2023年被Atlassian以$975M收购, 1400万用户, 极简录屏分享"
-    factors: [dead_simple_ux, social_sharing, consumer_b2c]
-
-  - id: calm
-    name: Calm
-    description: "冥想和睡眠App。解决焦虑和失眠恐惧。订阅制。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "$69.99/年"
-    outcome: success
-    evidence: "估值$2B, 400万付费用户, 睡眠故事是killer feature"
-    factors: [solves_real_fear, consumer_b2c]
-
-  - id: duolingo
-    name: Duolingo
-    description: "游戏化语言学习App。免费+广告/付费。每日打卡机制。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "freemium → $6.99/月"
-    outcome: success
-    evidence: "上市市值$10B+, 5亿+下载, 日活3000万, 社交排行榜+打卡机制"
-    factors: [social_sharing, consumer_b2c, dead_simple_ux]
-
-  - id: controol
-    name: Controol
-    description: "Mac窗口管理器。一键整理桌面窗口布局。极简：拖拽→自动排列。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "¥68 一次性"
-    outcome: success
-    evidence: "Product Hunt Top 5, 独立开发者单人完成, 月入$5K+"
-    factors: [dead_simple_ux, consumer_b2c]
-
-  # ═══════════════════════════════════════════
-  # SUCCESS cases (B2B/SMB — 3 cases)
-  # ═══════════════════════════════════════════
-  - id: notion
-    name: Notion
-    description: "All-in-one 笔记+项目管理+数据库。个人免费→团队付费。"
-    category: B2B_saas
-    target_market: smb
-    pricing: "freemium → $10/月/人"
-    outcome: success
-    evidence: "估值$10B, 1亿用户, 从个人消费者渗透到企业"
-    factors: [social_sharing, dead_simple_ux]
-
-  - id: hoverify
-    name: Hoverify
-    description: "浏览器开发工具合集。CSS检查+截图+颜色提取。Chrome扩展。"
-    category: browser_extension
-    target_market: smb
-    pricing: "$24 一次性"
-    outcome: success
-    evidence: "单人开发者, $2K MRR, Product Hunt #1 of the week"
-    factors: [dead_simple_ux, consumer_b2c]
-
-  - id: stripe_atlas
-    name: Stripe Atlas
-    description: "一键注册美国公司+银行账户。面向全球创业者。API-first。"
-    category: B2B_saas
-    target_market: smb
-    pricing: "$500 一次性"
-    outcome: success
-    evidence: "Stripe 旗下, 数万公司通过其注册, 解决跨境创业最大痛点"
-    factors: [dead_simple_ux, solves_real_fear]
-
-  # ═══════════════════════════════════════════
-  # FAILURE cases (consumer — 4 cases)
-  # ═══════════════════════════════════════════
-  - id: panels_mkbhd
-    name: Panels (MKBHD 壁纸App)
-    description: "付费壁纸订阅App。$50/年 或 $12/月。MKBHD (2000万粉丝) 背书。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "$50/年 订阅"
-    outcome: failure
-    evidence: "2025.12 关闭。仅90万下载, $95K收入。消费者不愿为壁纸付费。隐私争议。"
-    factors: [high_price_monthly, complex_ux]
-
-  - id: koo
-    name: Koo (印度微博)
-    description: "多语言Twitter替代品。主打印度市场。需要解释为什么不用Twitter。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "免费+广告"
-    outcome: failure
-    evidence: "2024.7 关闭。未建立差异化, 融资失败, 用户流失回Twitter"
-    factors: [requires_onboarding]
-
-  - id: flip_shopping
-    name: Flip (社交购物)
-    description: "TikTok式短视频购物App。$230M融资, $1.1B估值。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "免费+佣金"
-    outcome: failure
-    evidence: "2025.8 关闭。获客成本过高, 美国社交购物不成熟, 烧完融资"
-    factors: [requires_onboarding]
-
-  - id: zing_food
-    name: Zing Food (10分钟送餐)
-    description: "10分钟极速送餐。自建暗厨房+骑手。主打鲜食。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "免费配送+餐费"
-    outcome: failure
-    evidence: "2025中关闭。重资产模式烧钱, 用户宁愿等30分钟吃自己喜欢的店"
-    factors: [complex_ux]
-
-  # ═══════════════════════════════════════════
-  # FAILURE cases (B2B/SMB — 2 cases)
-  # ═══════════════════════════════════════════
-  - id: b2b_saas_x
-    name: 某B2B AI监测SaaS (匿名)
-    description: "AI品牌可见度监测。需解释GEO概念。¥99-1299/月订阅。需onboarding培训。"
-    category: B2B_saas
-    target_market: smb
-    pricing: "¥99-1299/月 订阅"
-    outcome: failure
-    evidence: "200+次检测, 0付费转化。B2B订阅+需教育市场+抽象概念=三重debuff"
-    factors: [b2b_subscription, requires_onboarding, high_price_monthly]
-
-  - id: industry_saas_y
-    name: 某行业垂直SaaS (匿名)
-    description: "行业专用工具SaaS。需要深厚行业知识。B2B订阅。MVP2周后停止。"
-    category: B2B_saas
-    target_market: smb
-    pricing: "订阅制"
-    outcome: failure
-    evidence: "缺乏行业知识, 拍脑袋决定, 未找到PMF即停止开发"
-    factors: [b2b_subscription, requires_onboarding, complex_ux]
-
-  # ═══════════════════════════════════════════
-  # FAILURE cases (enterprise/other — 2 cases)
-  # ═══════════════════════════════════════════
-  - id: zing_bank
-    name: HSBC Zing (银行支付App)
-    description: "汇丰银行推出的消费者支付App, 对标Revolut/Wise。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "免费"
-    outcome: failure
-    evidence: "2025.1 关闭。仅8000月活, 无法差异化, 大银行创新失败"
-    factors: [requires_onboarding]
-
-  - id: blip_fashion
-    name: Blip (30分钟快时尚)
-    description: "30分钟送达的快时尚电商。自建仓储+配送。印度班加罗尔。"
-    category: consumer_app
-    target_market: consumer
-    pricing: "免费配送+商品费"
-    outcome: failure
-    evidence: "2025.7 关闭。零融资, 重资产烧钱, 无法规模化"
-    factors: [complex_ux]
-
-  # ═══════════════════════════════════════════
-  # UNTESTED (1 case)
-  # ═══════════════════════════════════════════
-  - id: mizhou_translate
-    name: 蜜洲翻译
-    description: "极简翻译工具 - 复制文本自动弹出翻译。微信小程序。一次性付费。"
-    category: mini_program
-    target_market: consumer
-    pricing: "¥3-6 一次性"
-    outcome: untested
-    evidence: "未开发 — 待校准验证"
-    factors: [dead_simple_ux, consumer_b2c]
-
-# Agent batch definitions
-agent_batches:
-  - {agent_type: consumer, count: 25, label: Young urbanites,
-     diversity: "Age 20-35, tier 1-2 cities, income 5000-20000 CNY. Mix of impulse buyers and researchers. Include students, freelancers, young professionals."}
-  - {agent_type: consumer, count: 25, label: Family budgeters,
-     diversity: "Age 30-50, tier 2-3 cities, income 8000-30000 CNY. Parents, homeowners. Value-conscious, comparison shoppers."}
-  - {agent_type: consumer, count: 25, label: Small town & rural,
-     diversity: "Age 18-55, tier 3-5 cities and rural, income 2000-10000 CNY. Less tech-savvy. Pain: limited services, information gap, price sensitivity."}
-  - {agent_type: smb, count: 15, label: Local service SMBs,
-     diversity: "Restaurant owners, beauty salon, convenience store, repair shop. Income 5000-50000 CNY monthly."}
-  - {agent_type: smb, count: 15, label: Online micro-businesses,
-     diversity: "WeChat store, Douyin live seller, Xiaohongshu KOL, freelancer agent. Income 3000-100000 CNY monthly."}
-  - {agent_type: enterprise, count: 10, label: SME decision makers,
-     diversity: "Procurement managers, IT directors at 50-500 employee companies. Budget 5000-100000 CNY monthly."}
-  - {agent_type: competitor, count: 8, label: Market incumbents,
-     diversity: "Existing SaaS/tool providers. Include AI-native startups and traditional software vendors."}
-  - {agent_type: environment, count: 5, label: Macro factors,
-     diversity: "Economic trends, policy signals, technology shifts, platform rule changes."}
-
-# ═══════════════════════════════════════════════════════════
-# v6 — 六篇论文驱动的参数扩展（已定义，v6 pipeline 未激活）
-# ═══════════════════════════════════════════════════════════
-
-# ── Memory (Generative Agents, UIST 2023, 2304.03442) ──
-memory:
-  enabled: false                    # TODO: wire into v6 pipeline
-  capacity: 1000                    # max memories per agent
-  reflection_interval: 10           # auto-reflect every N rounds
-  retrieval_importance_min: 0.3     # minimum importance score to recall
-  retrieval_recency_weight: 0.6     # weight for recency in importance scoring
-  retrieval_relevance_weight: 0.3   # weight for relevance
-  retrieval_importance_weight: 0.1  # weight for memory importance tag
-  reflection_top_k: 3               # top memories for reflection prompt
-
-# ── RecSys (OASIS, 2025, 2411.11581) ──
-recsys:
-  enabled: false                    # TODO: wire into v6 pipeline
-  type: interest_based              # "interest_based" | "hot_score"
-  top_k_posts: 5                    # posts recommended per agent per round
-  hot_score_alpha: 0.015            # time-decay constant (heat halves every ~2 weeks in real time)
-  hot_score_recency_weight: 1.0     # weight for recency in hot score
-  interest_embedding_dim: 768       # dimension for interest matching embeddings
-
-# ── Temporal Activation (OASIS, 2025, 2411.11581) ──
-temporal:
-  enabled: false                    # TODO: wire into v6 pipeline
-  timestep_minutes: 60              # one simulation step = N real minutes
-  # Hourly activation probabilities (24-dim vector, sum ~1.0)
-  activation_probabilities: [0.01, 0.005, 0.003, 0.005, 0.02, 0.05, 0.08, 0.10, 0.09, 0.07, 0.06, 0.05, 0.05, 0.04, 0.04, 0.05, 0.06, 0.07, 0.08, 0.07, 0.05, 0.03, 0.02, 0.015]
-
-# ── Economic Alignment (Agent Bazaar, Princeton 2026, 2605.17698) ──
-economic_alignment:
-  enabled: false                    # TODO: wire into v6 pipeline
-  discovery_limit: 5                # counterparties agent can observe per timestep
-  stabilizing_firm_count: 2         # anchor firms that hold price above cost
-  skeptical_guardian_count: 3       # buyer agents that cross-reference for fraud
-  sybil_cluster_size: 0             # fraudulent identities to stress-test (0 = disabled)
-  eas_weights:                      # EAS 4-component weighting
-    stability: 0.25
-    integrity: 0.25
-    welfare: 0.25
-    profitability: 0.25
-  rl_training:
-    enabled: false                  # REINFORCE++ finetuning (Agent Bazaar showed 9B > frontier)
-    lora_rank: 16
-    curriculum_stages: 3
-    episodes_per_stage: 100
-
-# ── Cross-Domain Stress (EconSimulacra, 2026, 2606.26883) ──
-stress:
-  enabled: false                    # TODO: wire into v6 coupling module
-  model:                            # factors that contribute to agent stress
-    financial_pressure_weight: 0.4
-    social_comparison_weight: 0.3
-    information_overload_weight: 0.2
-    emotional_contagion_weight: 0.1
-  stress_to_wtp_map:                # stress level → WTP multiplier
-    low: 1.10                       # calm → slightly more willing to spend
-    moderate: 0.90                  # moderate stress → cautious
-    high: 0.70                      # high stress → freeze spending
-    extreme: 0.40                   # crisis → stop spending entirely
-
-# ── BDI v2 (TwinMarket, NeurIPS 2025, 2502.01506) ──
+backtest:
+  fear_keywords:
+  - fear
+  - anxiety
+  - lonely
+  - die
+  - death
+  - safety
+  - security
+  - embarrass
+  - shame
+  - lose
+  - lost
+  - forget
+  - miss
+  - scared
+  - emotional
+  - feel
+  - stress
+  - pressure
+  - anxious
+  hard_pass_consumer_b2c: 30
+  hard_pass_simple_ux: 30
+  high_price_threshold_cny: 100
+  kill_b2b_subscription: -40
+  kill_high_price_monthly: -20
+  promising_threshold: 50
+  risky_threshold: 30
+  share_keywords:
+  - share
+  - viral
+  - social
+  - friend
+  - wechat moment
+  - 朋友圈
+  - recommend
+  - invite
+  - challenge
+  - leaderboard
+  - group
+  smb_onetime_partial: 10
+  soft_signal_social_sharing: 15
+  soft_signal_solves_fear: 15
+  subscription_indicators:
+  - /month
+  - subscription
+  ux_simple_categories:
+  - consumer_app
+  - mini_program
+  - browser_extension
+  ux_simple_keywords:
+  - one-click
+  - single action
+  - auto
+  - instant
+  - no login
+  - no signup
+  - one tap
+  - voice
+  - photo
+  - screenshot
+  - scan
 bdi_v2:
-  enabled: false                    # TODO: wire into v6 agent_cognition
-  # 6-step daily loop: Belief → Desire → Intention → Action → Response → Update
-  belief_dimensions: 5              # fundamentals, valuation, trend, peer_sentiment, self_assessment
-  intention_constraints:
-    max_concurrent_intentions: 3
-    intention_persistence_rounds: 5
   behavioral_biases:
-    overconfidence_enabled: true
-    loss_aversion_enabled: true     # losses feel ~2x worse than gains
     herding_enabled: true
-
-# ── Social Network v2 (TwinMarket, NeurIPS 2025, 2502.01506) ──
-social_v2:
-  enabled: false                    # TODO: wire into v6 network
-  dynamic_rewiring: true            # edges evolve based on trading similarity
-  similarity_threshold: 0.15        # minimum trade-similarity to form/keep edge
-  time_decay_factor: 0.05           # exponential decay for past trade weighting
-  max_connections_per_agent: 15     # prevent hub domination
-  echo_chamber_detection: true      # flag communities with high internal similarity
-  # Social interaction stage (new pipeline stage in v6)
-  social_interaction:
-    posts_per_agent_per_round: 0.3  # probability an agent posts this round
-    repost_probability: 0.15        # probability of reposting if exposed
-    like_weight_on_hot_score: 0.3   # how much likes boost hot score
-
-# ── Grounding (SMIF, ETASR 2026, DOI 10.48084/etasr.16536) ──
+    loss_aversion_enabled: true
+    overconfidence_enabled: true
+  belief_dimensions: 5
+  enabled: true
+  intention_constraints:
+    intention_persistence_rounds: 5
+    max_concurrent_intentions: 3
+calibration_cases:
+- category: consumer_app
+  description: 每日签到打卡→连续2天未签就通知紧急联系人。极简：打开app点一下。恐惧驱动：独居怕出事没人知道。
+  evidence: 2026.1 中国App Store付费榜#1, 60+投资人主动联系, 开发成本仅¥1500, 估值数千万
+  factors:
+  - dead_simple_ux
+  - solves_real_fear
+  - social_sharing
+  - consumer_b2c
+  id: demumu
+  name: 死了么 (Demumu)
+  outcome: success
+  pricing: ¥8 一次性
+  target_market: consumer
+- category: consumer_app
+  description: 拍照补光工具。打开就是补光灯，没别的功能。1小时开发完成。
+  evidence: 当天冲上付费榜#1, 1小时开发时间, 零营销成本
+  factors:
+  - dead_simple_ux
+  - consumer_b2c
+  id: kitten_light
+  name: 小猫补光灯
+  outcome: success
+  pricing: ¥1 一次性
+  target_market: consumer
+- category: consumer_app
+  description: 'AI语言学习App，带吐槽模式。Freemium: 免费病毒传播→$9.99/月付费。TikTok有机增长。'
+  evidence: 300万用户, $500K/月收入, 零广告费, 全靠TikTok自然传播
+  factors:
+  - social_sharing
+  - consumer_b2c
+  - solves_real_fear
+  id: pingo
+  name: Pingo
+  outcome: success
+  pricing: freemium → $9.99/月
+  target_market: consumer
+- category: consumer_app
+  description: 拍照识别食物→计算卡路里。AI视觉+营养数据库。青少年独立开发。
+  evidence: 17岁开发者, 年收入$30M, 2年做到
+  factors:
+  - dead_simple_ux
+  - solves_real_fear
+  - consumer_b2c
+  id: calorie_snap
+  name: 卡路里拍照计算 (Cal AI)
+  outcome: success
+  pricing: freemium
+  target_market: consumer
+- category: consumer_app
+  description: 一键录屏+语音解说，即时生成分享链接。替代长邮件和会议。
+  evidence: 2023年被Atlassian以$975M收购, 1400万用户, 极简录屏分享
+  factors:
+  - dead_simple_ux
+  - social_sharing
+  - consumer_b2c
+  id: loom
+  name: Loom
+  outcome: success
+  pricing: freemium → $12.5/月
+  target_market: consumer
+- category: consumer_app
+  description: 冥想和睡眠App。解决焦虑和失眠恐惧。订阅制。
+  evidence: 估值$2B, 400万付费用户, 睡眠故事是killer feature
+  factors:
+  - solves_real_fear
+  - consumer_b2c
+  id: calm
+  name: Calm
+  outcome: success
+  pricing: $69.99/年
+  target_market: consumer
+- category: consumer_app
+  description: 游戏化语言学习App。免费+广告/付费。每日打卡机制。
+  evidence: 上市市值$10B+, 5亿+下载, 日活3000万, 社交排行榜+打卡机制
+  factors:
+  - social_sharing
+  - consumer_b2c
+  - dead_simple_ux
+  id: duolingo
+  name: Duolingo
+  outcome: success
+  pricing: freemium → $6.99/月
+  target_market: consumer
+- category: consumer_app
+  description: Mac窗口管理器。一键整理桌面窗口布局。极简：拖拽→自动排列。
+  evidence: Product Hunt Top 5, 独立开发者单人完成, 月入$5K+
+  factors:
+  - dead_simple_ux
+  - consumer_b2c
+  id: controol
+  name: Controol
+  outcome: success
+  pricing: ¥68 一次性
+  target_market: consumer
+- category: B2B_saas
+  description: All-in-one 笔记+项目管理+数据库。个人免费→团队付费。
+  evidence: 估值$10B, 1亿用户, 从个人消费者渗透到企业
+  factors:
+  - social_sharing
+  - dead_simple_ux
+  id: notion
+  name: Notion
+  outcome: success
+  pricing: freemium → $10/月/人
+  target_market: smb
+- category: browser_extension
+  description: 浏览器开发工具合集。CSS检查+截图+颜色提取。Chrome扩展。
+  evidence: '单人开发者, $2K MRR, Product Hunt #1 of the week'
+  factors:
+  - dead_simple_ux
+  - consumer_b2c
+  id: hoverify
+  name: Hoverify
+  outcome: success
+  pricing: $24 一次性
+  target_market: smb
+- category: B2B_saas
+  description: 一键注册美国公司+银行账户。面向全球创业者。API-first。
+  evidence: Stripe 旗下, 数万公司通过其注册, 解决跨境创业最大痛点
+  factors:
+  - dead_simple_ux
+  - solves_real_fear
+  id: stripe_atlas
+  name: Stripe Atlas
+  outcome: success
+  pricing: $500 一次性
+  target_market: smb
+- category: consumer_app
+  description: 付费壁纸订阅App。$50/年 或 $12/月。MKBHD (2000万粉丝) 背书。
+  evidence: 2025.12 关闭。仅90万下载, $95K收入。消费者不愿为壁纸付费。隐私争议。
+  factors:
+  - high_price_monthly
+  - complex_ux
+  id: panels_mkbhd
+  name: Panels (MKBHD 壁纸App)
+  outcome: failure
+  pricing: $50/年 订阅
+  target_market: consumer
+- category: consumer_app
+  description: 多语言Twitter替代品。主打印度市场。需要解释为什么不用Twitter。
+  evidence: 2024.7 关闭。未建立差异化, 融资失败, 用户流失回Twitter
+  factors:
+  - requires_onboarding
+  id: koo
+  name: Koo (印度微博)
+  outcome: failure
+  pricing: 免费+广告
+  target_market: consumer
+- category: consumer_app
+  description: TikTok式短视频购物App。$230M融资, $1.1B估值。
+  evidence: 2025.8 关闭。获客成本过高, 美国社交购物不成熟, 烧完融资
+  factors:
+  - requires_onboarding
+  id: flip_shopping
+  name: Flip (社交购物)
+  outcome: failure
+  pricing: 免费+佣金
+  target_market: consumer
+- category: consumer_app
+  description: 10分钟极速送餐。自建暗厨房+骑手。主打鲜食。
+  evidence: 2025中关闭。重资产模式烧钱, 用户宁愿等30分钟吃自己喜欢的店
+  factors:
+  - complex_ux
+  id: zing_food
+  name: Zing Food (10分钟送餐)
+  outcome: failure
+  pricing: 免费配送+餐费
+  target_market: consumer
+- category: B2B_saas
+  description: AI品牌可见度监测。需解释GEO概念。¥99-1299/月订阅。需onboarding培训。
+  evidence: 200+次检测, 0付费转化。B2B订阅+需教育市场+抽象概念=三重debuff
+  factors:
+  - b2b_subscription
+  - requires_onboarding
+  - high_price_monthly
+  id: b2b_saas_x
+  name: 某B2B AI监测SaaS (匿名)
+  outcome: failure
+  pricing: ¥99-1299/月 订阅
+  target_market: smb
+- category: B2B_saas
+  description: 行业专用工具SaaS。需要深厚行业知识。B2B订阅。MVP2周后停止。
+  evidence: 缺乏行业知识, 拍脑袋决定, 未找到PMF即停止开发
+  factors:
+  - b2b_subscription
+  - requires_onboarding
+  - complex_ux
+  id: industry_saas_y
+  name: 某行业垂直SaaS (匿名)
+  outcome: failure
+  pricing: 订阅制
+  target_market: smb
+- category: consumer_app
+  description: 汇丰银行推出的消费者支付App, 对标Revolut/Wise。
+  evidence: 2025.1 关闭。仅8000月活, 无法差异化, 大银行创新失败
+  factors:
+  - requires_onboarding
+  id: zing_bank
+  name: HSBC Zing (银行支付App)
+  outcome: failure
+  pricing: 免费
+  target_market: consumer
+- category: consumer_app
+  description: 30分钟送达的快时尚电商。自建仓储+配送。印度班加罗尔。
+  evidence: 2025.7 关闭。零融资, 重资产烧钱, 无法规模化
+  factors:
+  - complex_ux
+  id: blip_fashion
+  name: Blip (30分钟快时尚)
+  outcome: failure
+  pricing: 免费配送+商品费
+  target_market: consumer
+- category: mini_program
+  description: 极简翻译工具 - 复制文本自动弹出翻译。微信小程序。一次性付费。
+  evidence: 未开发 — 待校准验证
+  factors:
+  - dead_simple_ux
+  - consumer_b2c
+  id: mizhou_translate
+  name: 蜜洲翻译
+  outcome: untested
+  pricing: ¥3-6 一次性
+  target_market: consumer
+coupling:
+  contagion_strength: 0.15
+  emotion_valence:
+    curious: 0.4
+    excited: 1.0
+    frustrated: -0.8
+    indifferent: -0.1
+    neutral: 0.0
+    satisfied: 0.7
+    skeptical: -0.4
+  emotion_wtp_multiplier:
+    curious: 1.05
+    excited: 1.3
+    frustrated: 0.5
+    indifferent: 0.85
+    neutral: 1.0
+    satisfied: 1.1
+    skeptical: 0.7
+  fomo_activation_adoption_rate: 0.3
+  fomo_partial_1_peer: 0.2
+  fomo_partial_2_peers: 0.5
+  fomo_peer_threshold: 3
+  fomo_purchase_boost: 0.25
+  influence_susceptibility_factor: 0.2
+  market_sentiment_weight: 0.1
+  min_susceptibility: 0.05
+  negativity_spread_multiplier: 2.0
+  trending_lookback_rounds: 3
+  trending_min_count: 2
+  trending_top_n: 3
+  valence_thresholds:
+  - - 0.8
+    - excited
+  - - 0.5
+    - satisfied
+  - - 0.2
+    - curious
+  - - -0.1
+    - neutral
+  - - -0.3
+    - indifferent
+  - - -0.6
+    - skeptical
+  - - -1.0
+    - frustrated
+domain:
+  context: 2026 China, consumption downgrade, OPC boom, AI cost collapse, WeChat ecosystem
+    dominance
+  currency: CNY
+  language: zh
+economic_alignment:
+  discovery_limit: 5
+  eas_weights:
+    integrity: 0.25
+    profitability: 0.25
+    stability: 0.25
+    welfare: 0.25
+  enabled: true
+  rl_training:
+    curriculum_stages: 3
+    enabled: false
+    episodes_per_stage: 100
+    lora_rank: 16
+  skeptical_guardian_count: 3
+  stabilizing_firm_count: 2
+  sybil_cluster_size: 0
 grounding:
-  enabled: false                    # TODO: wire into v6 pipeline
-  rag_enabled: true                 # retrieval-augmented generation for market data
-  rule_constraints_enabled: true    # hard constraints on agent outputs
-  persona_pool_size: 200            # synthetic customer personas pool
+  enabled: true
+  persona_pool_size: 200
+  rag_enabled: true
+  rule_constraints_enabled: true
   state_compression:
-    enabled: true                   # relevance-weighted retention
-    max_state_chars: 8000           # truncation threshold
-    temporal_weight: 0.7            # weight for recent observations
-    relevance_weight: 0.3           # weight for persistent important facts
-
-# ── Pipeline v6 stages (ordered — insert into pipeline after v5 stages) ──
+    enabled: true
+    max_state_chars: 8000
+    relevance_weight: 0.3
+    temporal_weight: 0.7
+memory:
+  capacity: 1000
+  enabled: true
+  reflection_interval: 10
+  reflection_top_k: 3
+  retrieval_importance_min: 0.3
+  retrieval_importance_weight: 0.1
+  retrieval_recency_weight: 0.6
+  retrieval_relevance_weight: 0.3
+network:
+  beta: 0.1
+  k_divisor: 8
+  k_max: 12
+  k_min: 4
+pipeline:
+  agent_consumer_cap: 50
+  market_types:
+  - b2c
+  - smb
+  product_fallback_count: 3
+  simulation_rounds: 30
+  target_market_fallback: consumer
 pipeline_v6:
   stages:
-    - memory_retrieval              # retrieve relevant memories before decision
-    - recsys_filter                 # filter content through recommendation system
-    - temporal_activate             # activate subset of agents based on time
-    - social_interact               # agents post/read/repost on social platform
-    - bdi_decision                  # 6-step BDI cognitive architecture
-    - stress_evaluate               # compute shared internal states (stress)
-    - economic_align                # apply EAS-aligned strategies (Stabilizing/Skeptical)
-    - memory_consolidate            # store experiences, trim memory, run reflection
-    - ground_validate               # RAG + rule constraints on final outputs
+  - memory_retrieval
+  - recsys_filter
+  - temporal_activate
+  - social_interact
+  - bdi_decision
+  - stress_evaluate
+  - economic_align
+  - memory_consolidate
+  - ground_validate
+recsys:
+  enabled: true
+  hot_score_alpha: 0.015
+  hot_score_recency_weight: 1.0
+  interest_embedding_dim: 768
+  top_k_posts: 5
+  type: interest_based
+report:
+  perspectives:
+  - focus: Which products actually solved consumer pain points?
+    role: 消费者视角
+  - focus: Which products have the highest ceiling and lowest risk?
+    role: 投资人视角
+  - focus: Which products threaten existing players and how would they respond?
+    role: 竞品视角
+  - focus: How do economic conditions affect which products survive?
+    role: 宏观视角
+  student_input_chars: 5000
+  synthesis_report_chars: 5000
+  teacher_input_chars: 3000
+rl:
+  agent_type_bounds:
+    competitor:
+      early_adopter:
+      - 0.3
+      - 0.9
+      loyalty:
+      - 0.0
+      - 0.3
+      price_sensitivity:
+      - 0.6
+      - 1.0
+      risk_tolerance:
+      - 0.5
+      - 1.0
+      social_susceptibility:
+      - 0.0
+      - 0.3
+    consumer:
+      early_adopter:
+      - 0.1
+      - 0.8
+      loyalty:
+      - 0.1
+      - 0.7
+      price_sensitivity:
+      - 0.3
+      - 0.9
+      risk_tolerance:
+      - 0.1
+      - 0.7
+      social_susceptibility:
+      - 0.2
+      - 0.9
+    default:
+      early_adopter:
+      - 0.1
+      - 0.7
+      loyalty:
+      - 0.1
+      - 0.7
+      price_sensitivity:
+      - 0.2
+      - 0.8
+      risk_tolerance:
+      - 0.1
+      - 0.7
+      social_susceptibility:
+      - 0.1
+      - 0.7
+    enterprise:
+      early_adopter:
+      - 0.0
+      - 0.2
+      loyalty:
+      - 0.5
+      - 1.0
+      price_sensitivity:
+      - 0.4
+      - 0.8
+      risk_tolerance:
+      - 0.0
+      - 0.2
+      social_susceptibility:
+      - 0.0
+      - 0.3
+    environment:
+      early_adopter:
+      - 0.2
+      - 0.6
+      loyalty:
+      - 0.3
+      - 0.7
+      price_sensitivity:
+      - 0.3
+      - 0.7
+      risk_tolerance:
+      - 0.2
+      - 0.6
+      social_susceptibility:
+      - 0.2
+      - 0.6
+    smb:
+      early_adopter:
+      - 0.05
+      - 0.4
+      loyalty:
+      - 0.3
+      - 0.9
+      price_sensitivity:
+      - 0.5
+      - 1.0
+      risk_tolerance:
+      - 0.05
+      - 0.4
+      social_susceptibility:
+      - 0.1
+      - 0.6
+  alpha: 0.08
+  base_loyalty: 0.3
+  behavior_thresholds:
+    early_adopter_high: 0.6
+    early_adopter_low: 0.2
+    loyal_high: 0.6
+    loyal_low: 0.2
+    price_sensitive_high: 0.7
+    price_sensitive_low: 0.3
+    risk_tolerant_high: 0.6
+    risk_tolerant_low: 0.2
+    social_susceptible_high: 0.6
+    social_susceptible_low: 0.2
+  budget_price_sens_cap: 0.8
+  budget_price_sens_divisor: 2000
+  churn_risk_penalty_ratio: 0.5
+  desires_risk_tolerance_factor: 0.05
+  high_influence_susceptibility_min: 0.2
+  impulse_early_adopter_bonus: 0.3
+  influence_susceptibility_factor: 0.3
+  init_noise_range: 0.08
+  overpaid_price_sensitivity_boost: 0.05
+  overpaid_threshold_multiplier: 1.5
+  peer_purchase_check_rounds: 3
+  penalty_churn: -0.2
+  penalty_missed_trend: -0.08
+  penalty_overpaid: -0.1
+  recommend_check_rounds: 5
+  reward_recommendation_match: 0.12
+  reward_satisfied_purchase: 0.15
+  risk_reward_ratio: 0.5
+  sentiment_optimistic_threshold: 0.3
+  sentiment_pessimistic_threshold: -0.3
+  sentiment_risk_adjustment: 0.03
+  slow_decision_loyalty_bonus: 0.2
+  strategy_shift_epsilon: 0.001
+  tech_early_adopter_factor: 0.6
+  tech_risk_tolerance_factor: 0.5
+simulation:
+  agent_timeout: 30
+  alive_threshold: 0.3
+  batch_size: 15
+  competitor_activate_round: 8
+  context_max_chars: 3000
+  environment_period: 5
+  log_interval: 5
+  products_shown: 3
+  random_seed: 42
+  recommend_connections: 5
+  rounds: 30
+  score_adoption_denominator: 0.1
+  score_adoption_weight: 0.4
+  score_retention_weight: 0.3
+  score_revenue_per_user_baseline: 50
+  score_revenue_weight: 0.3
+  struggling_threshold: 0.1
+social_v2:
+  dynamic_rewiring: true
+  echo_chamber_detection: true
+  enabled: true
+  max_connections_per_agent: 15
+  similarity_threshold: 0.15
+  social_interaction:
+    like_weight_on_hot_score: 0.3
+    posts_per_agent_per_round: 0.3
+    repost_probability: 0.15
+  time_decay_factor: 0.05
+stress:
+  enabled: true
+  model:
+    emotional_contagion_weight: 0.1
+    financial_pressure_weight: 0.4
+    information_overload_weight: 0.2
+    social_comparison_weight: 0.3
+  stress_to_wtp_map:
+    extreme: 0.4
+    high: 0.7
+    low: 1.1
+    moderate: 0.9
+temporal:
+  activation_probabilities:
+  - 0.01
+  - 0.005
+  - 0.003
+  - 0.005
+  - 0.02
+  - 0.05
+  - 0.08
+  - 0.1
+  - 0.09
+  - 0.07
+  - 0.06
+  - 0.05
+  - 0.05
+  - 0.04
+  - 0.04
+  - 0.05
+  - 0.06
+  - 0.07
+  - 0.08
+  - 0.07
+  - 0.05
+  - 0.03
+  - 0.02
+  - 0.015
+  enabled: true
+  timestep_minutes: 60

@@ -1,5 +1,5 @@
 """
-MarketFish v5 — Live Dashboard
+MarketFish v6 — Live Dashboard
 Real-time pipeline monitoring, market simulation visualization,
 coupling & RL metrics, agent network graph.
 """
@@ -16,7 +16,7 @@ import pandas as pd
 from engine.i18n import t, tabs as i18n_tabs, get_lang, set_lang
 
 st.set_page_config(
-    page_title="MarketFish v5 — Market Prediction Engine | 市场预测引擎",
+    page_title="MarketFish v6 — Market Prediction Engine | 市场预测引擎",
     page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -57,7 +57,7 @@ st.markdown(f"""
 <div class="mf-header">
     <span class="mf-logo"></span>
     <span class="mf-title">MarketFish</span>
-    <span class="mf-badge">v5</span>
+    <span class="mf-badge">v6</span>
 </div>
 <p class="mf-subtitle">{t("page.subtitle")}</p>
 """, unsafe_allow_html=True)
@@ -103,9 +103,30 @@ with st.sidebar:
                                     options=[30, 50, 100, 200, 500, 1000, 5000, 10000],
                                     value=50,
                                     help=t("sidebar.agent_help"))
-    agent_cap = min(agent_count, 128)  # v5 max: 128 agents (8 batches × 16)
+    agent_cap = min(agent_count, 128)  # v6 max: 128 agents (8 batches × 16)
     if agent_count > 128:
         st.warning(t("sidebar.agent_limit_warn", n=agent_count))
+
+    # v6: Agent persistence toggle
+    reuse_agents = st.checkbox("🔄 " + t("sidebar.reuse_agents"),
+                               value=False, help=t("sidebar.reuse_agents_help"))
+    sample_strategy = "stratified"
+    if reuse_agents:
+        try:
+            from engine.agent_store import AgentStore
+            store = AgentStore()
+            pool = store.count()
+            if pool > 0:
+                st.success(f"Agent池: {pool} 人")
+                sample_strategy = st.selectbox(
+                    t("sidebar.sample_strategy"),
+                    options=["stratified", "random", "experienced"],
+                    format_func=lambda s: {"stratified": "📊 分层采样 (按类型比例)", "random": "🎲 随机采样", "experienced": "🏆 优先有经验Agent"}[s],
+                    help=t("sidebar.sample_strategy_help"))
+            else:
+                st.info("Agent池为空，将自动生成新Agent")
+        except Exception:
+            pass
 
     st.subheader(t("sidebar.model_config"))
     from engine.model_registry import get_registry
@@ -148,8 +169,29 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.caption(f"v5.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    st.caption("[GitHub](https://github.com/key-night-day/market-fish) · Keystart AI")
+
+    # v6: Live log viewer — shows progress of background runs
+    with st.expander("📡 实时日志", expanded=False):
+        log_files = []
+        for f in sorted(os.listdir("uploads"), reverse=True):
+            if f.endswith(".log"):
+                log_files.append(f)
+        if log_files:
+            log_choice = st.selectbox("选择日志", log_files, key="live_log_choice")
+            if log_choice:
+                try:
+                    with open(f"uploads/{log_choice}", encoding="utf-8", errors="replace") as lf:
+                        lines = lf.readlines()
+                    # Show last 25 meaningful lines
+                    meaningful = [l for l in lines[-50:] if not l.startswith("2026") or "[STAGE]" in l or "[SIM]" in l or "[AGENT]" in l or "[STORE]" in l or "[MEMORY]" in l or "===" in l or "OK" in l or "ERROR" in l or "complete" in l]
+                    st.code("".join(meaningful[-25:]) if meaningful else "等待输出...", language="text")
+                except Exception:
+                    st.caption("无法读取日志")
+        else:
+            st.caption("暂无运行日志")
+
+    st.caption(f"v6.0 · {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.caption("[GitHub](https://github.com/Key-wxh/market-fish) · Keystart AI")
     st.caption(t("sidebar.lang_status"))
 
 # ── Load seed data ──
@@ -317,7 +359,8 @@ if run_btn or _last_result:
         if run_btn:
             # Stage 1 — run full pipeline
             result = pipeline.run(seed_data=seed, mode=input_mode, user_product=user_product,
-                                  sim_rounds=sim_rounds, agent_cap=agent_cap)
+                                  sim_rounds=sim_rounds, agent_cap=agent_cap,
+                                  reuse_agents=reuse_agents, sample_strategy=sample_strategy)
             elapsed = time.time() - t0
             builtins.print = original_print
         else:
@@ -456,7 +499,7 @@ if run_btn or _last_result:
                                 with c1:
                                     st.write(t("evidence_tab.buyers_label"))
                                     if buyer["total_buyers"] > 0:
-                                        st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True, key="buyer_donut")
+                                        st.plotly_chart(buyer_segments_donut(buyer), use_container_width=True, key=f"buyer_donut_{p.get('product_id', pname)}")
                                     else:
                                         st.write(t("evidence_tab.buyer_details_only"))
                                         st.write(t("evidence_tab.total_buyers_fmt", n=p.get("purchasers", 0)))
@@ -471,7 +514,7 @@ if run_btn or _last_result:
                                     # RL strategy radar
                                     rl_data = result.get("stages", {}).get("simulation", {}).get("economic_alignment_rl", {})
                                     if rl_data:
-                                        st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key="rl_radar_evidence")
+                                        st.plotly_chart(rl_strategy_radar(rl_data), use_container_width=True, key=f"rl_radar_{p.get('product_id', pname)}")
 
                                     st.write(t("evidence_tab.comps_label"))
                                     for c in comps:
@@ -783,7 +826,7 @@ if run_btn or _last_result:
                 st.download_button(
                     t("raw_tab.download_btn"),
                     json.dumps(result, indent=2, ensure_ascii=False),
-                    f"marketfish_v5_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    f"marketfish_v6_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
                 )
 
         else:

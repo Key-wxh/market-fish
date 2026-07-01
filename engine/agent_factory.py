@@ -4,15 +4,34 @@ Target: 100+ agents (75 consumer + 25 SMB + 10 enterprise + 10 competitor/env).
 
 Strategy: Split into N parallel LLM calls, each generating ~25 agents.
 This avoids single-call token limits and LLM "lazy generation" (12 instead of 100).
-"""
 
+Language-aware: agent names follow the current UI language (zh → Chinese, en → English).
+"""
+import re
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from engine.llm_client import get_llm
 from engine.network import build_agent_network
 from engine.config import agent_gen_cfg as _cfg, agent_batches as _batches
+from engine.i18n import get_lang
 
-BATCH_PROMPT = """You are generating market agents for a simulation. Generate EXACTLY the requested number of agents with diverse, realistic profiles.
+def _name_instruction() -> str:
+    """Return the name field instruction for the current language."""
+    if get_lang() == "en":
+        return '"name": "English name — first name + last name for people, business name for shops, e.g. \'Alice Chen\', \'Bob\'s Noodle House\' — NO Chinese characters, NO pinyin in parentheses"'
+    else:
+        return '"name": "纯中文姓名 — 人名或店铺名，例如\'王丽\'\'张伟\'\'李记面馆\' — 不含英文、拼音、括号翻译"'
+
+def _clean_name(name: str) -> str:
+    """Post-process agent name: strip parenthetical translations based on language."""
+    if get_lang() == "en":
+        # Strip Chinese parenthetical: "Alice Chen (陈丽)" → "Alice Chen"
+        return re.sub(r'\s*\([^)]*[一-鿿][^)]*\)\s*$', '', name).strip()
+    else:
+        # Strip English/pinyin parenthetical: "王美美 (Wang Meimei)" → "王美美"
+        return re.sub(r'\s*\([^)]*[a-zA-Z][^)]*\)\s*$', '', name).strip()
+
+BATCH_PROMPT_ZH = """You are generating market agents for a Chinese-market simulation. Generate EXACTLY the requested number of agents with diverse, realistic profiles.
 
 Output EXACTLY this JSON:
 {
@@ -20,7 +39,7 @@ Output EXACTLY this JSON:
     {
       "id": "unique_slug_with_number",
       "type": "consumer|smb|enterprise|competitor|environment",
-      "name": "readable Chinese name",
+      {name_field},
       "demographics": { "age": "range", "income_cny": "range", "city_tier": "1-5", "occupation": "specific job" },
       "bdi": {
         "beliefs": ["2-3 specific beliefs about AI, money, technology"],
@@ -45,7 +64,53 @@ MANDATORY:
 - Every agent must have a DIFFERENT occupation, different income, different pain points.
 - Use realistic 2026 China contexts: consumption downgrade, OPC (one-person-company) boom, AI everywhere, WeChat ecosystem.
 - Budgets in CNY must be realistic for the agent's income level.
+- Names, beliefs, desires, pain_points, occupation: ALL must be Chinese ONLY — no English, no pinyin, no parenthetical translations. Pure Chinese text throughout.
 """
+
+BATCH_PROMPT_EN = """You are generating market agents for a simulation. Generate EXACTLY the requested number of agents with diverse, realistic profiles.
+
+Output EXACTLY this JSON:
+{
+  "agents": [
+    {
+      "id": "unique_slug_with_number",
+      "type": "consumer|smb|enterprise|competitor|environment",
+      {name_field},
+      "demographics": { "age": "range", "income_cny": "range", "city_tier": "1-5", "occupation": "specific job" },
+      "bdi": {
+        "beliefs": ["2-3 specific beliefs about AI, money, technology"],
+        "desires": ["2-3 concrete goals"],
+        "intentions": ["1-2 immediate next actions"]
+      },
+      "budget_monthly_cny": "specific number",
+      "pain_points": ["3-5 ranked by severity, very specific"],
+      "tech_savviness": 0.0-1.0,
+      "decision_speed": "impulse|days|weeks|months",
+      "influence_weight": 0.0-3.0,
+      "social_network": {
+        "connections": [],
+        "network_type": "small_world"
+      }
+    }
+  ]
+}
+
+MANDATORY:
+- Generate EXACTLY the number of agents specified in the prompt. No fewer.
+- Every agent must have a DIFFERENT occupation, different income, different pain points.
+- Use realistic 2026 China contexts: consumption downgrade, OPC (one-person-company) boom, AI everywhere, WeChat ecosystem.
+- Budgets in CNY must be realistic for the agent's income level.
+- Names, beliefs, desires, pain_points, occupation: ALL must be English ONLY — no Chinese characters, no pinyin in parentheses. Pure English text throughout.
+"""
+
+def _build_prompt() -> str:
+    """Build the language-appropriate batch prompt."""
+    name_instr = _name_instruction()
+    if get_lang() == "en":
+        return BATCH_PROMPT_EN.replace("{name_field}", name_instr)
+    else:
+        return BATCH_PROMPT_ZH.replace("{name_field}", name_instr)
+
 
 # Batch definitions — lazy-loaded from config/defaults.yaml
 def _get_batches():
@@ -53,13 +118,15 @@ def _get_batches():
 
 
 def _generate_one_batch(batch_def: dict, knowledge_graph: dict, product_directions: list) -> list:
-    """Generate one batch of agents via LLM. Returns list of agent dicts."""
+    """Generate one batch of agents via LLM. Returns list of agent dicts with cleaned names."""
     llm = get_llm()
+    lang = get_lang()
 
     user_prompt = f"""Generate EXACTLY {batch_def['count']} {batch_def['agent_type']} agents.
 
 BATCH LABEL: {batch_def['label']}
 DIVERSITY REQUIREMENT: {batch_def['diversity']}
+LANGUAGE: {"English only" if lang == "en" else "Chinese only"}
 
 KNOWLEDGE GRAPH CONTEXT:
 {json.dumps(knowledge_graph, indent=2, ensure_ascii=False)[:_cfg()["context_kg_chars"]]}
@@ -76,15 +143,22 @@ Use realistic 2026 China data. IDs must be unique slugs."""
     for attempt in range(max_retries):
         try:
             result = llm.chat_json(
-                system=BATCH_PROMPT,
+                system=_build_prompt(),
                 user=user_prompt,
                 agent_type=batch_def["agent_type"],
                 temperature=_cfg()["temperature"],
             )
             agents = result.get("agents", [])
-            # Tag with batch label
+            # Tag with batch label + clean names
+            cleaned = 0
             for a in agents:
                 a["batch_label"] = batch_def["label"]
+                original = a.get("name", "")
+                a["name"] = _clean_name(original)
+                if a["name"] != original:
+                    cleaned += 1
+            if cleaned:
+                print(f"  [BATCH] {batch_def['label']}: cleaned {cleaned} bilingual names", flush=True)
             print(f"  [BATCH] {batch_def['label']}: generated {len(agents)}/{batch_def['count']} {batch_def['agent_type']}s", flush=True)
             return agents
         except Exception as e:

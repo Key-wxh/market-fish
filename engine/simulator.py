@@ -11,7 +11,7 @@ v4 changes:
 
 import json, time, os, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from engine.config import simulation_cfg as _cfg, pipeline_cfg as _pcfg
+from engine.config import simulation_cfg as _cfg, pipeline_cfg as _pcfg, get_config
 from engine.llm_client import get_llm
 from engine.coupling import apply_coupling, compute_fomo_boost, adjust_willingness_to_pay
 from engine.alignment_rl import update_all_strategies, get_strategy_context_for_decision
@@ -34,7 +34,8 @@ Budget is a HARD constraint. Cannot spend more than budget_monthly_cny.
 After discovering: if product solves pain→purchase. If not→ignore. After purchase: if satisfied→renew. If not→churn."""
 
 
-def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list, total_rounds: int) -> dict:
+def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list, total_rounds: int,
+                      memory_context: str = "") -> dict:
     """Single agent decision — called in parallel within each round."""
     profile = state["profile"]
     agent_type = profile.get("type", "consumer")
@@ -70,10 +71,28 @@ def _decide_one_agent(agent_id: str, state: dict, round_num: int, products: list
         },
     }
 
-    # Inject RL strategy guidance into the user prompt
+    # v6: BDI v2 cognitive context
+    bdi_context = ""
+    if get_config().get("bdi_v2", {}).get("enabled", False):
+        from engine.bdi_v2 import bdi_decision_context
+        bdi_context = bdi_decision_context(profile, state, round_num, products, market_sentiment)
+
+    # v6: Grounding RAG context
+    rag_ctx = ""
+    if get_config().get("grounding", {}).get("enabled", False):
+        from engine.grounding import rag_context
+        rag_ctx = rag_context(profile, products, state.get("_seed_data"))
+
+    # Inject RL strategy guidance + v6 contexts into the user prompt
     user_extra = ""
+    if bdi_context:
+        user_extra += bdi_context
     if rl_context:
-        user_extra = f"\n\nYOUR LEARNED BEHAVIOR: {rl_context}"
+        user_extra += f"\n\nYOUR LEARNED BEHAVIOR: {rl_context}"
+    if rag_ctx:
+        user_extra += rag_ctx
+    if memory_context:
+        user_extra += memory_context
 
     try:
         llm = get_llm()
@@ -116,18 +135,69 @@ def simulate(agents: list, product_directions: list, rounds: int = None, market_
     log, timeline = [], []
     coupling_history = []
     rl_history = []
-    batch_size = _cfg()["batch_size"]  # More parallel workers for larger agent count
+    batch_size = _cfg()["batch_size"]
+
+    # v6: Memory module (Generative Agents 2023)
+    mem_cfg = get_config().get("memory", {})
+    memory_enabled = mem_cfg.get("enabled", False)
+    memory_streams = {}
+    if memory_enabled:
+        from engine.memory import MemoryStream, inject_memories_to_context, record_decision_memory
+        for aid in agent_states:
+            memory_streams[aid] = MemoryStream(
+                agent_id=aid,
+                capacity=mem_cfg.get("capacity", 1000),
+                reflection_interval=mem_cfg.get("reflection_interval", 10),
+                recency_weight=mem_cfg.get("retrieval_recency_weight", 0.6),
+                relevance_weight=mem_cfg.get("retrieval_relevance_weight", 0.3),
+                importance_weight=mem_cfg.get("retrieval_importance_weight", 0.1),
+                reflection_top_k=mem_cfg.get("reflection_top_k", 3),
+            )
+        print(f"  [MEMORY] Initialized for {len(memory_streams)} agents", flush=True)
     started = time.time()
 
     for rnd in range(1, rounds + 1):
         rnd_start = time.time()
         agent_ids = list(agent_states.keys())
 
-        # Parallel batch execution
+        # v6: Temporal activation (OASIS) — only activate a subset
+        temporal_cfg = get_config().get("temporal", {})
+        if temporal_cfg.get("enabled", False):
+            from engine.temporal import activate_agents
+            active_ids, inactive_ids = activate_agents(agent_ids, rnd, rounds)
+        else:
+            active_ids, inactive_ids = agent_ids, []
+
+        # v6: RecSys filter (OASIS) — personalized product recommendations
+        recsys_cfg = get_config().get("recsys", {})
+        if recsys_cfg.get("enabled", False):
+            from engine.recsys import recsys_filter
+            profiles = {aid: agent_states[aid]["profile"] for aid in active_ids}
+            recs = recsys_filter(product_directions, profiles, rnd)
+        else:
+            recs = {aid: product_directions for aid in active_ids}
+
+        # v6: Stress computation (EconSimulacra)
+        stress_cfg = get_config().get("stress", {})
+        if stress_cfg.get("enabled", False):
+            from engine.stress import apply_stress
+            apply_stress(agent_states, {})
+
+        # v6: Memory retrieval before decisions
+        mem_contexts = {}
+        if memory_enabled:
+            product_names = ", ".join(p.get("name", p.get("id", "")) for p in product_directions[:3])
+            query = f"round {rnd} evaluating: {product_names[:200]}"
+            for aid in active_ids:
+                mem_contexts[aid] = inject_memories_to_context(aid, query, memory_streams, top_k=3)
+
+        # Parallel batch execution (active agents only)
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             futures = {
-                executor.submit(_decide_one_agent, aid, agent_states[aid], rnd, product_directions, rounds): aid
-                for aid in agent_ids
+                executor.submit(_decide_one_agent, aid, agent_states[aid], rnd,
+                                recs.get(aid, product_directions), rounds,
+                                mem_contexts.get(aid, "")): aid
+                for aid in active_ids
             }
             for future in as_completed(futures):
                 aid = futures[future]
@@ -174,6 +244,51 @@ def simulate(agents: list, product_directions: list, rounds: int = None, market_
                 state["history"].append(decision)
                 log.append(decision)
 
+                # v6: Grounding validation
+                if get_config().get("grounding", {}).get("enabled", False):
+                    from engine.grounding import ground_validate
+                    decision = ground_validate(decision, state["profile"], state.get("_seed_data"))
+
+                # v6: BDI intention update (TwinMarket Step 6)
+                if get_config().get("bdi_v2", {}).get("enabled", False):
+                    from engine.bdi_v2 import update_bdi_intentions
+                    update_bdi_intentions(aid, state, decision, rnd)
+
+                # v6: Stress-adjusted WTP
+                if stress_cfg.get("enabled", False):
+                    from engine.stress import stress_to_wtp_multiplier
+                    sl = state.get("stress_level", 0)
+                    if action == "purchase":
+                        multiplier = stress_to_wtp_multiplier(sl)
+                        decision["willingness_to_pay_cny"] = round(
+                            _safe_float(decision.get("willingness_to_pay_cny", 0)) * multiplier, 1)
+
+                # v6: Record decision as memory
+                if memory_enabled and action not in ("skip", "error", "timeout"):
+                    try:
+                        record_decision_memory(aid, decision, rnd, task_id=market_type, memory_streams=memory_streams)
+                    except Exception:
+                        pass
+
+        # v6: Inactive agents receive passive updates (social/emotional only)
+        for aid in inactive_ids:
+            state = agent_states[aid]
+            state["history"].append({"agent_id": aid, "round": rnd, "action": "inactive",
+                                     "reason": "temporal_deactivation"})
+            log.append(state["history"][-1])
+
+        # ---- Post-round: Memory Reflection (Generative Agents 2023) ----
+        if memory_enabled and rnd % memory_streams[list(agent_ids)[0]].reflection_interval == 0:
+            reflected = 0
+            for aid in agent_ids:
+                try:
+                    mems = memory_streams[aid].reflect()
+                    reflected += len(mems)
+                except Exception:
+                    pass
+            if reflected > 0:
+                print(f"  [MEMORY] Round {rnd}: {reflected} reflections generated", flush=True)
+
         # ---- Post-round: Cross-Domain Coupling (EconSimulacra 2026) ----
         coupling_stats = apply_coupling(agent_states, rnd, product_directions)
         coupling_history.append(coupling_stats)
@@ -199,6 +314,17 @@ def simulate(agents: list, product_directions: list, rounds: int = None, market_
             n_strats = sum(1 for s in agent_states.values() if s.get("rl_strategy"))
             print(f"  [SIM] Round {rnd}/{rounds} | {purchasers} purchasers | sentiment={market.get('avg_sentiment',0):.2f} | {n_strats} RL-active | {total_elapsed:.0f}s total", flush=True)
 
+    # v6: Memory consolidation at simulation end
+    if memory_enabled:
+        total_removed = 0
+        for aid in agent_ids:
+            try:
+                total_removed += memory_streams[aid].consolidate()
+            except Exception:
+                pass
+        mem_stats = {aid: memory_streams[aid].stats()["total"] for aid in list(agent_ids)[:5]}
+        print(f"  [MEMORY] Consolidated: {total_removed} removed, sample sizes: {mem_stats}", flush=True)
+
     results = _compute_results(agent_states, product_directions)
 
     # Collect final RL strategy summary
@@ -214,6 +340,7 @@ def simulate(agents: list, product_directions: list, rounds: int = None, market_
         "timeline": timeline,
         "log": log,
         "results": results,
+        "agent_states": agent_states,  # v6: for persistence after simulation
         "coupling_history": coupling_history,
         "rl_summary": {
             "rounds_with_updates": len([r for r in rl_history if r.get("strategies_with_changes", 0) > 0]),

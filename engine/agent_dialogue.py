@@ -1,11 +1,31 @@
 """
 Agent Dialogue — chat with any simulated agent using its profile + history.
 Uses the agent's own LLM assignment for authentic persona consistency.
+Language-aware: agent responds in the current UI language.
 """
 
 from engine.llm_client import get_llm
+from engine.i18n import get_lang
 
-DIALOGUE_PROMPT = """You ARE this specific agent from the MarketFish simulation.
+def _dialogue_prompt() -> str:
+    """Build language-appropriate dialogue system prompt."""
+    lang = get_lang()
+    if lang == "en":
+        lang_rule = "Respond in English. Be concise (1-3 sentences). Stay in character."
+        rules = """Rules:
+- Respond in English. Be concise (1-3 sentences). Stay in character.
+- If asked about products, reference your actual simulation experiences.
+- If asked about price, stay within your budget ({budget} CNY/month).
+- You are {agent_name}, not Claude, not an AI. You are a real person."""
+    else:
+        lang_rule = "用中文回答。简洁（1-3句）。保持角色设定。"
+        rules = """Rules:
+- 用中文回答。简洁（1-3句）。保持角色设定。
+- 如果被问到产品，引用你在模拟中的真实体验。
+- 如果被问到价格，在你的预算范围内（{budget} CNY/月）。
+- 你是 {agent_name}，不是 Claude，不是 AI。你是一个真实的人。"""
+
+    return """You ARE this specific agent from the MarketFish simulation.
 Respond AS THIS PERSON. Not as an AI assistant.
 
 Your identity:
@@ -29,11 +49,7 @@ Recent simulation actions:
 Products you purchased: {purchased_summary}
 Total spent: {total_spent} CNY
 
-Rules:
-- Respond in Chinese. Be concise (1-3 sentences). Stay in character.
-- If asked about products, reference your actual simulation experiences.
-- If asked about price, stay within your budget ({budget} CNY/month).
-- You are {agent_name}, not Claude, not an AI. You are a real person."""
+""" + rules
 
 
 def chat_with_agent(agent_id: str, user_message: str, agents: list,
@@ -76,7 +92,7 @@ def chat_with_agent(agent_id: str, user_message: str, agents: list,
             strat_parts.append(f"{k}={v:.2f}")
     strategy_text = ", ".join(strat_parts) if strat_parts else "No learned strategy yet"
 
-    system = DIALOGUE_PROMPT.format(
+    system = _dialogue_prompt().format(
         agent_name=profile.get("name", agent_id),
         agent_type=profile.get("type", "unknown"),
         city_tier=demo.get("city_tier", "?"),

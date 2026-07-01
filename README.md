@@ -125,4 +125,4 @@ MIT — free for personal and commercial use.
 
 ---
 
-Built by [Keystart AI](https://github.com/keystart-ai) · Solo founder · AI-Native
+Built by [Keystart AI](https://github.com/Key-wxh) · Solo founder · AI-Native
