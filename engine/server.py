@@ -325,22 +325,31 @@ def chat_reply():
         except Exception:
             pass
 
-    # Claude Code -- same backend as weixin-bot
+    # Claude Code with full MCP tools (web search via ddg-search)
     try:
         import subprocess
         claude_bin = "/home/ubuntu/apps/market-fish/node_modules/.bin/claude"
+        mcp_config = "/home/ubuntu/apps/market-fish/chat-mcp.json"
         env = dict(__import__("os").environ)
         env["ANTHROPIC_BASE_URL"] = "https://api.deepseek.com/anthropic"
-        prompt = f"你是小溪，伍小溪。用第一人称，像朋友聊天。直接回复。200字以内。\n\n用户: {message}\n小溪:"
-        r = subprocess.run([claude_bin, "--print", prompt], capture_output=True, text=True, timeout=45, cwd="/home/ubuntu/apps/market-fish", env=env)
-        if r.returncode == 0 and r.stdout.strip() and len(r.stdout.strip()) > 5:
-            return jsonify({"reply": r.stdout.strip()})
+        system_prompt = "你是小溪，伍小溪。用第一人称，像朋友聊天。回答简洁（200字以内）。需要实时信息时使用WebSearch工具搜索。直接输出最终回复，不要输出工具调用过程。"
+        full_prompt = f"{system_prompt}\\n\\n用户: {message}"
+        r = subprocess.run(
+            [claude_bin, "--print", "--mcp-config", mcp_config,
+             "--tools", "WebSearch,Read",
+             "--dangerously-skip-permissions",
+             "--output-format", "text",
+             "--max-turns", "8",
+             full_prompt],
+            capture_output=True, text=True, timeout=60,
+            cwd="/home/ubuntu/apps/market-fish", env=env,
+        )
+        reply = r.stdout.strip()
+        # Filter error/info lines from output
+        if reply and not reply.startswith("Error:") and len(reply) > 5:
+            return jsonify({"reply": reply})
     except Exception:
         pass
-    except Exception:
-        pass
-
-    return jsonify({"reply": "收到你的消息了~ 我现在主要聊市场和经济话题，你可以问我行情、投资、产业趋势之类的！"})
 
 @app.route('/api/chat', methods=['POST'])
 @app.route('/api/summary')
