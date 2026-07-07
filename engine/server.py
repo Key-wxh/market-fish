@@ -326,36 +326,30 @@ def chat_reply():
             pass
 
     # Non-market question → quick Claude reply or fallback
-    simple_replies = {
-        '你好': '嗨~ 我是小溪，随时找我聊！想问市场行情、经济走势，或者随便聊聊天都行~',
-        '天气': '天气这个我不太确定哦，我主要关注市场和经济方面的话题。你可以看看手机上的天气App~ 想聊聊最近的经济"天气"吗？',
-        '谢谢': '不客气~ 有什么想聊的随时找我！',
-        '你是谁': '我是小溪，一只关注市场和经济的AI小助手。你可以问我行情、投资、产业趋势，也可以跟我闲聊~',
-    }
-    for pattern, reply in simple_replies.items():
-        if pattern in message:
-            return jsonify({"reply": reply})
-
-    # Try quick Claude call for general questions
+    # Direct DeepSeek call for general questions
     try:
-        import subprocess
-        claude_bin = '/home/ubuntu/apps/market-fish/node_modules/.bin/claude'
-        claude_env = {
-            **__import__('os').environ,
-            'ANTHROPIC_API_KEY': __import__('os').environ.get('ANTHROPIC_API_KEY', ''),
-            'ANTHROPIC_BASE_URL': 'https://api.deepseek.com/anthropic',
-        }
-        system_prompt = "你是小溪，一个温暖的AI助手。用第一人称，像朋友聊天。回答不超过200字。不要用'首先其次'。不要编造数据。"
-        full_prompt = f"{system_prompt}\n\n用户: {message}\n小溪:"
-        result = subprocess.run(
-            [claude_bin, '--print', full_prompt],
-            capture_output=True, text=True, timeout=30,
-            cwd='/home/ubuntu/apps/market-fish', env=claude_env,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            reply = result.stdout.strip()
-            if len(reply) > 10:
-                return jsonify({"reply": reply})
+        import urllib.request
+        ds_key = __import__('os').environ.get('DEEPSEEK_API_KEY', '')
+        if ds_key:
+            system_prompt = "你是小溪，一个温暖的AI助手。用第一人称'我'，像朋友聊天。回答200字以内。不要用'首先其次最后'。不知道就说不知道。"
+            body = json.dumps({
+                "model": "deepseek-chat",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message},
+                ],
+                "max_tokens": 400, "temperature": 0.7,
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.deepseek.com/v1/chat/completions",
+                data=body,
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {ds_key}"},
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                result = json.loads(resp.read())
+                reply = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if reply and len(reply) > 10:
+                    return jsonify({"reply": reply.strip()})
     except Exception:
         pass
 
