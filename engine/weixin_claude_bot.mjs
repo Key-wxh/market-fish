@@ -146,6 +146,25 @@ function askAgentAPI(question) {
   } catch (e) { return null; }
 }
 
+// ── Cross-Validation (ruflo Dual-Mode: Agent API vs Claude) ──
+async function crossValidate(question, agentAnswer) {
+  if (!agentAnswer || agentAnswer.length < 50) return;
+  try {
+    const checkPrompt = "你是质量检查员。检查这段回复是否有问题。只输出 OK 或 ISSUE: <问题>";
+    const fullPrompt = checkPrompt + "\n\n【回复】\n" + agentAnswer.substring(0, 300);
+    const result = await callClaude(
+      "你是质检员。快速检查下面回复的质量。只输出 OK 或 FLAG: <具体问题>，不超过30字。",
+      fullPrompt,
+      10000
+    );
+    if (result && result.startsWith("FLAG:")) {
+      console.log("  [cross-validate] FLAG: " + result.substring(0, 100));
+    }
+  } catch (e) {
+    // Silent fail
+  }
+}
+
 // ── Complex 路径: 多 Agent 管线 ──
 async function askMultiAgent(userId, text) {
   const context = buildContext(userId, text);
@@ -221,7 +240,9 @@ async function askClaude(userId, text) {
     case "market":
       // 优先走 Agent API，失败降级到多 Agent 管线
       reply = askAgentAPI(text);
-      if (!reply) {
+      if (reply) {
+        crossValidate(text, reply).catch(function(){});
+      } else {
         console.log("  Agent API failed, fallback to multi-agent");
         reply = await askMultiAgent(userId, text);
       }
