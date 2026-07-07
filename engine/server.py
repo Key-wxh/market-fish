@@ -325,31 +325,18 @@ def chat_reply():
         except Exception:
             pass
 
-    # Non-market question → quick Claude reply or fallback
-    # Direct DeepSeek call for general questions
+    # Claude Code -- same backend as weixin-bot
     try:
-        import urllib.request
-        ds_key = __import__('os').environ.get('DEEPSEEK_API_KEY', '')
-        if ds_key:
-            system_prompt = "你是小溪，一个温暖的AI助手。用第一人称'我'，像朋友聊天。回答200字以内。不要用'首先其次最后'。不知道就说不知道。"
-            body = json.dumps({
-                "model": "deepseek-chat",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": message},
-                ],
-                "max_tokens": 400, "temperature": 0.7,
-            }).encode()
-            req = urllib.request.Request(
-                "https://api.deepseek.com/v1/chat/completions",
-                data=body,
-                headers={"Content-Type": "application/json", "Authorization": f"Bearer {ds_key}"},
-            )
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                result = json.loads(resp.read())
-                reply = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-                if reply and len(reply) > 10:
-                    return jsonify({"reply": reply.strip()})
+        import subprocess
+        claude_bin = "/home/ubuntu/apps/market-fish/node_modules/.bin/claude"
+        env = dict(__import__("os").environ)
+        env["ANTHROPIC_BASE_URL"] = "https://api.deepseek.com/anthropic"
+        prompt = f"你是小溪，伍小溪。用第一人称，像朋友聊天。直接回复。200字以内。\n\n用户: {message}\n小溪:"
+        r = subprocess.run([claude_bin, "--print", prompt], capture_output=True, text=True, timeout=45, cwd="/home/ubuntu/apps/market-fish", env=env)
+        if r.returncode == 0 and r.stdout.strip() and len(r.stdout.strip()) > 5:
+            return jsonify({"reply": r.stdout.strip()})
+    except Exception:
+        pass
     except Exception:
         pass
 
