@@ -269,9 +269,14 @@ def send_get():
 
 @app.route('/send', methods=['POST'])
 def send_post():
-    """Form-encoded POST /send (dashboard form) — redirect back to /"""
-    text = request.form.get('text', '').strip()
-    author = request.form.get('author', 'CEO')
+    """POST /send — accepts JSON or form-encoded"""
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        text = data.get('text', '').strip()
+        author = data.get('author', 'CEO')
+    else:
+        text = request.form.get('text', '').strip()
+        author = request.form.get('author', 'CEO')
     if text:
         msgs = load_msgs()
         msgs["messages"].append({
@@ -282,6 +287,9 @@ def send_post():
         if len(msgs["messages"]) > 200:
             msgs["messages"] = msgs["messages"][-200:]
         save_msgs(msgs)
+    # API callers (JSON) get JSON response; form gets redirect
+    if request.is_json:
+        return jsonify({"status": "ok"})
     from flask import redirect
     return redirect("/")
 
